@@ -9,6 +9,7 @@ from selenium.common.exceptions import NoSuchElementException, ElementClickInter
 
 GET_HEIGHT_SCRIPT = "return document.body.scrollHeight"
 SCROLL_DOWN_SCRIPT = "window.scrollTo(0, document.body.scrollHeight);" #scroll to height value of the bottom of the page
+SCROLL_1000_SCRIPT = "window.scrollTo(0, 1000);"
 CSS_SELECTOR = "css selector" #can use instead: from selenium.webdriver.common.by import By
 
 def press_button_until_gone(button_selector, url=None, wait_time=2, 
@@ -47,7 +48,7 @@ def press_button_until_gone(button_selector, url=None, wait_time=2,
     return soup
 
 
-def close_popup(button_selector, url=None, click_wait=15, post_click_wait = 0,
+def close_popup(button_selector, url=None, click_wait=12, post_click_wait = 0,
                   pre_scroll=False, post_scroll=False, 
                   driver = None, close_driver=True, open_page=True):
     """
@@ -59,6 +60,7 @@ def close_popup(button_selector, url=None, click_wait=15, post_click_wait = 0,
         driver.get(url)
     
     try:
+        driver.execute_script(SCROLL_1000_SCRIPT)
         WebDriverWait(driver, click_wait).until(
                 expected_conditions.element_to_be_clickable((CSS_SELECTOR, button_selector))
         )
@@ -142,13 +144,15 @@ def scroll_scrape_website(url=None, driver = None, close_driver = True, wait_tim
         driver.quit()
     return soup
 
-def requests_responses(urls, return_kind = 'soups', https = False, headers = None):
+def requests_responses(urls, return_kind = 'soups', https = False, headers = None, wait_time = 0.3):
     responses = []
     session = requests.Session()
     if https:
         if 'User-Agent' not in headers:
             headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
     for url in urls:
+        if wait_time:
+            time.sleep(wait_time)
         response = session.get(url, headers = headers)
         responses.append(response)
         
@@ -160,13 +164,13 @@ def requests_responses(urls, return_kind = 'soups', https = False, headers = Non
     
     raise ValueError(f'Unknown return_kind: {return_kind}')
 
-def process_webpage(urls, usecase='http', **kwargs):
+def process_webpages(urls, usecase='http', **kwargs):
     if usecase == 'http':
-        soups = requests_responses(urls)
+        soups = requests_responses(urls, **kwargs)
         return soups
     
     if usecase == 'https':
-        soups = requests_responses(urls, https = True)
+        soups = requests_responses(urls, https = True, **kwargs)
         return soups
     
     if usecase == 'selenium':
