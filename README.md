@@ -299,13 +299,13 @@ plot_top_keywords_keyphrases(keyword_counts_nongerman, keyphrase_counts_nongerma
 
 If we first try to just list the keywords, and key phrases (phrases with more than one word) that appear in the job descriptions, the most frequent key phrases list includes too many German terms. If we filter out stopwords, we get better results:
 
-![Most common keywords and keyphrases (352 job descriptions) - corrected for stopwords](https://raw.githubusercontent.com/me9hanics/AWS-job-posting-analysis/refs/heads/main/imgs/keywords_keyphrases.png)
+![Most common keywords and keyphrases (352 job descriptions) - corrected for stopwords](https://raw.githubusercontent.com/me9hanics/AWS-job-posting-analysis/refs/heads/main/imgs/keyphrases.png)
 
 However, this is still far from desirable. We can filter out key phrases that appear to be in German - to save costs, we can use the `langdetect` library to detect the language of the key phrases, and only keep the English ones. This is a simple, but slow method.
 
 After filtering out German key phrases:
 
-![Most common keywords and keyphrases (352 job descriptions) - corrected for stopwords, filter German keywords](https://raw.githubusercontent.com/me9hanics/AWS-job-posting-analysis/refs/heads/main/imgs/keywords_keyphrases_nongerman.png)
+![Most common keywords and keyphrases (352 job descriptions) - corrected for stopwords, filter German keywords](https://raw.githubusercontent.com/me9hanics/AWS-job-posting-analysis/refs/heads/main/imgs/keyphrases_nongerman.png)
 
 ## Costs
 
