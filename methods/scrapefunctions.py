@@ -10,7 +10,7 @@ from selenium.common.exceptions import NoSuchElementException, ElementClickInter
 GET_HEIGHT_SCRIPT = "return document.body.scrollHeight"
 SCROLL_DOWN_SCRIPT = "window.scrollTo(0, document.body.scrollHeight);" #scroll to height value of the bottom of the page
 SCROLL_1000_SCRIPT = "window.scrollTo(0, 1000);"
-CSS_SELECTOR = "css selector" #can use instead: from selenium.webdriver.common.by import By
+CSS_SELECTOR = "css selector" #can use instead: from selenium.webdriver.common.by import By, then By.CSS_SELECTOR
 
 def press_button_until_gone(button_selector, url=None, wait_time=2, 
                             pre_click_wait=0, post_click_wait=0,
