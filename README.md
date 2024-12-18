@@ -68,7 +68,7 @@ Average number of words (excluding 0-length descriptions): 491.90
 
 Not all of the postings will be used for our analysis, and different languages need to be handled differently. These are steps for the key phrase extraction process.
 
-## Key phrases extraction
+## Key phrases extraction attempts
 
 We would like to extract terms that are appear more frequently in these job descriptions than expected by chance (analogous to the idea of TF-IDF), and are relevant for our job search - we are interested in key phrases that frequently appear in the job postings that are relevant to us.
 
@@ -91,7 +91,7 @@ description = "One bank.  Many career paths. #makeITmatter Conversational AI Spe
         related field. Proven experience in developing and deploying AI models ..."
 ```
 
-With a simple use of Amazon Comprehend (`response = comprehend.detect_key_phrases(Text=description, LanguageCode="en")`), we gather the following key phrases, with their respective confidence levels (frequency can also be gathered):
+With a simple use of Amazon Comprehend (`response = comprehend.detect_key_phrases(Text=description, LanguageCode="en")`), we gather the following key phrases, with their respective confidence levels (frequency can also be gathered). This is not something, that spaCy provides. Let's compare the results:
 
 ```
 Amazon Comprehend:
@@ -126,7 +126,6 @@ Amazon Comprehend:
 ```
 spaCy:
 
-
 'AI': 10,
 'models': 3,
 'bank': 2,
@@ -149,13 +148,15 @@ spaCy:
 ...
 ```
 
-While many of the job descriptions are in German, the keywords that we really care about are in English - this may come as a useful filter
+It seems, that spaCy not only picks up terms that are not even close to being key phrases, but can only look at words, not phrases. This gives a clear advantage to Amazon Comprehend, which can detect key phrases among providing confidence levels too - however those are not reliable. The processing took 44.1 seconds for the 462 job postings, which is managable, but not as fast as expected.<br>
+We see, that both methods focus on many terms that are not relevant to our search - this might be a fundamental issue, that is hard to solve. In the next steps, we use Amazon Comprehend's methods to attempt to improve key phrase extraction.
 
-44.1 seconds for 462 job postings
+Important to not that while many of the job descriptions are in German, the keywords that we really care about are typically in English - this will come as a useful filter later on.
 
-## Analysis of key phrases gathered with Amazon Comprehend
 
-Code:
+## Key phrase "mining" with Amazon Comprehend, and analysis
+
+The following code is used to first load the descriptions, then select only a relevant subset of 352 postings of them (which also reduces computing costs by 24%), then using Amazon Comprehend to first determine the language of a job description with `detect_dominant_language` (fast and cheap mode of improvement, as this information comes as input into the next method) on a small section of the description, and then extract key phrases with `detect_key_phrases`. Knowing, that these initial results are poor, we make 2 additional attempts to filter out unwanted key phrases: firstly by removing phrases including stopwords (provided by the `nltk` library), and then by detecting with a simple method from the `langdetect` library if a keyphrase or keyword is written in German, filtering out German key phrases. The results after both improvements are plotted.
 
 ```python
 
@@ -297,31 +298,47 @@ plot_top_keywords_keyphrases(keyword_counts_nongerman, keyphrase_counts_nongerma
 # %%
 ```
 
-If we first try to just list the keywords, and key phrases (phrases with more than one word) that appear in the job descriptions, the most frequent key phrases list includes too many German terms. If we filter out stopwords, we get better results:
+The use of the two libraries could be replaced via AWS methods - we could detect the language of the key phrases as we did before, and filtering stopwords is also possible with AWS. The main reason why these were utilized is cost - e.g. every separate request to detect the language of a key phrase costs as much money as requesting detecting language of a 300 character text, and since we can have many keywords and key phrases, that would not be feasible.
+
+If we first try to just list the keywords, and key phrases (phrases with more than one word) that appear in the job descriptions, the most frequent key phrases list includes too many German terms. Without filtering, every common keyword is just a frequent word. If we filter out stopwords, we already get better results, with some actual key phrases appearing:
 
 ![Most common keywords and keyphrases (352 job descriptions) - corrected for stopwords](https://raw.githubusercontent.com/me9hanics/AWS-job-posting-analysis/refs/heads/main/imgs/keyphrases.png)
 
-However, this is still far from desirable. We can filter out key phrases that appear to be in German - to save costs, we can use the `langdetect` library to detect the language of the key phrases, and only keep the English ones. This is a simple, but slow method.
+However, this is still far from desirable. Another attempt would be to filter out key phrases that appear to be in German - to save costs, we can use the `langdetect` library to detect the language of the key phrases (without increasing AWS costs), and only keep the English ones. This is a simple, but slow method.
 
 After filtering out German key phrases:
 
 ![Most common keywords and keyphrases (352 job descriptions) - corrected for stopwords, filter German keywords](https://raw.githubusercontent.com/me9hanics/AWS-job-posting-analysis/refs/heads/main/imgs/keyphrases_nongerman.png)
 
+We again see significant improvement, but this is still far from desirable.<br>
+This hints at researching methods that can understand the context of job posting descriptions, extracting key phrases based on text context. In modern NLP, this could be achieved with large language models, however is also a challenging and computationally expensive task.
+
+## Conclusion
+
+We (I) have successfully designed a pipeline to scrape job postings of certain categories from the karriere.at website, bypassing all issues and extracted key phrases from the job descriptions using Amazon Comprehend. The initial results were disappointing due to many unwanted terms appearing among the processed key phrases, thus attempts were made to filter out some these false positives. As the best solutions are still far from practical usage, the next steps would be to research methods that can understand the context of job posting descriptions, as utilizing text context seems to be necessary to solve such problems.
+
 ## Costs
 
-NLP requests are measured in units of 100 characters, with a 3 unit (300 character) minimum charge per request
-Key Phrase Extraction	$0.0001 per unit (for small scale)
+We only used the Amazon Comprehend service, which has standard pricing: *"NLP requests are measured in units of 100 characters, with a 3 unit (300 character) minimum charge per request"* (see the last section? this is why we could not use the `detect_dominant_language` method for each keyword, and why we used 299 words long text sections for translation).<br>
+The pricing is as follows: Key Phrase Extraction/Translation:	$0.0001 per unit (under 10M units)
 
-3 units * 352 job postings * $0.0001/unit ~ 0.1 USD
-On average, 3900 characters - 39 units * 352 job postings * $0.0001/unit ~ 1.37 USD
+We can utilize the fact that on average, our job descriptions are 3876.46 characters long, i.e. 39 units.<br>
+We have two sources of costs:
 
+-Small-scale translation: 3 units (299 characters) * 352 job postings * $0.0001/unit ~ 0.1 USD
+-Description key phrase extraction: On average, a description is 3900 characters long - we can guess a price of 39 units * 352 job postings * $0.0001/unit ~ 1.37 USD
 
-Initial, small scale attempts cost ~
-1213 characters, 160 words - 13 units
+Running the above code would cost roughly 1.47 USD per run.
 
-One time run on the full dataset:
+Whilst not reoccurring costs, initial costs while developing also need to be considered:
+
+Initial, small scale tests cost:<br>
+1213 characters long text - 13 units -> 0.0013 USD
+
+One time run on the full dataset:<br>
 39 units * 462 job postings * $0.0001/unit ~ 1.80 USD
-Two previous runs on the filtered dataset:
+
+Two previous runs on the filtered dataset:<br>
 2 * 39 units * 352 job postings * $0.0001/unit ~ 2.74 USD
 
-Overall costs: 0.1 + 1.37 + 1.80 + 2.74 ~ 6.01 USD
+**Overall costs**: 0.1 + 1.37 + 1.80 + 2.74 ~ 6.01 USD.
