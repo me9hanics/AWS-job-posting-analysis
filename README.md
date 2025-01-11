@@ -1,8 +1,10 @@
-# AWS-job-posting-analysis: Scraping the karriere.at website for job postings + Using AWS services to extract English key phrases
+# Job posting analysis with AWS: Scraping the karriere.at website for job postings + Using AWS services to extract relevant key phrases
 
-A project collecting job postings from scraping job postings from websites such as [Karriere.at](karriere.at), extracting information such as description keywords, running AWS Cloud Computing tools to obtain insightful information.
+A project collecting job postings from scraping websites such as [Karriere.at](karriere.at), extracting information such as description keywords, running AWS Cloud Computing tools combined with other NLP methods to obtain valuable insights.
 
-The current implementation only has a pipeline for scraping job postings from karriere.at, but extending it to enterprise websites is planned. The pipeline deals with and makes use of the fact that majority of the postings are written German.
+The implementation has been updated to support easier implementation of scraping other websites; the core of this is the very general `BaseScraper` class - each website has a separate scraper class inherited from the base class. The base class has methods that covers various scenarios: when only HTTP(S) requests are needed to gather the data, when JavaScript content has to be loaded (using Selenium as a headless browser), scrolling and loading new postings, pressing buttons and closing popups.
+
+The AWS key phrase extraction analysis was used on ~300 job postings from karriere.at, and none from other websites (as scraping solutions for those were not yet implemented at the time of analysis). The pipeline deals with and makes use of the fact that majority of the postings are written in German.
 
 ## Description
 
@@ -11,23 +13,27 @@ The project consists of two main parts:
 - Data collection: Scraping and processing job postings from the karriere.at website, in specific categories (e.g. Data Science and Vienna). Specifically, we use the job titles and descriptions.
 - Key phrases extraction with AWS servives: Using Amazon Comprehend's `detect_key_phrases` and `detect_dominant_language` methods to extract key phrases from the job descriptions.
 
-## Why not LinkedIn / Indeed ?
+For improving key phrase extraction, I filtered out stopwords (with `nltk` library methods) and detected German phrases (using the `langdetect` library). The results are plotted and manually evaluated.
+
+## Why not LinkedIn / Indeed?
 
 LinkedIn and Indeed have indicated in their `robots.txt` that they do not allow web scraping of their job postings. If you are not familiar with the concept of `robots.txt`, it's basically a programmatic ruleset provided by the website provider intended for bots that gather information from website, defining which subpages are allowed to be inspected and used for information processing.<br>
-(Indeed does not allow `/Jobs` subdirectory to be scraped - meanwhile LinkedIn might [allow scraping to some limits for any user](https://evaboot.com/blog/does-linkedin-allow-scraping#3-linkedin-scraping-limitations), it requires logging in with a real account to view job postings, making it not worth the risk considering their strict policies and [powerful prevention teams](https://www.linkedin.com/blog/engineering/trust-and-safety/using-deep-learning-to-detect-abusive-sequences-of-member-activi).)
+(Indeed does not allow the `/Jobs` subdirectory to be scraped. Meanwhile, LinkedIn might [allow scraping to some limits for any user](https://evaboot.com/blog/does-linkedin-allow-scraping#3-linkedin-scraping-limitations), it requires logging in with a real account to view job postings, making it not worth the risk considering their strict policies and [powerful prevention teams](https://www.linkedin.com/blog/engineering/trust-and-safety/using-deep-learning-to-detect-abusive-sequences-of-member-activi).)
 
-We have to suffice to karriere.at, and company websites for now, those do not disallow our bot's data collection.
+We have to suffice to karriere.at, and enterprise websites, those do not disallow our bot's data collection.
 
-A reasonable goal in the future is to collect a set of companies hiring in relevant fields, check their website if their `robots.txt` allows scraping, and using the implemented scraping tools to collect job postings from each website. For this reason, much of the code is designed to be modular, instead of hardcoded and specific.
+A reasonable goal in the future is to collect a set of companies hiring in relevant fields, check their website if their `robots.txt` allows scraping, and using the implemented scraping tools to collect job postings from each website. For such reasons, much of the code is designed to be modular, instead of hardcoded and specific to karriere.at.
 
 ## Data collection
 
-Scraping job postings with descriptions from the karriere.at website is in some retrospect simple, but challenging.<br>
-There seems to be no restrictions to even HTTP requests with no authentication, and often, simple web scraping tricks work to gather some information. However, quite often the simple methods might not return desired results, making it beneficial to use more advanced tools - in particular, `Selenium`. Even to job posting subpages a simple request will not return the full HTML, we need to use a headless browser to render the page, and then scrape.
+*Note: the data collection since has been updated to not use Selenium for the URL collection and general data collection part, and likely will be improved to only use requests to get description as well. See the `KarriereATScraper().gather_data()` method.*
 
-We cannot just open job postings directly, those have IDs that we can find through firstly opening category pages, and gathering the IDs from there. Then, we can open each job posting page and scrape the description.
+Scraping job postings with descriptions from the karriere.at website is in some retrospect simple, but nontrivial.<br>
+There seem to be no restrictions to even HTTP requests with no authentication, and often basic web scraping tricks work to gather some information. However, the simple methods do not always return desired results (especially not all postings, just a subsection), making it preferable to use more advanced tools. I used `Selenium` to render webpages and scrape instead - even for job posting subpages a simple request will not return the full HTML, thus the need use a headless browser like Selenium.
 
-Based on this, the pipeline consists of two parts, with the following steps:
+We cannot open job postings directly as those have IDs in their URLs. The IDs can be found through firstly opening category pages and gathering the IDs from there. Afterwards, we can open each job posting page and scrape the description.
+
+Based on this, the pipeline consists of two parts with the following steps:
 
 **Part 1**: Gathering job posting IDs
 - Constructing the to-be-scraped URLs from the base URL and categories - this is quite straightforward as the website uses a simple URL structure.
