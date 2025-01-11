@@ -18,7 +18,6 @@ def urls_builder(base_url, slash_elements_list = [], zipped = True, all_combinat
         else:
             slash_lists = list(zip(*slash_elements_list))
     else:
-        
         slash_lists = slash_elements_list
     for slash_list in slash_lists:
             urls.append(url_builder(base_url, slash_list))

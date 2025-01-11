@@ -250,6 +250,8 @@ class BaseScraper:
     def salary_from_text(self, text, keywords={"annual":["jährlich", "yearly", "per year", "annual", "jährige", "pro jahr"],
                                                "monthly":["monatlich", "monthly", "per month", "pro monat"]},
                                                clarity_comma_char=".", conversion_rate=14):
+        if type(text) != str:
+            return None
         text = text.lower()
         salary = {}
         if "annual" in keywords.keys():
@@ -569,7 +571,7 @@ class KarriereATScraper(BaseScraper):
                                        wait_time=wait_time,
                                        headers_more = {
                                            "Priority": "u=1, i",
-                                           "X-CSRF-Token": "BmzH84EGVAak4Qp7Lk7apR1DM77dtVwz6hMJZBlC",
+                                           "X-CSRF-Token": "GVJiHEzc3AZ3syhOq8TV1DpRECCEvAnDIzJ3hGSW",
                                            "X-Requested-With": "XMLHttpRequest",
                                        },
                                        return_kind='responses',
@@ -583,14 +585,13 @@ class KarriereATScraper(BaseScraper):
                         posting = items[i]['jobsItem']
                         locs = posting['locations']
                         salary_read = self.salary_from_text(posting['salary'])
-                        salary_monthly = salary_read["monthly"] if salary_read else None
                         postings.update({(website+str(posting['id'])):{
                                         "title": posting['title'],
                                         "company": posting['company']['name'],
                                         "source": website,
                                         "salary": posting['salary'],
                                         "salary_guessed": salary_read,
-                                        "salary_monthly": salary_monthly,
+                                        "salary_monthly": salary_read["monthly"] if salary_read else None,
                                         "locations": [loc['name'] for loc in locs],
                                         "isActive": posting['isActive'],
                                         "isHomeOffice": posting['isHomeOffice'],
