@@ -55,7 +55,7 @@ BASE_KEYWORDS = {
                           #"complexity-science",
                           ],
     "banned_words": ["manager", "management", "professor", "team leader", "teamleader", "teamleiter", "team leiter",
-                    "jurist", "lawyer", "audit", "legal", "advisor", "owner", "officer", "controller",
+                    "jurist", "lawyer", "audit", "legal", "advisor", "owner", "officer", "controller", "cyber security"
                     "praktikum", "praktikant", #"internship", "intern", "trainee",
                     ],
     "banned_capital_words": ["SAP", "HR"],
@@ -244,7 +244,10 @@ class BaseScraper:
         for regex in regexes:
             value = re.search(regex, text)
             if value:
-                return int(value.group())
+                try:
+                    return int(value.group())
+                except ValueError:
+                    return int(float(value.group().replace(",",".")))
         return None
 
     def salary_from_text(self, text, keywords={"annual":["jährlich", "yearly", "per year", "annual", "jährige", "pro jahr"],
@@ -258,13 +261,13 @@ class BaseScraper:
             value = self.salary_number_from_str(text, keywords["annual"], remove_chars=[clarity_comma_char], lengths=[6,5])
             if value:
                 salary["annual"] = value
-        elif "monthly" in keywords.keys():
+        if (not salary) and ("monthly" in keywords.keys()):
             value = self.salary_regex(text.replace(clarity_comma_char, ""), regexes=[r'\d{4},\d{2}'])
             if not value:
                 value = self.salary_number_from_str(text, keywords["monthly"], remove_chars=[clarity_comma_char], lengths=[4])
             if value:
                 salary["monthly"] = value
-        else:
+        if not salary:
             value = self.salary_regex(text.replace(clarity_comma_char, ""),
                                       regexes=[r'\d{6},\d{2}', r'\d{5},\d{2}',  r'\d{6}', r'\d{5}'])
             if value:
@@ -588,11 +591,11 @@ class KarriereATScraper(BaseScraper):
                         postings.update({(website+str(posting['id'])):{
                                         "title": posting['title'],
                                         "company": posting['company']['name'],
-                                        "source": website,
-                                        "salary": posting['salary'],
-                                        "salary_guessed": salary_read,
-                                        "salary_monthly": salary_read["monthly"] if salary_read else None,
                                         "locations": [loc['name'] for loc in locs],
+                                        "salary": posting['salary'],
+                                        "salary_monthly_guessed": salary_read["monthly"] if salary_read else None,
+                                        "salary_guessed": salary_read,
+                                        "source": website,
                                         "isActive": posting['isActive'],
                                         "isHomeOffice": posting['isHomeOffice'],
                                         "employmentTypes": posting['employmentTypes'],
