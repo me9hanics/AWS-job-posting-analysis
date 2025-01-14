@@ -192,8 +192,8 @@ def requests_responses_with_cookies(base_url, pages, base_path, referer=None,
     responses = []
     session = requests.Session()
     for page in pages:
-        url = base_url + "&page=" + str(page)
-        path = base_path + "&page=" + str(page)
+        url = base_url + str(page)
+        path = base_path + str(page)
         headers['Path'] = path
         if wait_time:
             time.sleep(wait_time)

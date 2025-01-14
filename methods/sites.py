@@ -40,7 +40,7 @@ BASE_KEYWORDS = {
                    "data science", "data scientist", "data mining",
                    "data engineer", "data engineering", "data engineering developer",
                    "data analysis", "data analytics", "data analyst",
-                   "graph theory", "network science", "graph database"
+                   "graph theory", "network science", "graph database",
                    "business intelligence", "business intelligence analyst", "bi analyst", "business analyst",
                    #"complexity science",
                   ],
@@ -331,7 +331,7 @@ class BaseScraper:
                                            "salary_versions": salary_versions, "text": _text}
         return postings
 
-    def save_data(self, data, path = "source/save/", name="", with_date = True, verbose = False):
+    def save_data(self, data, path = "source/save/postings/", name="", with_date = True, verbose = False):
         #check if path exists
         if not os.path.exists(path):
             os.makedirs(path)
@@ -362,7 +362,6 @@ class BaseScraper:
             filtered_postings[id] = posting
         return filtered_postings
         
-
     def gather_data(self, close_driver=True,
                     url_links = [],
                     posting_id = False,
@@ -568,7 +567,7 @@ class KarriereATScraper(BaseScraper):
             path = '/jobs?keywords='+pair[0]+'&location='+pair[1]
             referer = 'https://www.karriere.at/jobs/'+pair[0].replace(' ','-')+'/'+pair[1].replace(' ','-')
             responses = scrape.requests_responses_with_cookies(base_url= base_url,
-                                       pages=list(range(1,40)),
+                                       pages=["&page=" + str(i) for i in range(1,40)],
                                        base_path = path,
                                        referer = referer,
                                        wait_time=wait_time,
@@ -613,22 +612,30 @@ class KarriereATScraper(BaseScraper):
         postings = self.filter_postings(postings)
 
         if descriptions:
-            pass #outdated, new version not implemented yet
-            driver = self.driver
-            if not driver:
-                driver = webdriver.Firefox()
             jobs_url = [posting["url"] for posting in postings.values()]
-            soups,returned_urls = self.load_jobs(jobs_url, popup_wait=2.2, close_driver=False, return_urls=True)
-            ids = [re.search(r'\d+', url).group() for url in returned_urls]
-
-            for i,soup in enumerate(soups):
-                description = soup.find("div", class_="m-jobContent__jobText m-jobContent__jobText--standalone")
-                if description:
-                    description = description.text.strip()
-                postings[ids[i]]["description"] = description
-
-            if close_driver:
-                driver.quit()
+            ids = [re.search(r'\d+', url) for url in jobs_url if re.search(r'\d+', url)]
+            ids = ["/"+ str(id.group()) for id in ids]
+            responses = scrape.requests_responses_with_cookies(base_url='https://www.karriere.at/jobs',
+                                       base_path = '/jobs',
+                                       referer = 'https://www.karriere.at/jobs/machine-learning/wien-und-umgebung',
+                                       pages=ids,
+                                       headers_more = {
+                                           "Priority": "u=1, i",
+                                           "X-CSRF-Token": "GVJiHEzc3AZ3syhOq8TV1DpRECCEvAnDIzJ3hGSW",
+                                           "X-Requested-With": "XMLHttpRequest",
+                                       },
+                                       return_kind='responses')
+            if responses:
+                for response in responses:
+                    content = (json.loads(response.text))
+                    posting = content['data']['jobDetailContent']['jobContent']['text']
+                    id = content['data']['jobDetailContent']['jobHeader']['job']['id']
+                    id = website+str(id)
+                    if id in postings.keys():
+                        postings[id]["description"] = posting
+                    else:
+                        if verbose:
+                            print(f"Could not find posting with id {id}")
 
         if save_data:
             self.save_data(postings, name=f"karriere_at", with_date=True)
