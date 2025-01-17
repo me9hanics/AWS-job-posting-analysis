@@ -44,22 +44,13 @@ BASE_KEYWORDS = {
                    "business intelligence", "business intelligence analyst", "bi analyst", "business analyst",
                    #"complexity science",
                   ],
-    "titlewords_dashed": ["machine-learning","machine-learning-engineer","machine-learning-scientist",
-                          "ML-scientist", "ML-engineer", "ML-researcher", "ML-developer", "ML-AI",
-                          "AI-engineer", "AI-scientist", "AI-researcher", "AI-developer", "AI-ML", 
-                          "data-science","data-scientist", "data-mining",
-                          "data-engineer", "data-engineering", "data-engineering-developer",
-                          "data-analysis", "data-analytics", "data-analyst",
-                          "graph-theory", "network-science", "graph-database",
-                          "business-intelligence", "business-intelligence-analyst", "bi-analyst", "business-analyst",
-                          #"complexity-science",
-                          ],
     "banned_words": ["manager", "management", "professor", "team leader", "teamleader", "teamleiter", "team leiter",
                     "jurist", "lawyer", "audit", "legal", "advisor", "owner", "officer", "controller", "cyber security"
                     "praktikum", "praktikant", #"internship", "intern", "trainee",
                     ],
     "banned_capital_words": ["SAP", "HR"],
 }
+BASE_KEYWORDS["titlewords_dashed"] = [word.replace(" ", "-") for word in BASE_KEYWORDS["titlewords"]]
 
 class BaseScraper:
     def __init__(self, driver=None, rules = BASE_RULES, keywords = BASE_KEYWORDS):
@@ -210,11 +201,13 @@ class BaseScraper:
             driver.quit()
         return all_soups
 
-    def construct_page_urls(self, base_url = None):
+    def construct_page_urls(self, base_url = None, locations = None, titlewords = None):
         if base_url is None:
             base_url = self.rules["scraping_base_url"]
-        locations = self.keywords["locations"]
-        titlewords = self.keywords["titlewords"]
+        if locations is None:
+            locations = self.keywords["locations"]
+        if titlewords is None:
+            titlewords = self.keywords["titlewords"]
         links = urls.urls_builder(base_url = base_url, slash_elements_list = [titlewords, locations],
                                   zipped = True, all_combinations = True)
         links = list(set(links)) #Don't include duplicates
@@ -361,7 +354,10 @@ class BaseScraper:
                 continue
             filtered_postings[id] = posting
         return filtered_postings
-        
+    
+    def rank_postings(self, postings:dict, keyword_points={}):
+        pass
+
     def gather_data(self, close_driver=True,
                     url_links = [],
                     posting_id = False,
@@ -393,7 +389,8 @@ class BaseScraper:
 
         if usecase in ["http", "https"]:
             request_wait_time = self.rules["request_wait_time"] if "request_wait_time" in self.rules.keys() else 0.3
-            soups = scrape.requests_responses(url_links, https=True if usecase=="https" else False, wait_time=request_wait_time)
+            soups = scrape.requests_responses(url_links, https=True if usecase=="https" else False,
+                                              return_kind="soups", wait_time=request_wait_time)
         elif usecase in ["selenium", "http_selenium"]:
             driver = self.driver
             if driver is None:
@@ -431,7 +428,7 @@ class KarriereATScraper(BaseScraper):
         If it is not used, the driver argument should be something other than None
         """
         rules["website"] = "karriere.at"
-        rules["usecase"] = "selenium"
+        rules["usecase"] = "https"
         rules["scraping_base_url"] = "https://www.karriere.at/jobs"
         rules["request_wait_time"] = 0.16
         if driver or type(driver) == type(None):
@@ -632,10 +629,12 @@ class KarriereATScraper(BaseScraper):
                     id = content['data']['jobDetailContent']['jobHeader']['job']['id']
                     id = website+str(id)
                     if id in postings.keys():
-                        postings[id]["description"] = posting
+                        if posting:
+                            posting = BeautifulSoup(posting, 'html.parser').get_text()
+                            postings[id]["description"] = posting
                     else:
                         if verbose:
-                            print(f"Could not find posting with id {id}")
+                            print(f"Could not find id {id} in saved postings - likely programming error")
 
         if save_data:
             self.save_data(postings, name=f"karriere_at", with_date=True)

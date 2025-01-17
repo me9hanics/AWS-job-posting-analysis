@@ -12,6 +12,8 @@ SCROLL_DOWN_SCRIPT = "window.scrollTo(0, document.body.scrollHeight);" #scroll t
 SCROLL_1000_SCRIPT = "window.scrollTo(0, 1000);"
 CSS_SELECTOR = "css selector" #can use instead: from selenium.webdriver.common.by import By, then By.CSS_SELECTOR
 
+### TODO: add "next page till condition" function
+
 def press_button_until_gone(button_selector, url=None, first_wait=1.0, 
                             pre_click_wait=0.0, post_click_wait=0.0,
                             scroll=True, driver = None, close_driver=True, open_page = True):
@@ -144,7 +146,7 @@ def scroll_scrape_website(url=None, driver = None, close_driver = True,
     return soup
 
 
-def requests_responses(urls, return_kind = 'soups', https = False,
+def requests_responses(urls, return_kind = 'responses', https = False,
                        headers = {}, wait_time = 0.3):
     responses = []
     session = requests.Session()
