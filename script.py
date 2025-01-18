@@ -12,7 +12,11 @@ websites = {
 def __main__():
     postings = {}
     for website, scraper in websites.items():
-        postings.update(scraper.gather_data(descriptions=False))
+        try:
+            results =scraper.gather_data(descriptions=False)
+        except:
+            continue
+        postings.update(results)
     
     date_today = time.strftime("%Y-%m-%d")
     with open(f"source/save/postings_{date_today}.json", "w") as f:

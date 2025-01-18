@@ -1,4 +1,6 @@
 import json
+import os
+import time
 
 def compare_lists(new, previous, print_out=True):
     """
@@ -21,3 +23,18 @@ def compare_lists(new, previous, print_out=True):
 def save_list(list_, filename):
     with open(filename, 'w', encoding="utf-8") as f:
         json.dump(list_, f, indent=4, ensure_ascii=False)
+
+def save_data(data, path = "source/save/postings/", name="", with_date = True, verbose = False):
+    if not os.path.exists(path):
+        os.makedirs(path)
+    if not name:
+        name = "postings"
+    if with_date:
+        date = time.strftime("%Y-%m-%d-%H-%M-%S")
+        name = f"{name}_{date}"
+    with open(f"{path}{name}.json", "w", encoding="utf-8") as file:
+        if type(data) in [dict, list, str]:
+            json.dump(data, file, indent=4, ensure_ascii=False)
+        else:
+            if verbose:
+                print(f"Could not save data of type {type(data)}")

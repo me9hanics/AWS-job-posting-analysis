@@ -45,12 +45,38 @@ BASE_KEYWORDS = {
                    #"complexity science",
                   ],
     "banned_words": ["manager", "management", "professor", "team leader", "teamleader", "teamleiter", "team leiter",
-                    "jurist", "lawyer", "audit", "legal", "advisor", "owner", "officer", "controller", "cyber security"
+                    "jurist", "lawyer", "audit", "legal", "advisor", "owner", "officer", "controller", "cyber security",
+                    "head of", "director", "leitung"
                     "praktikum", "praktikant", #"internship", "intern", "trainee",
                     ],
     "banned_capital_words": ["SAP", "HR"],
 }
 BASE_KEYWORDS["titlewords_dashed"] = [word.replace(" ", "-") for word in BASE_KEYWORDS["titlewords"]]
+
+BASE_RANKINGS ={
+    "ranking_pos":{"graph":1.5, "network science":2, "graph theory":2, "graph data":1, "graph machine learning": 1,
+                "machine learning":1, "intelligence":1, "complexity science":2, "math":1, "data":0.25,
+                "engineer": 0.4, "developer": 0.35, "scientist": 0.9, "researcher": 0.9,
+                "data science":1, "data engineering": 1.1, "full stack":1.2, "full-stack":1.2,
+                "python":1, "sql":0.3, "c++":0.1, "algorithm":0.5, "web scraping":0.8,
+                "knime":1, "nlp": 0.5, "neo4j":1, "mysql":0.2,
+                "lidar": 0.5, "radar": 0.5, "sensor": 0.2, "vision":0.3, "robot":0.4,
+                "hungarian":1.5,
+                },
+    "ranking_pos_capital":{"ETL":1, "ELT":1, "AI":0.5, "ML":0.6,},
+    "ranking_neg":{"consultant":-0.7, "consulting":-0.7, "audit":-1,
+                    "leiter":-1, "leader":-1, "manager":-1, "management":-1, "risk":-0.5,
+                    "cyber":-0.5, "security":-0.5, "devops":-0.1, "java":-0.1, "test":-0.3,
+                    "web":-0.3, "stack developer":-0.6, "linux":-0.5,
+                    "senior":-0.2, "student":-0.2, 
+                    "architect":-0.5, "owner":-1, "officer":-1, "controll":-1, "holding":-1,
+                    "product": -0.5, "agile":-0.5, "requirements":-0.5, "scrum":-0.5,
+                    "accounting": -1, "accountant": -1, "marketing": -1, "sales": -1,
+                    "merger": -0.6, "acquisition": -0.6, "real estate": -1,
+                    "technik":-1,
+                    },
+    "ranking_neg_capital":{"SAP":-1, "HR":-1},
+}
 
 class BaseScraper:
     def __init__(self, driver=None, rules = BASE_RULES, keywords = BASE_KEYWORDS):
@@ -213,39 +239,44 @@ class BaseScraper:
         links = list(set(links)) #Don't include duplicates
         return links
 
+    def next_page_logic(self, input, **kwargs):
+        """input: typically a soup or HTML element, possibly dict or string"""
+        pass
+
     def salary_number_from_str(self, text, keywords=[],
                                remove_chars = ['.'], lengths=[6,5]):
         if type(text) != str:
             return None
         for char in remove_chars:
-            text = text.replace(char, "")
+            text_cleaned = text.replace(char, "")
         if not keywords:
             for length in lengths:
                 #Search for length-digit numbers
-                value = re.search(rf'\d{{{length}}}', text)
+                value = re.search(rf'\d{{{length}}}', text_cleaned)
                 if value:
                     return int(value.group())
         else:
             if any([keyword in text for keyword in keywords]):
                 for length in lengths:
-                    value = re.search(rf'\d{{{length}}}', text)
+                    value = re.search(rf'\d{{{length}}}', text_cleaned)
                     if value:
                         return int(value.group())
         return None
     
-    def salary_regex(self, text, regexes=[r'\d{6},\d{2}', r'\d{5},\d{2}',  r'\d{6}', r'\d{5}']):
+    def salary_regex(self, text, regexes=[r'\d{6},\d{2}', r'\d{5},\d{2}',  r'\d{6}', r'\d{5}'],
+                     decimal_separator=","):
         for regex in regexes:
             value = re.search(regex, text)
             if value:
                 try:
                     return int(value.group())
                 except ValueError:
-                    return int(float(value.group().replace(",",".")))
+                    return int(float(value.group().replace(decimal_separator,".")))
         return None
 
-    def salary_from_text(self, text, keywords={"annual":["jährlich", "yearly", "per year", "annual", "jährige", "pro jahr"],
+    def salary_from_text(self, text, keywords={"annual":["jährlich", "yearly", "per year", "annual", "jährige", "pro jahr", "p.a."],
                                                "monthly":["monatlich", "monthly", "per month", "pro monat"]},
-                                               clarity_comma_char=".", conversion_rate=14):
+                                               clarity_comma_char=".", decimal_separator=",", conversion_rate=14):
         if type(text) != str:
             return None
         text = text.lower()
@@ -255,18 +286,20 @@ class BaseScraper:
             if value:
                 salary["annual"] = value
         if (not salary) and ("monthly" in keywords.keys()):
-            value = self.salary_regex(text.replace(clarity_comma_char, ""), regexes=[r'\d{4},\d{2}'])
+            value = self.salary_regex(text.replace(clarity_comma_char, ""), decimal_separator=decimal_separator,
+                                      regexes=[r'\d{{4}}{0}\d{{2}}'.format(decimal_separator)])
             if not value:
                 value = self.salary_number_from_str(text, keywords["monthly"], remove_chars=[clarity_comma_char], lengths=[4])
             if value:
                 salary["monthly"] = value
         if not salary:
-            value = self.salary_regex(text.replace(clarity_comma_char, ""),
-                                      regexes=[r'\d{6},\d{2}', r'\d{5},\d{2}',  r'\d{6}', r'\d{5}'])
+            value = self.salary_regex(text.replace(clarity_comma_char, ""), decimal_separator=decimal_separator,
+                                      regexes=[r'\d{{6}}{0}\d{{2}}'.format(decimal_separator), r'\d{{5}}{0}\d{{2}}'.format(decimal_separator), r'\d{6}', r'\d{5}'])
             if value:
                 salary["annual"] = value
             else:
-                value = self.salary_regex(text.replace(clarity_comma_char, ""), regexes=[r'\d{4},\d{2}', r'\d{4}'])
+                value = self.salary_regex(text.replace(clarity_comma_char, ""), decimal_separator=decimal_separator,
+                                          regexes=[r'\d{{4}}{0}\d{{2}}'.format(decimal_separator), r'\d{4}'])
                 if value:
                     salary["monthly"] = value
             
@@ -280,7 +313,20 @@ class BaseScraper:
             return None
         return salary
 
-    def process_soups(self, soups, pattern, website = "",
+    def salary_from_description(self, text,
+                                regexes = [r'Salary:.*', r'Gehalt:.*',
+                                           r'Compensation:.*', r'Vergütung:.*'],
+                                **kwargs):
+        if type(text) != str:
+            return None
+        for regex in regexes:
+            salary_section = re.search(regex, text)
+            if salary_section:
+                salary = self.salary_from_text(salary_section.group(), **kwargs)
+                return salary
+        return None
+
+    def process_posting_soups(self, soups, pattern, website = "",
                       posting_id=False, posting_id_path=None,
                       posting_id_regex=r'\d+', title_path=None, 
                        company_path=None, salary_path=None):
@@ -355,8 +401,37 @@ class BaseScraper:
             filtered_postings[id] = posting
         return filtered_postings
     
-    def rank_postings(self, postings:dict, keyword_points={}):
-        pass
+    def rank_postings(self, postings:dict, keyword_points=BASE_RANKINGS, desc_ratio = 0.3, salary_ratio = 0.15/100):
+        for id, posting in postings.items():
+            title = posting["title"] if "title" in posting.keys() else ""
+            description = posting["description"] if "description" in posting.keys() else ""
+            salary = posting["salary_monthly_guessed"]
+            points = 0
+            for keyword, value in keyword_points["ranking_pos"].items():
+                if keyword in title.lower():
+                    points += value
+                if keyword in description.lower():
+                    points += value*desc_ratio
+            for keyword, value in keyword_points["ranking_pos_capital"].items():
+                if keyword in title:
+                    points += value
+                if keyword in description:
+                    points += value*desc_ratio
+            for keyword, value in keyword_points["ranking_neg"].items():
+                if keyword in title.lower():
+                    points += value
+                if keyword in description.lower():
+                    points += value*desc_ratio
+            for keyword, value in keyword_points["ranking_neg_capital"].items():
+                if keyword in title:
+                    points += value
+                if keyword in description:
+                    points += value*desc_ratio
+            
+            if salary:
+                points += (salary-2700)*salary_ratio
+            postings[id]["points"] = points
+        return postings
 
     def gather_data(self, close_driver=True,
                     url_links = [],
@@ -399,11 +474,12 @@ class BaseScraper:
         else:
             raise ValueError("Usecase not implemented")
 
-        postings = self.process_soups(soups, pattern, posting_id=posting_id, website=website,
+        postings = self.process_posting_soups(soups, pattern, posting_id=posting_id, website=website,
                                       posting_id_path=posting_id_path, posting_id_regex=posting_id_regex,
                                       title_path=title_path, company_path=company_path, salary_path=salary_path)
         
         postings = self.filter_postings(postings)
+        postings = self.rank_postings(postings)
         if titles:
             title_list = [posting["text"] for posting in postings.values()]
         if companies:
@@ -636,6 +712,7 @@ class KarriereATScraper(BaseScraper):
                         if verbose:
                             print(f"Could not find id {id} in saved postings - likely programming error")
 
+        postings = self.rank_postings(postings)
         if save_data:
             self.save_data(postings, name=f"karriere_at", with_date=True)
         return postings
