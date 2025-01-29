@@ -37,7 +37,7 @@ BASE_KEYWORDS = {
     "titlewords": ["machine learning", "machine learning engineer", "machine learning scientist",
                    "ML scientist", "ML engineer", "ML researcher", "ML developer", "ML AI",
                    "AI engineer", "AI scientist", "AI researcher", "AI developer", "AI ML",
-                   "data science", "data scientist", "data mining",
+                   "data science", "data scientist", "data mining", "web scraping",
                    "data engineer", "data engineering", "data engineering developer",
                    "data analysis", "data analytics", "data analyst",
                    "graph theory", "network science", "graph database",
@@ -45,8 +45,9 @@ BASE_KEYWORDS = {
                    #"complexity science",
                   ],
     "banned_words": ["manager", "management", "professor", "team leader", "teamleader", "teamleiter", "team leiter",
-                    "jurist", "lawyer", "audit", "legal", "advisor", "owner", "officer", "controller", "cyber security",
-                    "head of", "director", "leitung"
+                    "jurist", "lawyer", "rechsanwalt", "legal", "audit", "advisor", "owner", "officer", "controller",
+                    "head of", "director", "leitung", "professor", "professur", "secretary", 
+                    "microsoft", "m365", "azure", "cyber security",
                     "praktikum", "praktikant", #"internship", "intern", "trainee",
                     ],
     "banned_capital_words": ["SAP", "HR"],
@@ -54,29 +55,71 @@ BASE_KEYWORDS = {
 BASE_KEYWORDS["titlewords_dashed"] = [word.replace(" ", "-") for word in BASE_KEYWORDS["titlewords"]]
 
 BASE_RANKINGS ={
-    "ranking_pos":{"graph":1.5, "network science":2, "graph theory":2, "graph data":1, "graph machine learning": 1,
+    "ranking_pos":{
+                #graphs/networks
+                "graph":1.5, "network science":2, "graph theory":2, "graph data":1, "graph machine learning": 1, "graph database":0.5,
+                #general fields
                 "machine learning":1, "intelligence":1, "complexity science":2, "math":1, "data":0.25,
-                "engineer": 0.4, "developer": 0.35, "scientist": 0.9, "researcher": 0.9,
-                "data science":1, "data engineering": 1.1, "full stack":1.2, "full-stack":1.2,
+                #titles
+                "engineer": 0.4, "developer": 0.35, "scientist": 0.9, "researcher": 0.9, #"analyst": 0.1,
+                #data science
+                "data science":1, "data engineering": 1.1, "full stack":1.2, "full-stack":1.2, "data collection":0.5,
+                #other fields
+                "operations research":1, "optimization":1, "algorithms":1,
+                #tech stack
                 "python":1, "sql":0.3, "c++":0.1, "algorithm":0.5, "web scraping":0.8,
-                "knime":1, "nlp": 0.5, "neo4j":1, "mysql":0.2,
+                "knime":1, "nlp": 0.5, "neo4j":1, "mysql":0.2, "machine learning engineer":1,
+                #engineering
                 "lidar": 0.5, "radar": 0.5, "sensor": 0.2, "vision":0.3, "robot":0.4,
+                #languages
                 "hungarian":1.5,
                 },
-    "ranking_pos_capital":{"ETL":1, "ELT":1, "AI":0.5, "ML":0.6,},
-    "ranking_neg":{"consultant":-0.7, "consulting":-0.7, "audit":-1,
-                    "leiter":-1, "leader":-1, "manager":-1, "management":-1, "risk":-0.5,
+    "ranking_pos_capital":{"ETL":1, "ELT":1, "AI":0.5, "ML":0.6, "API":0.3, "REST":0.1},
+    "ranking_neg":{
+                    #type of work
+                    "consultant":-0.7, "consulting":-0.7, "audit":-1, "risk":-0.5, "control":-1, "holding":-1, "purchasing":-1, "thesis":-0.5,
+                    #high rank
+                    "leiter":-1, "leader":-1, "manager":-1, "management":-1, "owner":-1, "officer":-1,
+                    #tech
                     "cyber":-0.5, "security":-0.5, "devops":-0.1, "java":-0.1, "test":-0.3,
-                    "web":-0.3, "stack developer":-0.6, "linux":-0.5,
-                    "senior":-0.2, "student":-0.2, 
-                    "architect":-0.5, "owner":-1, "officer":-1, "controll":-1, "holding":-1,
-                    "product": -0.5, "agile":-0.5, "requirements":-0.5, "scrum":-0.5,
+                    "web":-0.3, "stack developer":-0.6, "linux":-0.5, "safety":-0.5, "quality":-0.3,
+                    #general rank
+                    "senior":-0.2, "student":-0.2, "architect":-0.5, "support":-0.5,
+                    #
+                    "product": -0.5, "agile":-0.5, "requirement":-0.5, "scrum":-0.5,
                     "accounting": -1, "accountant": -1, "marketing": -1, "sales": -1,
-                    "merger": -0.6, "acquisition": -0.6, "real estate": -1,
+                    "merger": -0.6, "acquisition": -0.6, "real estate": -1, "assurance": -0.5,
+                    
+                    #other
                     "technik":-1,
                     },
-    "ranking_neg_capital":{"SAP":-1, "HR":-1},
+    "ranking_neg_capital":{"SAP":-1, "HR":-1, "SAS":-0.5},
+    "neutral":[#dataviz
+        "visualization", "tableau", "power bi", "dashboard", "qlik", "d3", "matplotlib", "seaborn", "shiny",
+        #data
+        "daten", "llm", "quantitative", "statistic", "quantitative", "big data", "data warehous",#e/ing
+        #data software
+        "postgres", "cloudpak", "django", "scala", "spark", "hadoop", "kafka", "airflow", "apache",
+        #web
+        "html", "javascript", "react", "angular", "node", "flask",
+        #IT
+        "cloud", "ci/cd", "ci cd", "git", "open source", "workflow",
+        #IT software
+        "docker", "kubernetes", "jenkins", "terraform", "aws", "azure", "gcp", "github", "gitlab", "bitbucket",
+        "excel", "powerpoint", 
+        #other
+        "b2c", "b2b", "lean", "kanban", "data-driven", "data driven", "kpi", "customer service", "communication",
+        "stakeholder", "marketing", "sales", "banking", "finance", "insurance", "health",
+    ]
 }
+
+ALL_KEYWORDS_NONCAPITAL = list(set(BASE_KEYWORDS["titlewords"] + BASE_KEYWORDS["banned_words"]
+                        + BASE_KEYWORDS["banned_capital_words"] + list(BASE_RANKINGS["ranking_pos"].keys())
+                        + list(BASE_RANKINGS["ranking_neg"].keys()) + BASE_RANKINGS["neutral"]
+                        ))
+ALL_KEYWORDS_CAPITAL = list(set(list(BASE_RANKINGS["ranking_pos_capital"].keys())
+                            + list(BASE_RANKINGS["ranking_neg_capital"].keys())
+                            ))
 
 class BaseScraper:
     def __init__(self, driver=None, rules = BASE_RULES, keywords = BASE_KEYWORDS):
@@ -401,6 +444,18 @@ class BaseScraper:
             filtered_postings[id] = posting
         return filtered_postings
     
+    def check_locations(self, locations_list, locations_desired=["vienna", "wien", "österreich"]):
+        if not locations_desired:
+            if "locations" in self.keywords.keys():
+                locations_desired = self.keywords["locations"]
+            else:
+                raise ValueError("Empty locations_desired provided")
+        for location in locations_list:
+            for desired in locations_desired:
+                if desired.lower() in location.lower(): #in the string, e.g. "wien" in "wien 04"
+                    return True
+        return False
+
     def rank_postings(self, postings:dict, keyword_points=BASE_RANKINGS, desc_ratio = 0.3, salary_ratio = 0.15/100):
         for id, posting in postings.items():
             title = posting["title"] if "title" in posting.keys() else ""
@@ -430,7 +485,32 @@ class BaseScraper:
             
             if salary:
                 points += (salary-2700)*salary_ratio
+            
+            if "locations" in posting.keys():    
+                if not self.check_locations(posting["locations"]):
+                    points -= 1.5
+
             postings[id]["points"] = points
+        return postings
+
+    def find_keywords(self, text, non_capital = ALL_KEYWORDS_NONCAPITAL, capital=ALL_KEYWORDS_CAPITAL):
+        found = []
+        for keyword in non_capital:
+            if keyword in text.lower():
+                found.append(keyword)
+        for keyword in capital:
+            if keyword in text:
+                found.append(keyword)
+        return found
+    
+    def find_keywords_in_postings(self, postings:dict, description_key = "description",
+                                  non_capital = ALL_KEYWORDS_NONCAPITAL, capital=ALL_KEYWORDS_CAPITAL):
+        for id, posting in postings.items():
+            postings[id]["keywords"] = []
+            if description_key in posting.keys():
+                text = posting[description_key]
+                keywords = self.find_keywords(text, non_capital=non_capital, capital=capital)
+                postings[id]["keywords"] = keywords
         return postings
 
     def gather_data(self, close_driver=True,
@@ -480,6 +560,7 @@ class BaseScraper:
         
         postings = self.filter_postings(postings)
         postings = self.rank_postings(postings)
+        postings = self.find_keywords_in_postings(postings)
         if titles:
             title_list = [posting["text"] for posting in postings.values()]
         if companies:
@@ -509,7 +590,7 @@ class KarriereATScraper(BaseScraper):
         rules["request_wait_time"] = 0.16
         if driver or type(driver) == type(None):
             keywords["locations"] = ["wien-und-umgebung"]
-            keywords["titlewords"] = keywords["titlewords_dashed"]
+            #keywords["titlewords"] = keywords["titlewords_dashed"]
         else:
             keywords["locations"] = ["wien und umgebung"]
         super().__init__(driver, rules, keywords)
@@ -655,32 +736,32 @@ class KarriereATScraper(BaseScraper):
                 for response in responses:
                     content = json.loads(response.text)
                     items = content['data']['jobsSearchList']['activeItems']['items']
-                for i in range(len(items)):
-                    if 'jobsItem' in items[i]:
-                        posting = items[i]['jobsItem']
-                        locs = posting['locations']
-                        salary_read = self.salary_from_text(posting['salary'])
-                        postings.update({(website+str(posting['id'])):{
-                                        "title": posting['title'],
-                                        "company": posting['company']['name'],
-                                        "locations": [loc['name'] for loc in locs],
-                                        "salary": posting['salary'],
-                                        "salary_monthly_guessed": salary_read["monthly"] if salary_read else None,
-                                        "salary_guessed": salary_read,
-                                        "source": website,
-                                        "isActive": posting['isActive'],
-                                        "isHomeOffice": posting['isHomeOffice'],
-                                        "employmentTypes": posting['employmentTypes'],
-                                        "url": posting['link'],
-                                        "snippet": posting['snippet'],
-                                        "date": posting['date'],
-                                        "id": posting['id']}
-                                        })
-                    else:
-                        if ('alarmDisruptor' not in items[i]) and ('contentAd' not in items[i]) and ('bsAd' not in items[i]):
-                            if verbose:
-                                print(items[i])
-                        continue
+                    for i in range(len(items)):
+                        if 'jobsItem' in items[i]:
+                            posting = items[i]['jobsItem']
+                            locs = posting['locations']
+                            salary_read = self.salary_from_text(posting['salary'])
+                            postings.update({(website+str(posting['id'])):{
+                                            "title": posting['title'],
+                                            "company": posting['company']['name'],
+                                            "locations": [loc['name'] for loc in locs],
+                                            "salary": posting['salary'],
+                                            "salary_monthly_guessed": salary_read["monthly"] if salary_read else None,
+                                            "salary_guessed": salary_read,
+                                            "source": website,
+                                            "isActive": posting['isActive'],
+                                            "isHomeOffice": posting['isHomeOffice'],
+                                            "employmentTypes": posting['employmentTypes'],
+                                            "url": posting['link'],
+                                            "snippet": posting['snippet'],
+                                            "date": posting['date'],
+                                            "id": posting['id']}
+                                            })
+                        else:
+                            if ('alarmDisruptor' not in items[i]) and ('contentAd' not in items[i]) and ('bsAd' not in items[i]):
+                                if verbose:
+                                    print(items[i])
+                            continue
 
         postings = self.filter_postings(postings)
 
@@ -711,8 +792,10 @@ class KarriereATScraper(BaseScraper):
                     else:
                         if verbose:
                             print(f"Could not find id {id} in saved postings - likely programming error")
+                postings = self.find_keywords_in_postings(postings)
 
         postings = self.rank_postings(postings)
         if save_data:
             self.save_data(postings, name=f"karriere_at", with_date=True)
         return postings
+    
