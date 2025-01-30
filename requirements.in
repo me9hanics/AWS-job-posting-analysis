@@ -1,0 +1,7 @@
+bs4
+requests
+selenium
+numpy
+matplotlib
+boto3
+nltk
