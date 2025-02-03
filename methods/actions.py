@@ -2,29 +2,34 @@ import json
 import os
 import time
 
-def compare_lists(new, previous, print_out=True):
-    """
-    Compare two lists and return the differences.
-    If new or previous is a string, the list is read from a file.
-    """
-    if isinstance(new, str):
-        with open(new, 'r', encoding="utf-8") as f:
-            new = json.load(f)
-    if isinstance(previous, str):
-        with open(previous, 'r', encoding="utf-8") as f:
-            previous = json.load(f) 
-    added = list(set(new) - set(previous))
-    removed = list(set(previous) - set(new))
-    if print_out:
-        print("New items: ", added)
-        print("Removed items: ", removed)
-    return added, removed
-
 def save_list(list_, filename):
+    """
+    Save a list to a JSON file.
+
+    Parameters:
+    list_ (list): The list to save.
+    filename (str): The name of the file to save the list to.
+
+    Returns:
+    None
+    """
     with open(filename, 'w', encoding="utf-8") as f:
         json.dump(list_, f, indent=4, ensure_ascii=False)
 
 def save_data(data, path = "source/save/postings/", name="", with_date = True, verbose = False):
+    """
+    Save data to a JSON file, optionally with a date in the name.
+    
+    Parameters:
+    data (dict | list | str): The data to save.
+    path (str): The directory path to save the file to.
+    name (str): The name of the file, without the date extension.
+    with_date (bool): Whether to include the date in the name.
+    verbose (bool): Whether to print a message if the data type is not supported.
+
+    Returns:
+    None
+    """
     if not os.path.exists(path):
         os.makedirs(path)
     if not name:
@@ -38,3 +43,152 @@ def save_data(data, path = "source/save/postings/", name="", with_date = True, v
         else:
             if verbose:
                 print(f"Could not save data of type {type(data)}")
+
+def load_file_if_str(file, type_ = "dict"):
+    """
+    Load a file if the input is a string, otherwise return the input.
+    (Convenience abstraction.)
+
+    Parameters:
+    file (any): The file or data to load.
+    type (str): The type of the data to load, either "dict" or "list".
+
+    Returns:
+    file (any): The loaded file; possibly the original data.
+    """
+    if isinstance(file, str):
+        with open(file, 'r', encoding="utf-8") as f:
+            if type_ == "dict":
+                file = json.load(f)
+            elif type_ == "list":
+                file = f.read().splitlines()
+    return file
+
+def load_list_items(files=None, folder_path = "source/save/postings/", type_ = "dict"):
+    """
+    Load a list of files, optionally from a directory path.
+    
+    Parameters:
+    files (list): The list of file names to load.
+    path (str): The directory path to load the files from.
+    type (str): The type of the data to load, either "dict" or "list".
+
+    Returns:
+    files (list): The list of loaded files.
+    """
+    if folder_path[-1] != "/":
+        folder_path += "/"
+    if not isinstance(files, list): #e.g. string
+        files = os.listdir(folder_path)
+    contents = []
+    for i, file in enumerate(files):
+        if isinstance(file, str):
+            contents.append(load_file_if_str(f"{folder_path}{file}", type_))
+    return contents
+
+def load_file_from_dir(path = "source/save/postings/", prefix = "postings", ascending = True, index = 0):
+    """
+    Load the last file in a directory, optionally with a prefix.
+    
+    Parameters:
+    path (str): The directory path to load the file from.
+    prefix (str): The prefix of the file name.
+    ascending (bool): Whether to sort the files in ascending order.
+
+    Returns:
+    file (str): The name of the last file in the directory.
+    """
+    
+    files = [f for f in os.listdir(path) if f.startswith(prefix)]
+    files.sort(reverse = not ascending)
+    if files:
+        return files[index]
+    else:
+        return None
+
+def compare_lists(new, previous, print_out="complete_lists"):
+    """
+    Compare two lists and return the differences.
+    (If any of the lists are given as a string, it is interpreted as a file path,
+            and the list is loaded from the file.)
+
+    Parameters:
+    new (list | str): The new list, that is being compared.
+    previous (list | str): The previous list, to compare against.
+    print_out (str): What to print out, if anything. Can be:
+        -"complete_lists": Print out the lists
+        -"only_lengths": Print out the lengths of the lists
+        -"none": Do not print out anything
+        -*string*: Interpreted as a key in dictionaries;
+                print out the value of that key for each item in both lists.
+    """
+    new = load_file_if_str(new, "dict")
+    previous = load_file_if_str(previous, "dict")
+    added_keys = list(set(new) - set(previous))
+    removed_keys = list(set(previous) - set(new))
+    added = {key: new[key] for key in added_keys}
+    removed = {key: previous[key] for key in removed_keys}
+
+    if print_out=="complete_lists":
+        print("New items: ")
+        for key in added_keys:
+            print(key, added[key])
+        print("\n\n\nRemoved items: ")
+        for key in removed_keys:
+            print(key, removed[key])
+    elif print_out=="only_lengths":
+        print("Amount of new items: ", len(added_keys))
+        print("Amount of removed items: ", len(removed_keys))
+    elif print_out!="none":
+        """Interpreted as a key in the dictionaries in the two lists"""
+        print(f"New {print_out}s: ")
+        for key in added_keys:
+            print(added[key][print_out])
+        print(f"\n\n\nRemoved {print_out}s: ")
+        for key in removed_keys:
+            print(removed[key][print_out])
+
+    return added, removed
+
+def compare_postings(new, previous, print_out_titles=True):
+    """
+    Compare two lists of postings and return the differences.
+    If new or previous is a string, the list is read from a file.
+
+    Parameters:
+    new (list | str): The new list of postings, optionally read from a file.
+    previous (list | str): The previous list of postings, optionally read from a file.
+    print_out_titles (bool): Whether to print out the titles of the postings.
+
+    Returns:
+    added (dict): The new postings that were added.
+    removed (dict): The old postings that were removed.
+    """
+    print_out = "title" if print_out_titles else "none"
+    return compare_lists(new, previous, print_out)
+
+def combine_postings(postings=None, folder_path="source/save/postings/asd/", extend = False):
+    """
+    Combine multiple lists of postings into one list.
+    If postings is a string, the list is read from a file.
+
+    Parameters:
+    postings (list | *): The list of postings to combine - or overwritten if not a list.
+    folder_path (str): The directory path to load the files from.
+    extend (bool): Whether to extend the values of duplicate keys.
+
+    Returns:
+    all_postings (dict): The combined list of postings.
+    """
+    files = load_list_items(postings, folder_path=folder_path, type_="dict")
+
+    all_postings = {}
+    for postings in files:
+        for key, value in postings.items():
+            if key not in all_postings:
+                all_postings[key] = value
+            elif extend == True:
+                if not isinstance(all_postings[key], list):
+                    all_postings[key] = [all_postings[key]]
+                all_postings[key].extend(value)
+    return all_postings
