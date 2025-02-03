@@ -129,6 +129,8 @@ class BaseScraper:
             self.driver = driver
         self.rules = rules
         self.keywords = keywords
+        self.time = time.strftime("%Y-%m-%d-%H-%M-%S")
+        self.day = self.time[:10]
 
     def close_website_popup(self, button_selector, url=None, 
                             click_wait=12.0, pre_click_scroll=False, 
@@ -709,7 +711,7 @@ class KarriereATScraper(BaseScraper):
             driver.quit()
         return postings
     
-    def gather_data(self, close_driver=True, descriptions=False, save_data=False, verbose=False):
+    def gather_data(self, descriptions=False, save_data=False, verbose=False):
         website = self.rules["website"]
         locations = self.keywords["locations"]
         titlewords = self.keywords["titlewords"] #expected not to have dashes, but spaces
@@ -754,6 +756,7 @@ class KarriereATScraper(BaseScraper):
                                             "employmentTypes": posting['employmentTypes'],
                                             "url": posting['link'],
                                             "snippet": posting['snippet'],
+                                            "collected_on": self.day,
                                             "date": posting['date'],
                                             "id": posting['id']}
                                             })
@@ -798,4 +801,3 @@ class KarriereATScraper(BaseScraper):
         if save_data:
             self.save_data(postings, name=f"karriere_at", with_date=True)
         return postings
-    
