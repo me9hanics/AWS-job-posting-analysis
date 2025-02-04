@@ -106,6 +106,24 @@ def load_file_from_dir(path = "source/save/postings/", prefix = "postings", asce
     else:
         return None
 
+def sort_dict_by_key(x, key="points", descending = True):
+    return {k: v for k, v in sorted(x.items(), key=lambda item: item[1][key], reverse = descending)}
+
+def get_nested_dict_keys(dictionary, appear = "any", return_type=list):
+    #plan: make it handle different levels, e.g. 2 levels deep vs. 3 levels deep (with while)
+    if len(dictionary) == 0:
+        return []
+    keys = set(dictionary[list(dictionary.keys())[0]].keys())
+    for _, value in dictionary.items():
+        if appear == "all":
+            keys = keys.intersection(set(value.keys()))
+        elif appear == "any":
+            keys = keys.union(set(value.keys()))
+        else:
+            raise ValueError("appear must be 'all' or 'any'")
+        
+    return return_type(keys)
+
 def compare_lists(new, previous, print_out="complete_lists"):
     """
     Compare two lists and return the differences.
@@ -127,30 +145,36 @@ def compare_lists(new, previous, print_out="complete_lists"):
     added_keys = list(set(new) - set(previous))
     removed_keys = list(set(previous) - set(new))
     added = {key: new[key] for key in added_keys}
+    added = sort_dict_by_key(added, key="points", descending = True)
     removed = {key: previous[key] for key in removed_keys}
+    removed = sort_dict_by_key(removed, key="points", descending = True)
 
     if print_out=="complete_lists":
-        print("New items: ")
-        for key in added_keys:
-            print(key, added[key])
-        print("\n\n\nRemoved items: ")
-        for key in removed_keys:
-            print(key, removed[key])
+        #make print out a list of all of the keys in the dictionaries, every single key that appears at least once
+        print_out = list(
+                    get_nested_dict_keys(new, appear="any", return_type=set).union(
+                    get_nested_dict_keys(previous, appear="any", return_type=set))
+                    )
     elif print_out=="only_lengths":
         print("Amount of new items: ", len(added_keys))
         print("Amount of removed items: ", len(removed_keys))
-    elif print_out!="none":
+    elif (type(print_out)==str) & (print_out!="none"):
         """Interpreted as a key in the dictionaries in the two lists"""
-        print(f"New {print_out}s: ")
-        for key in added_keys:
-            print(added[key][print_out])
-        print(f"\n\n\nRemoved {print_out}s: ")
-        for key in removed_keys:
-            print(removed[key][print_out])
+        print_out = [print_out]
+
+    if type(print_out) == list:
+        print("New items: ")
+        for posting_key in added:
+            text = ",\n\t".join([str(u)+":"+str(v) for u,v in (added[posting_key].items()) if u in print_out])
+            print(f"{posting_key}: \n\t{text}")
+        print("\n\n\nRemoved items: ")
+        for posting_key in removed:
+            text = ",\n\t".join([str(u)+":"+str(v) for u,v in (removed[posting_key].items()) if u in print_out])
+            print(f"{posting_key}: \n\t{text}")
 
     return added, removed
 
-def compare_postings(new, previous, print_out_titles=True):
+def compare_postings(new, previous, print_attrs=["title", "company", "points"]):
     """
     Compare two lists of postings and return the differences.
     If new or previous is a string, the list is read from a file.
@@ -164,7 +188,8 @@ def compare_postings(new, previous, print_out_titles=True):
     added (dict): The new postings that were added.
     removed (dict): The old postings that were removed.
     """
-    print_out = "title" if print_out_titles else "none"
+
+    print_out = print_attrs if print_attrs else "none"
     return compare_lists(new, previous, print_out)
 
 def combine_postings(postings=None, folder_path="source/save/postings/asd/", extend = False):
