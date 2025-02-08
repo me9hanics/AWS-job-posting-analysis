@@ -107,7 +107,7 @@ def load_file_from_dir(path = "source/save/postings/", prefix = "postings", asce
         return None
 
 def sort_dict_by_key(x, key="points", descending = True):
-    return {k: v for k, v in sorted(x.items(), key=lambda item: item[1][key], reverse = descending)}
+    return {k: v for k, v in sorted(x.items(), key=lambda item: item[1][key], reverse = descending)} if x else {}
 
 def get_nested_dict_keys(dictionary, appear = "any", return_type=list):
     #plan: make it handle different levels, e.g. 2 levels deep vs. 3 levels deep (with while)
@@ -124,7 +124,7 @@ def get_nested_dict_keys(dictionary, appear = "any", return_type=list):
         
     return return_type(keys)
 
-def compare_lists(new, previous, print_out="complete_lists"):
+def compare_lists(new, previous, print_out="complete_lists", printed_text_max_length = None):
     """
     Compare two lists and return the differences.
     (If any of the lists are given as a string, it is interpreted as a file path,
@@ -162,19 +162,28 @@ def compare_lists(new, previous, print_out="complete_lists"):
         """Interpreted as a key in the dictionaries in the two lists"""
         print_out = [print_out]
 
+    print_added = added.copy()
+    print_removed = removed.copy()
+
+    if printed_text_max_length:
+        print_added = {key: {k: v[:printed_text_max_length]+"..." if isinstance(v, str) & (len(str(v))> printed_text_max_length)
+                       else v for k,v in value.items()} for key, value in added.items()}
+        print_removed = {key: {k: v[:printed_text_max_length]+"..." if isinstance(v, str) & (len(str(v))> printed_text_max_length)
+                         else v for k,v in value.items()} for key, value in removed.items()}
+
     if type(print_out) == list:
         print("New items: ")
-        for posting_key in added:
-            text = ",\n\t".join([str(u)+":"+str(v) for u,v in (added[posting_key].items()) if u in print_out])
-            print(f"{posting_key}: \n\t{text}")
+        for posting_key in print_added:
+            text = ",\n\t".join([str(u)+": "+str(v) for u,v in (print_added[posting_key].items()) if u in print_out])     
+            print(f"\n{posting_key}: \n\t{text}")
         print("\n\n\nRemoved items: ")
-        for posting_key in removed:
-            text = ",\n\t".join([str(u)+":"+str(v) for u,v in (removed[posting_key].items()) if u in print_out])
-            print(f"{posting_key}: \n\t{text}")
+        for posting_key in print_removed:
+            text = ",\n\t".join([str(u)+": "+str(v) for u,v in (print_removed[posting_key].items()) if u in print_out])
+            print(f"\n{posting_key}: \n\t{text}")
 
     return added, removed
 
-def compare_postings(new, previous, print_attrs=["title", "company", "points"]):
+def compare_postings(new, previous, print_attrs=["title", "company", "points"], printed_text_max_length = 100):
     """
     Compare two lists of postings and return the differences.
     If new or previous is a string, the list is read from a file.
@@ -190,7 +199,7 @@ def compare_postings(new, previous, print_attrs=["title", "company", "points"]):
     """
 
     print_out = print_attrs if print_attrs else "none"
-    return compare_lists(new, previous, print_out)
+    return compare_lists(new, previous, print_out, printed_text_max_length)
 
 def combine_postings(postings=None, folder_path="source/save/postings/asd/", extend = False):
     """
