@@ -44,7 +44,7 @@ BASE_KEYWORDS = {
                    "business intelligence", "business intelligence analyst", "bi analyst", "business analyst",
                    #"complexity science",
                   ],
-    "banned_words": ["manager", "management", "professor", "team leader", "teamleader", "teamleiter", "team leiter",
+    "banned_words": ["manager", "professor", "team leader", "teamleader", "teamleiter", "team leiter",
                     "jurist", "lawyer", "rechsanwalt", "legal", "audit", "advisor", "owner", "officer", "controller",
                     "head of", "director", "leitung", "professor", "professur", "secretary", 
                     "microsoft", "m365", "azure", "cyber security",
@@ -63,7 +63,7 @@ BASE_RANKINGS ={
                 #titles
                 "engineer": 0.4, "developer": 0.35, "scientist": 0.9, "researcher": 0.9, #"analyst": 0.1,
                 #data science
-                "data science":1, "data engineering": 1.1, "full stack":1.2, "full-stack":1.2, "data collection":0.5,
+                "data science":1, "data engineering": 1.1, "data management":1, "full stack":1.2, "full-stack":1.2, "data collection":0.5,
                 #other fields
                 "operations research":1, "optimization":1, "algorithms":1,
                 #tech stack
@@ -85,11 +85,10 @@ BASE_RANKINGS ={
                     "web":-0.3, "stack developer":-0.6, "linux":-0.5, "safety":-0.5, "quality":-0.3,
                     #general rank
                     "senior":-0.2, "student":-0.2, "architect":-0.5, "support":-0.5,
-                    #
+                    #work related keywords
                     "product": -0.5, "agile":-0.5, "requirement":-0.5, "scrum":-0.5,
                     "accounting": -1, "accountant": -1, "marketing": -1, "sales": -1,
                     "merger": -0.6, "acquisition": -0.6, "real estate": -1, "assurance": -0.5,
-                    
                     #other
                     "technik":-1,
                     },
@@ -121,6 +120,10 @@ ALL_KEYWORDS_CAPITAL = list(set(list(BASE_RANKINGS["ranking_pos_capital"].keys()
                             + list(BASE_RANKINGS["ranking_neg_capital"].keys())
                             ))
 
+LOCATIONS_DESIRED = ["vienna", "wien", "österreich", "austria"]
+LOCATIONS_SECONDARY = ["st. pölten", "sankt pölten", "wiener neudorf", "linz", "krems", "nussdorf", 
+                       "klosterneuburg", "schwechat"] #graz, salzburg, innsbruck, #klagenfurt
+
 class BaseScraper:
     def __init__(self, driver=None, rules = BASE_RULES, keywords = BASE_KEYWORDS):
         if driver is None:
@@ -131,6 +134,8 @@ class BaseScraper:
         self.keywords = keywords
         self.time = time.strftime("%Y-%m-%d-%H-%M-%S")
         self.day = self.time[:10]
+        self.locations_desired = LOCATIONS_DESIRED
+        self.locations_secondary = LOCATIONS_SECONDARY
 
     def close_website_popup(self, button_selector, url=None, 
                             click_wait=12.0, pre_click_scroll=False, 
@@ -458,7 +463,13 @@ class BaseScraper:
                     return True
         return False
 
-    def rank_postings(self, postings:dict, keyword_points=BASE_RANKINGS, desc_ratio = 0.3, salary_ratio = 0.15/100):
+    def rank_postings(self, postings:dict, keyword_points=BASE_RANKINGS, desc_ratio = 0.3, salary_ratio = 0.15/100,
+                      locations_desired=None, locations_secodary=None):
+        if not locations_desired:
+            locations_desired = self.locations_desired if "locations_desired" in self.__dict__.keys() else []
+        if not locations_secodary:
+            locations_secodary = self.locations_secondary if "locations_secondary" in self.__dict__.keys() else []
+
         for id, posting in postings.items():
             title = posting["title"] if "title" in posting.keys() else ""
             description = posting["description"] if "description" in posting.keys() else ""
@@ -489,8 +500,10 @@ class BaseScraper:
                 points += (salary-2700)*salary_ratio
             
             if "locations" in posting.keys():    
-                if not self.check_locations(posting["locations"]):
-                    points -= 1.5
+                if not self.check_locations(posting["locations"], locations_desired=locations_desired):
+                    points -= 1
+                    if not self.check_locations(posting["locations"], locations_desired=locations_secodary):
+                        points -= 1
 
             postings[id]["points"] = points
         return postings
