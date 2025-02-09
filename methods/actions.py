@@ -110,6 +110,17 @@ def sort_dict_by_key(x, key="points", descending = True):
     return {k: v for k, v in sorted(x.items(), key=lambda item: item[1][key], reverse = descending)} if x else {}
 
 def get_nested_dict_keys(dictionary, appear = "any", return_type=list):
+    """
+    Get the keys of a nested dictionary: for each key, take the value dictionary and return
+            the union or intersection of these nested dictionaries.
+
+    Parameters:
+    dictionary (dict): The input dictionary, with dictionaries as values.
+    appear (str): Whether to return the keys that appear in all or any of the nested dictionaries.
+        -"all": Return the keys that appear in all nested dictionaries.
+        -"any": Return the keys that appear at least once in the nested dictionaries.
+    return_type (type): The type of the output. Typically list or set.
+    """
     #plan: make it handle different levels, e.g. 2 levels deep vs. 3 levels deep (with while)
     if len(dictionary) == 0:
         return []
