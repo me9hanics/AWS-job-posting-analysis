@@ -157,9 +157,9 @@ def compare_lists(new, previous, print_out="complete_lists", printed_text_max_le
     added_keys = list(set(new) - set(previous))
     removed_keys = list(set(previous) - set(new))
     added = {key: new[key] for key in added_keys}
-    added = sort_dict_by_key(added, key="points", descending = True)
+    added = sort_dict_by_key(added, key="points", descending = True) if added else {}
     removed = {key: previous[key] for key in removed_keys}
-    removed = sort_dict_by_key(removed, key="points", descending = True)
+    removed = sort_dict_by_key(removed, key="points", descending = True) if removed else {}
 
     if print_out=="complete_lists":
         #make print out a list of all of the keys in the dictionaries, every single key that appears at least once
