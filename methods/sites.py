@@ -38,7 +38,7 @@ BASE_KEYWORDS = {
                    "ML scientist", "ML engineer", "ML researcher", "ML developer", "ML AI",
                    "AI engineer", "AI scientist", "AI researcher", "AI developer", "AI ML",
                    "data science", "data scientist", "data mining", "web scraping",
-                   "data engineer", "data engineering", "data engineering developer",
+                   "data engineer", "data engineering", "data engineering developer", "Python engineer",
                    "data analysis", "data analytics", "data analyst",
                    "graph theory", "network science", "graph database",
                    "business intelligence", "business intelligence analyst", "bi analyst", "business analyst",
@@ -74,7 +74,7 @@ BASE_RANKINGS ={
                 #languages
                 "hungarian":1.5,
                 },
-    "ranking_pos_capital":{"ETL":1, "ELT":1, "AI":0.5, "ML":0.6, "API":0.3, "REST":0.1},
+    "ranking_pos_capital":{"ETL":1, "ELT":1, "AI":0.5, "ML":0.6, "API":0.3, "REST":0.1, "CI/CD":0.1, "CI CD":0.1,},
     "ranking_neg":{
                     #type of work
                     "consultant":-0.7, "consulting":-0.7, "audit":-1, "risk":-0.5, "control":-1, "holding":-1, "purchasing":-1, "thesis":-0.5,
@@ -92,7 +92,7 @@ BASE_RANKINGS ={
                     #other
                     "technik":-1,
                     },
-    "ranking_neg_capital":{"SAP":-1, "HR":-1, "SAS":-0.5},
+    "ranking_neg_capital":{"SAP":-1, "HR":-1, "SAS":-0.5,},
     "neutral":[#dataviz
         "visualization", "tableau", "power bi", "dashboard", "qlik", "d3", "matplotlib", "seaborn", "shiny",
         #data
@@ -102,7 +102,7 @@ BASE_RANKINGS ={
         #web
         "html", "javascript", "react", "angular", "node", "flask",
         #IT
-        "cloud", "ci/cd", "ci cd", "git", "open source", "workflow",
+        "cloud", "git", "open source", "workflow", #"ci/cd", "ci cd",
         #IT software
         "docker", "kubernetes", "jenkins", "terraform", "aws", "azure", "gcp", "github", "gitlab", "bitbucket",
         "excel", "powerpoint", 
@@ -813,4 +813,167 @@ class KarriereATScraper(BaseScraper):
         postings = self.rank_postings(postings)
         if save_data:
             self.save_data(postings, name=f"karriere_at", with_date=True)
+        return postings
+
+    
+class RaiffeisenScraper(BaseScraper):
+    def __init__(self, driver="", rules=BASE_RULES, keywords=BASE_KEYWORDS):
+        rules["website"] = "raiffeisen_international"
+        rules["usecase"] = "http"
+        rules["scraping_base_url"] = "https://jobs.rbinternational.com/search/?q="
+        rules["jobs_base_url"] = "https://jobs.rbinternational.com"
+        rules["request_wait_time"] = 0.16
+        rules['gather_data_selector'] = 'a.jobTitle-link'
+        rules['more_pages_url_extension'] = "&sortColumn=referencedate&sortDirection=desc&startrow="
+        rules['description_selector'] = 'ul'
+        keywords["titlewords"] += ["machine", "engineer", "scientist"]
+        super().__init__(driver, rules, keywords)
+
+    def construct_page_urls(self, base_url = None, titlewords = None):
+        if base_url is None:
+            base_url = self.rules["scraping_base_url"]
+        if titlewords is None:
+            titlewords = self.keywords["titlewords"]
+        links = []
+        for titleword in titlewords:
+            links.append(base_url + titleword)
+        links = list(set(links)) #Don't include duplicates
+        return links
+    
+    def next_page_logic(self, input:BeautifulSoup, pattern):
+        """input: typically a soup or HTML element, possibly dict or string"""
+        if not isinstance(input, BeautifulSoup):
+            input = BeautifulSoup(input, 'html.parser')
+        selects = input.select(pattern)
+        if len(selects) == 50 or len(selects) == 25:
+            return True
+        return False
+
+    def process_posting_soups(self, soups, pattern, website="", jobs_base_url=None):
+        #could also use .select('.pagination') or .select('ul.pagination') counting
+        if not website:
+            website = self.rules["website"]
+        if jobs_base_url is None:
+            jobs_base_url = self.rules["jobs_base_url"]
+        postings = {}
+        for soup in soups:
+            selects = soup.select(pattern)
+            for select in selects:
+                title = select.text
+                url = jobs_base_url + select["href"]
+                id = re.search(r'/\d+/$', url).group().replace("/", "")
+                id = website + id
+                if id not in postings.keys():
+                    title = select.text
+                    if title:
+                        title = title.strip()
+                    postings[id] = {"title": title, "url": url,
+                                    "company": "Raiffeisen International",
+                                    "source": website, "id": id}
+        return postings
+        
+    def clean_variables(self, variables):
+        if type(variables) == str:
+            variables = variables.strip().replace("\n", " ").replace("\t", " ").replace("\r", " ").replace("\xa0", " ")
+        elif type(variables) == list:
+            for (i, variable) in enumerate(variables):
+                variables[i] = variable.strip().replace("\n", " ").replace("\t", " ").replace("\r", " ").replace("\xa0", " ") if variable else None
+        return variables
+    
+    def soup_descriptions(self, id_soup_dicts, verbose=False):
+        descriptions = {}
+        for id, soup in id_soup_dicts.items():
+            posting = soup.select("div.joblayouttoken.rtltextaligneligible.displayDTM") #TODO
+            for i in posting:
+                if i.select("ul"):
+                    break
+            posting = i
+            contexts = posting.select("ul")
+            contexts = [context for context in contexts if context.attrs=={}]
+            if len(contexts) not in [3,4]:
+                if verbose:
+                    #print(f"Contexts length not 4, but {len(contexts)}; something incorrect. Contexts: {contexts}")
+                    pass
+
+            role = contexts[0].text if contexts else None
+            requirements = contexts[1].text if len(contexts)>1 else None
+            benefits = contexts[2].text if len(contexts)>2 else None
+            
+            if len(contexts)==3:
+                nice_to_have = None
+                benefits = contexts[2].text
+            elif len(contexts)==4:
+                nice_to_have = contexts[2].text
+                benefits = contexts[3].text
+            elif len(contexts)>4:
+                nice_to_have = None
+                #join all contexts
+                benefits = "\n ".join([context.text for context in contexts[2:]])
+
+            description = posting.text
+            salary = None
+            if benefits:
+                salary = self.salary_from_description(benefits, decimal_separator=".", clarity_comma_char=",")
+                if not salary:
+                    salary = self.salary_from_description(benefits, decimal_separator=",", clarity_comma_char=".")
+                salary_monthly = salary["monthly"] if salary else None
+
+            role, requirements, nice_to_have, benefits, description = self.clean_variables([role, requirements, nice_to_have, benefits, description])
+            descriptions[id] = {"role": role, "requirements": requirements,
+                                "salary_guessed": salary, "salary_monthly_guessed": salary_monthly,
+                                "nice_to_have": nice_to_have, "benefits": benefits,
+                                "description": description}
+        return descriptions
+                
+
+    def gather_data(self, url_links=[], descriptions=False, verbose=False):
+        titles_pattern = self.rules["gather_data_selector"]
+        website = self.rules["website"]
+        usecase = self.rules["usecase"]
+        request_wait_time = self.rules["request_wait_time"] if "request_wait_time" in self.rules.keys() else 0.16
+        more_pages_url_extension = self.rules["more_pages_url_extension"]
+        jobs_base_url = self.rules["jobs_base_url"]
+
+
+        if url_links == []:
+            url_links = self.construct_page_urls(self.rules["scraping_base_url"])
+
+        soups = []
+        for url in url_links:
+            soup = scrape.requests_responses([url], https=True if usecase=="https" else False,
+                                              return_kind="soups", wait_time=request_wait_time)[0]
+            soups.append(soup)
+            row = 25
+            get_next_page = self.next_page_logic(soup, titles_pattern)
+            while get_next_page:
+                if verbose:
+                    print(f"Getting next page for {url}")
+                next_page = url + more_pages_url_extension + str(row)
+                soup = scrape.requests_responses([next_page], https=True if usecase=="https" else False,
+                                                  return_kind="soups", wait_time=request_wait_time)[0]
+                soups.append(soup)
+                get_next_page = self.next_page_logic(soup, titles_pattern)
+                row += 25
+                
+        postings = self.process_posting_soups(soups, titles_pattern, website=website,
+                                      jobs_base_url=jobs_base_url)
+        postings = self.filter_postings(postings)
+
+        if descriptions:
+            urls = [posting["url"] for posting in postings.values()]
+            ids = [website+re.search(r'/\d+/$', url).group().replace("/", "") for url in urls]
+            soups = scrape.requests_responses(urls, https=True if usecase=="https" else False,
+                                              return_kind="soups", wait_time=request_wait_time)
+            ids_soups = {id:soup for id,soup in zip(ids, soups)}
+            descriptions = self.soup_descriptions(ids_soups, verbose=verbose)
+            for id, posting in descriptions.items():
+                postings[id] = {'id':id, 'title':postings[id]["title"],
+                                'company':postings[id]["company"],
+                                **posting, 'url':postings[id]["url"],
+                                'source':postings[id]["source"],
+                                "collected_on": self.day,
+                                }
+        
+        postings = self.rank_postings(postings)
+        postings = self.find_keywords_in_postings(postings)
         return postings
