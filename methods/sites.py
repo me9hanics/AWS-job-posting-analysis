@@ -20,6 +20,9 @@ GET_HEIGHT_SCRIPT = "return document.body.scrollHeight"
 SCROLL_DOWN_SCRIPT = "window.scrollTo(0, document.body.scrollHeight);" #scroll to height value of the bottom of the page
 SCROLL_1000_SCRIPT = "window.scrollTo(0, 1000);"
 CSS_SELECTOR = "css selector" #can use instead: from selenium.webdriver.common.by import By, then By.CSS_SELECTOR
+
+SALARY_BEARABLE = 3000
+
 BASE_RULES = {"website":"karriere.at",
               "scraping_base_url": "https://www.karriere.at/jobs",
               "close_website_popup":False,
@@ -38,15 +41,16 @@ BASE_KEYWORDS = {
                    "ML scientist", "ML engineer", "ML researcher", "ML developer", "ML AI",
                    "AI engineer", "AI scientist", "AI researcher", "AI developer", "AI ML",
                    "data science", "data scientist", "data mining", "web scraping",
-                   "data engineer", "data engineering", "data engineering developer", "Python engineer",
+                   "data engineer", "data engineering", "data engineering developer", "Python engineer", "DataOps",
                    "data analysis", "data analytics", "data analyst",
                    "graph theory", "network science", "graph database",
                    "business intelligence", "business intelligence analyst", "bi analyst", "business analyst",
                    #"complexity science",
                   ],
-    "banned_words": ["manager", "professor", "team leader", "teamleader", "teamleiter", "team leiter",
+    "banned_words": ["manager", "professor", "team leader", "teamleader", "teamleiter", "team leiter", "geschäft",
                     "jurist", "lawyer", "rechsanwalt", "legal", "audit", "advisor", "owner", "officer", "controller",
-                    "head of", "director", "leitung", "professor", "professur", "secretary", 
+                    "head of", "director", "leitung", "professor", "professur", "secretary",
+                    "ärtzin",
                     "microsoft", "m365", "azure", "cyber security",
                     "praktikum", "praktikant", #"internship", "intern", "trainee",
                     ],
@@ -57,13 +61,14 @@ BASE_KEYWORDS["titlewords_dashed"] = [word.replace(" ", "-") for word in BASE_KE
 BASE_RANKINGS ={
     "ranking_pos":{
                 #graphs/networks
-                "graph":1.5, "network science":2, "graph theory":2, "graph data":1, "graph machine learning": 1, "graph database":0.5,
+                "graph":1.5, "network science":2, "graph theory":2, "graph data":1, "graph machine learning": 1,
+                "graph database":0.5, "geospatial":0.7, "maps":0.3,
                 #general fields
                 "machine learning":1, "intelligence":1, "complexity science":2, "math":1, "data":0.25,
                 #titles
                 "engineer": 0.4, "developer": 0.35, "scientist": 0.9, "researcher": 0.9, #"analyst": 0.1,
                 #data science
-                "data science":1, "data engineering": 1.1, "data management":1, "full stack":1.2, "full-stack":1.2, "data collection":0.5,
+                "data science":1, "data engineering": 1.1, "data management":1, "full stack":1.1, "full-stack":1.1, "data collection":0.5,
                 #other fields
                 "operations research":1, "optimization":1, "algorithms":1,
                 #tech stack
@@ -71,15 +76,17 @@ BASE_RANKINGS ={
                 "knime":1, "nlp": 0.5, "neo4j":1, "mysql":0.2, "machine learning engineer":1,
                 #engineering
                 "lidar": 0.5, "radar": 0.5, "sensor": 0.2, "vision":0.3, "robot":0.4,
+                #details
+                "conference":0.6, "home office":0.1,
                 #languages
                 "hungarian":1.5,
                 },
-    "ranking_pos_capital":{"ETL":1, "ELT":1, "AI":0.5, "ML":0.6, "API":0.3, "REST":0.1, "CI/CD":0.1, "CI CD":0.1,},
+    "ranking_pos_capital":{"ETL":1, "ELT":1, "AI":0.5, "ML":0.6, "API":0.3, "REST":0.1, "CI/CD":0.2, "CI CD":0.2,},
     "ranking_neg":{
                     #type of work
                     "consultant":-0.7, "consulting":-0.7, "audit":-1, "risk":-0.5, "control":-1, "holding":-1, "purchasing":-1, "thesis":-0.5,
                     #high rank
-                    "leiter":-1, "leader":-1, "manager":-1, "management":-1, "owner":-1, "officer":-1,
+                    "leiter":-1.5, "leader":-0.5, "lead": -1, "manager":-1, "management":-1, "owner":-1, "officer":-1, "head":-0.7,
                     #tech
                     "cyber":-0.5, "security":-0.5, "devops":-0.1, "java":-0.1, "test":-0.3,
                     "web":-0.3, "stack developer":-0.6, "linux":-0.5, "safety":-0.5, "quality":-0.3,
@@ -90,13 +97,13 @@ BASE_RANKINGS ={
                     "accounting": -1, "accountant": -1, "marketing": -1, "sales": -1,
                     "merger": -0.6, "acquisition": -0.6, "real estate": -1, "assurance": -0.5,
                     #other
-                    "technik":-1,
+                    "technik":-1, "dissertation": -1, #"phd": -0.5,
                     },
     "ranking_neg_capital":{"SAP":-1, "HR":-1, "SAS":-0.5,},
     "neutral":[#dataviz
         "visualization", "tableau", "power bi", "dashboard", "qlik", "d3", "matplotlib", "seaborn", "shiny",
         #data
-        "daten", "llm", "quantitative", "statistic", "quantitative", "big data", "data warehous",#e/ing
+        "daten", "llm", "quantitative", "quantitative", "big data", "data warehous",#e/ing
         #data software
         "postgres", "cloudpak", "django", "scala", "spark", "hadoop", "kafka", "airflow", "apache",
         #web
@@ -112,30 +119,59 @@ BASE_RANKINGS ={
     ]
 }
 
-ALL_KEYWORDS_NONCAPITAL = list(set(BASE_KEYWORDS["titlewords"] + BASE_KEYWORDS["banned_words"]
-                        + BASE_KEYWORDS["banned_capital_words"] + list(BASE_RANKINGS["ranking_pos"].keys())
-                        + list(BASE_RANKINGS["ranking_neg"].keys()) + BASE_RANKINGS["neutral"]
-                        ))
-ALL_KEYWORDS_CAPITAL = list(set(list(BASE_RANKINGS["ranking_pos_capital"].keys())
-                            + list(BASE_RANKINGS["ranking_neg_capital"].keys())
-                            ))
+def get_all_keywords(keywords = BASE_KEYWORDS, rankings = BASE_RANKINGS):
+    """
+    Returns union of keywords (as lists), non capitalized and capitalized.
+    """
+    
+    all_keywords_noncapital = list(set(
+        (keywords.get("titlewords", []) +
+         keywords.get("banned_words", []) +
+         keywords.get("banned_capital_words", []) +
+         list(rankings.get("ranking_pos", {}).keys()) +
+         list(rankings.get("ranking_neg", {}).keys()) +
+         rankings.get("neutral", []))
+    ))
+
+    all_keywords_capital = list(set(
+        list(rankings.get("ranking_pos_capital", {}).keys()) +
+        list(rankings.get("ranking_neg_capital", {}).keys())
+    ))
+
+    return all_keywords_noncapital, all_keywords_capital
+
+ALL_KEYWORDS_NONCAPITAL, ALL_KEYWORDS_CAPITAL = get_all_keywords(keywords=BASE_KEYWORDS, rankings=BASE_RANKINGS)
 
 LOCATIONS_DESIRED = ["vienna", "wien", "österreich", "austria"]
 LOCATIONS_SECONDARY = ["st. pölten", "sankt pölten", "wiener neudorf", "linz", "krems", "nussdorf", 
                        "klosterneuburg", "schwechat"] #graz, salzburg, innsbruck, #klagenfurt
 
 class BaseScraper:
-    def __init__(self, driver=None, rules = BASE_RULES, keywords = BASE_KEYWORDS):
+    def __init__(self, driver=None, rules = BASE_RULES, keywords = BASE_KEYWORDS,
+                 rankings = BASE_RANKINGS, locations_desired = LOCATIONS_DESIRED,
+                 locations_secondary = LOCATIONS_SECONDARY, locations = None):
         if driver is None:
             self.driver = webdriver.Firefox()
         else:
             self.driver = driver
-        self.rules = rules
-        self.keywords = keywords
+
         self.time = time.strftime("%Y-%m-%d-%H-%M-%S")
         self.day = self.time[:10]
-        self.locations_desired = LOCATIONS_DESIRED
-        self.locations_secondary = LOCATIONS_SECONDARY
+
+        self.rules = rules
+        self.BASE_RULES = rules
+
+        self.keywords = keywords
+        self.BASE_KEYWORDS = keywords
+
+        self.rankings = rankings
+        self.BASE_RANKINGS = rankings
+        
+        self.all_keywords_noncapital, self.all_keywords_capital = get_all_keywords(keywords=keywords, rankings=rankings)
+
+        self.locations = locations if locations else keywords.get("locations", LOCATIONS_DESIRED)
+        self.LOCATIONS_DESIRED = locations_desired
+        self.LOCATIONS_SECONDARY = locations_secondary
 
     def close_website_popup(self, button_selector, url=None, 
                             click_wait=12.0, pre_click_scroll=False, 
@@ -364,17 +400,33 @@ class BaseScraper:
         return salary
 
     def salary_from_description(self, text,
-                                regexes = [r'Salary:.*', r'Gehalt:.*',
-                                           r'Compensation:.*', r'Vergütung:.*'],
+                                regexes = [r'(Salary|Gehalt|Compensation|Vergütung):.*',
+                                           r'\b(Gross|Brutto|Net|Netto)\b:.*',
+                                           r'(\d{5}[.,]\d+)(?:(?!\d{5}[.,]?\d*).)*?\b(netto|brutto|gross)\b', #select last such number
+                                           r'(\d{4}[.,]\d+)(?:(?!\d{4}[.,]?\d*).)*?\b(netto|brutto|gross)\b',
+                                           r'(\d{5})(?:(?!\d{5}).)*?\b(netto|brutto|net|gross)\b',
+
+
+                                           #also try these: 3926.14; 3926,14; 50.000; 50,000;
+                                           r'\d{4,5}(\.|,)\d{2}',
+                                           ],
                                 **kwargs):
         if type(text) != str:
             return None
         for regex in regexes:
-            salary_section = re.search(regex, text)
+            salary_section = re.search(regex, text, flags=re.IGNORECASE)
             if salary_section:
                 salary = self.salary_from_text(salary_section.group(), **kwargs)
                 return salary
         return None
+
+    def salary_points(self, salary, salary_bearable = SALARY_BEARABLE, salary_ratio = 0.15/100,
+                      high_dropoff = True, dropoff_bearable_ratio = 2.0):
+        points = (salary-salary_bearable)*salary_ratio
+        if high_dropoff & (salary > salary_bearable*dropoff_bearable_ratio):
+            max_points = (salary_bearable*dropoff_bearable_ratio-salary_bearable)*salary_ratio
+            points = 2 * max_points - points
+        return points
 
     def process_posting_soups(self, soups, pattern, website = "",
                       posting_id=False, posting_id_path=None,
@@ -436,11 +488,11 @@ class BaseScraper:
                 if verbose:
                     print(f"Could not save data of type {type(data)}")
     
-    def filter_postings(self, postings:dict, banned_words=[], banned_capital_words=[]):
+    def filter_postings(self, postings:dict, banned_words=None, banned_capital_words=None):
         if not banned_words:
-            banned_words = self.keywords["banned_words"]
+            banned_words = self.keywords.get("banned_words", [])
         if not banned_capital_words:
-            banned_capital_words = self.keywords["banned_capital_words"]
+            banned_capital_words = self.keywords.get("banned_capital_words", [])
         filtered_postings = {}
         for id, posting in postings.items():
             title = posting["title"]
@@ -453,22 +505,24 @@ class BaseScraper:
     
     def check_locations(self, locations_list, locations_desired=["vienna", "wien", "österreich"]):
         if not locations_desired:
-            if "locations" in self.keywords.keys():
-                locations_desired = self.keywords["locations"]
-            else:
-                raise ValueError("Empty locations_desired provided")
+            locations_desired = self.__dict__.get("LOCATIONS_DESIRED", LOCATIONS_DESIRED)
         for location in locations_list:
             for desired in locations_desired:
                 if desired.lower() in location.lower(): #in the string, e.g. "wien" in "wien 04"
                     return True
         return False
 
-    def rank_postings(self, postings:dict, keyword_points=BASE_RANKINGS, desc_ratio = 0.3, salary_ratio = 0.15/100,
+    def rank_postings(self, postings:dict, keyword_points=None, desc_ratio = 0.3,
+                      salary_bearable = None, salary_ratio = 0.15/100, 
                       locations_desired=None, locations_secodary=None):
+        if not salary_bearable:
+            salary_bearable = getattr(self, "salary_bearable", SALARY_BEARABLE)
+        if not keyword_points:
+            keyword_points = getattr(self, "rankings", BASE_RANKINGS)
         if not locations_desired:
-            locations_desired = self.locations_desired if "locations_desired" in self.__dict__.keys() else []
+            locations_desired = getattr(self, "LOCATIONS_DESIRED", LOCATIONS_DESIRED)
         if not locations_secodary:
-            locations_secodary = self.locations_secondary if "locations_secondary" in self.__dict__.keys() else []
+            locations_secodary = getattr(self, "LOCATIONS_SECONDARY", LOCATIONS_SECONDARY)
 
         for id, posting in postings.items():
             title = posting["title"] if "title" in posting.keys() else ""
@@ -497,9 +551,10 @@ class BaseScraper:
                     points += value*desc_ratio
             
             if salary:
-                points += (salary-2700)*salary_ratio
+                points += self.salary_points(salary, salary_bearable=salary_bearable, salary_ratio=salary_ratio,
+                                             high_dropoff=True, dropoff_bearable_ratio=2.0)
             
-            if "locations" in posting.keys():    
+            if posting.get("locations"):
                 if not self.check_locations(posting["locations"], locations_desired=locations_desired):
                     points -= 1
                     if not self.check_locations(posting["locations"], locations_desired=locations_secodary):
@@ -508,7 +563,12 @@ class BaseScraper:
             postings[id]["points"] = points
         return postings
 
-    def find_keywords(self, text, non_capital = ALL_KEYWORDS_NONCAPITAL, capital=ALL_KEYWORDS_CAPITAL):
+    def find_keywords(self, text, non_capital = None, capital = None):
+        if not non_capital:
+            non_capital = getattr(self, "all_keywords_noncapital", ALL_KEYWORDS_NONCAPITAL)
+        if not capital:
+            capital = getattr(self, "all_keywords_capital", ALL_KEYWORDS_CAPITAL)
+
         found = []
         for keyword in non_capital:
             if keyword in text.lower():
@@ -519,7 +579,12 @@ class BaseScraper:
         return found
     
     def find_keywords_in_postings(self, postings:dict, description_key = "description",
-                                  non_capital = ALL_KEYWORDS_NONCAPITAL, capital=ALL_KEYWORDS_CAPITAL):
+                                  non_capital = None, capital=None):
+        if not non_capital:
+            non_capital = getattr(self, "all_keywords_noncapital", ALL_KEYWORDS_NONCAPITAL)
+        if not capital:
+            capital = getattr(self, "all_keywords_capital", ALL_KEYWORDS_CAPITAL)
+
         for id, posting in postings.items():
             postings[id]["keywords"] = []
             if description_key in posting.keys():
@@ -594,7 +659,9 @@ class BaseScraper:
 
 
 class KarriereATScraper(BaseScraper):
-    def __init__(self, driver="", rules = BASE_RULES, keywords = BASE_KEYWORDS):
+    def __init__(self, driver="", rules = BASE_RULES, keywords = BASE_KEYWORDS, rankings = BASE_RANKINGS,
+                 locations_desired = LOCATIONS_DESIRED, locations_secondary = LOCATIONS_SECONDARY,
+                 locations = None):
         """
         If Selenium is used, the driver argument should be None or a previously opened driver
         If it is not used, the driver argument should be something other than None
@@ -605,10 +672,16 @@ class KarriereATScraper(BaseScraper):
         rules["request_wait_time"] = 0.16
         if driver or type(driver) == type(None):
             keywords["locations"] = ["wien-und-umgebung"]
+            locations = ["wien-und-umgebung"]
             #keywords["titlewords"] = keywords["titlewords_dashed"]
         else:
             keywords["locations"] = ["wien und umgebung"]
-        super().__init__(driver, rules, keywords)
+            locations = ["wien und umgebung"]
+
+        self.X_CSRF_TOKEN = "GVJiHEzc3AZ3syhOq8TV1DpRECCEvAnDIzJ3hGSW"
+        super().__init__(driver=driver, rules=rules, keywords=keywords, rankings=rankings,
+                         locations_desired=locations_desired, locations_secondary=locations_secondary,
+                         locations=locations)
         
     def load_job(self, url, close_popup=False,
                  popup_wait=5.0, post_click_wait=1.0,
@@ -742,7 +815,7 @@ class KarriereATScraper(BaseScraper):
                                        wait_time=wait_time,
                                        headers_more = {
                                            "Priority": "u=1, i",
-                                           "X-CSRF-Token": "GVJiHEzc3AZ3syhOq8TV1DpRECCEvAnDIzJ3hGSW",
+                                           "X-CSRF-Token": self.X_CSRF_TOKEN,
                                            "X-Requested-With": "XMLHttpRequest",
                                        },
                                        return_kind='responses',
@@ -791,7 +864,7 @@ class KarriereATScraper(BaseScraper):
                                        pages=ids,
                                        headers_more = {
                                            "Priority": "u=1, i",
-                                           "X-CSRF-Token": "GVJiHEzc3AZ3syhOq8TV1DpRECCEvAnDIzJ3hGSW",
+                                           "X-CSRF-Token": self.X_CSRF_TOKEN,
                                            "X-Requested-With": "XMLHttpRequest",
                                        },
                                        return_kind='responses')
@@ -817,17 +890,28 @@ class KarriereATScraper(BaseScraper):
 
     
 class RaiffeisenScraper(BaseScraper):
-    def __init__(self, driver="", rules=BASE_RULES, keywords=BASE_KEYWORDS):
+    def __init__(self, driver="", rules = BASE_RULES, keywords = BASE_KEYWORDS, rankings = BASE_RANKINGS,
+                 locations_desired=LOCATIONS_DESIRED, locations_secondary=LOCATIONS_SECONDARY, locations=None):
         rules["website"] = "raiffeisen_international"
         rules["usecase"] = "http"
         rules["scraping_base_url"] = "https://jobs.rbinternational.com/search/?q="
         rules["jobs_base_url"] = "https://jobs.rbinternational.com"
-        rules["request_wait_time"] = 0.16
         rules['gather_data_selector'] = 'a.jobTitle-link'
         rules['more_pages_url_extension'] = "&sortColumn=referencedate&sortDirection=desc&startrow="
         rules['description_selector'] = 'ul'
+        rules["request_wait_time"] = 0.16 if "request_wait_time" not in rules.keys() else rules["request_wait_time"]
+        
+        for key, value in BASE_RULES.items():
+            if key not in rules.keys():
+                rules[key] = value
+
+        if not keywords:
+            keywords = BASE_KEYWORDS
         keywords["titlewords"] += ["machine", "engineer", "scientist"]
-        super().__init__(driver, rules, keywords)
+        
+        super().__init__(driver=driver, rules=rules, keywords=keywords, rankings=rankings,
+                         locations_desired=locations_desired, locations_secondary=locations_secondary, 
+                         locations=locations)
 
     def construct_page_urls(self, base_url = None, titlewords = None):
         if base_url is None:
