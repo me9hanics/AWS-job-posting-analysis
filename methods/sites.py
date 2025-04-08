@@ -21,7 +21,7 @@ SCROLL_DOWN_SCRIPT = "window.scrollTo(0, document.body.scrollHeight);" #scroll t
 SCROLL_1000_SCRIPT = "window.scrollTo(0, 1000);"
 CSS_SELECTOR = "css selector" #can use instead: from selenium.webdriver.common.by import By, then By.CSS_SELECTOR
 
-SALARY_BEARABLE = 3000
+SALARY_BEARABLE = 3300
 
 BASE_RULES = {"website":"karriere.at",
               "scraping_base_url": "https://www.karriere.at/jobs",
@@ -66,7 +66,7 @@ BASE_RANKINGS ={
                 #general fields
                 "machine learning":1, "intelligence":1, "complexity science":2, "math":1, "data":0.25,
                 #titles
-                "engineer": 0.4, "developer": 0.35, "scientist": 0.9, "researcher": 0.9, #"analyst": 0.1,
+                "engineer": 0.4, "developer": 0.35, "scientist": 0.9, "researcher": 0.5, "research": 0.4, "analyst": 0.1,
                 #data science
                 "data science":1, "data engineering": 1.1, "data management":1, "full stack":1.1, "full-stack":1.1, "data collection":0.5,
                 #other fields
@@ -148,8 +148,8 @@ LOCATIONS_SECONDARY = ["st. pölten", "sankt pölten", "wiener neudorf", "linz",
 
 class BaseScraper:
     def __init__(self, driver=None, rules = BASE_RULES, keywords = BASE_KEYWORDS,
-                 rankings = BASE_RANKINGS, locations_desired = LOCATIONS_DESIRED,
-                 locations_secondary = LOCATIONS_SECONDARY, locations = None):
+                 rankings = BASE_RANKINGS, salary_bearable = SALARY_BEARABLE, locations = None,
+                 locations_desired = LOCATIONS_DESIRED, locations_secondary = LOCATIONS_SECONDARY):
         if driver is None:
             self.driver = webdriver.Firefox()
         else:
@@ -168,6 +168,8 @@ class BaseScraper:
         self.BASE_RANKINGS = rankings
         
         self.all_keywords_noncapital, self.all_keywords_capital = get_all_keywords(keywords=keywords, rankings=rankings)
+
+        self.salary_bearable = salary_bearable
 
         self.locations = locations if locations else keywords.get("locations", LOCATIONS_DESIRED)
         self.LOCATIONS_DESIRED = locations_desired
@@ -404,11 +406,11 @@ class BaseScraper:
                                            r'\b(Gross|Brutto|Net|Netto)\b:.*',
                                            r'(\d{5}[.,]\d+)(?:(?!\d{5}[.,]?\d*).)*?\b(netto|brutto|gross)\b', #select last such number
                                            r'(\d{4}[.,]\d+)(?:(?!\d{4}[.,]?\d*).)*?\b(netto|brutto|gross)\b',
-                                           r'(\d{5})(?:(?!\d{5}).)*?\b(netto|brutto|net|gross)\b',
-
-
-                                           #also try these: 3926.14; 3926,14; 50.000; 50,000;
-                                           r'\d{4,5}(\.|,)\d{2}',
+                                           r'(\d{5})(?:(?!\d{5}).)*?\b(netto|brutto|gross)\b',
+                                           r'(\d{5}[.,]\d+)(?:(?!\d{5}[.,]?\d*).)*?\b(net|taxes|tax)\b',
+                                           r'(\d{4}[.,]\d+)(?:(?!\d{4}[.,]?\d*).)*?\b(net|taxes|tax)\b',
+                                           r'\d{4,5}[.,]\d{2}',
+                                           r'(\d{5})(?:(?!\d{5}).)*?\b(net|taxes|tax)\b',
                                            ],
                                 **kwargs):
         if type(text) != str:
@@ -421,7 +423,7 @@ class BaseScraper:
         return None
 
     def salary_points(self, salary, salary_bearable = SALARY_BEARABLE, salary_ratio = 0.15/100,
-                      high_dropoff = True, dropoff_bearable_ratio = 2.0):
+                      high_dropoff = True, dropoff_bearable_ratio = 1.6):
         points = (salary-salary_bearable)*salary_ratio
         if high_dropoff & (salary > salary_bearable*dropoff_bearable_ratio):
             max_points = (salary_bearable*dropoff_bearable_ratio-salary_bearable)*salary_ratio
@@ -560,14 +562,16 @@ class BaseScraper:
                     if not self.check_locations(posting["locations"], locations_desired=locations_secodary):
                         points -= 1
 
-            postings[id]["points"] = points
+            postings[id]["points"] = round(points, 3)
         return postings
 
-    def find_keywords(self, text, non_capital = None, capital = None):
+    def find_keywords(self, text, non_capital = None, capital = None, sort=True, rankings = None):
         if not non_capital:
             non_capital = getattr(self, "all_keywords_noncapital", ALL_KEYWORDS_NONCAPITAL)
         if not capital:
             capital = getattr(self, "all_keywords_capital", ALL_KEYWORDS_CAPITAL)
+        if sort and (not rankings):
+            rankings = getattr(self, "rankings", BASE_RANKINGS)
 
         found = []
         for keyword in non_capital:
@@ -576,10 +580,15 @@ class BaseScraper:
         for keyword in capital:
             if keyword in text:
                 found.append(keyword)
+
+        if sort:
+            found = sorted(found,
+                key=lambda k: -abs(rankings.get("ranking_pos", {}).get(k, 0) or rankings.get("ranking_neg", {}).get(k, 0))
+            )
         return found
     
     def find_keywords_in_postings(self, postings:dict, description_key = "description",
-                                  non_capital = None, capital=None):
+                                  non_capital = None, capital=None, sort=True, rankings = None):
         if not non_capital:
             non_capital = getattr(self, "all_keywords_noncapital", ALL_KEYWORDS_NONCAPITAL)
         if not capital:
@@ -589,7 +598,8 @@ class BaseScraper:
             postings[id]["keywords"] = []
             if description_key in posting.keys():
                 text = posting[description_key]
-                keywords = self.find_keywords(text, non_capital=non_capital, capital=capital)
+                keywords = self.find_keywords(text, non_capital=non_capital, capital=capital,
+                                              sort=sort, rankings=rankings)
                 postings[id]["keywords"] = keywords
         return postings
 
@@ -659,9 +669,9 @@ class BaseScraper:
 
 
 class KarriereATScraper(BaseScraper):
-    def __init__(self, driver="", rules = BASE_RULES, keywords = BASE_KEYWORDS, rankings = BASE_RANKINGS,
-                 locations_desired = LOCATIONS_DESIRED, locations_secondary = LOCATIONS_SECONDARY,
-                 locations = None):
+    def __init__(self, driver="", rules = BASE_RULES, keywords = BASE_KEYWORDS,
+                 rankings = BASE_RANKINGS, salary_bearable = SALARY_BEARABLE, locations = None,
+                 locations_desired = LOCATIONS_DESIRED, locations_secondary = LOCATIONS_SECONDARY):
         """
         If Selenium is used, the driver argument should be None or a previously opened driver
         If it is not used, the driver argument should be something other than None
@@ -680,8 +690,9 @@ class KarriereATScraper(BaseScraper):
 
         self.X_CSRF_TOKEN = "GVJiHEzc3AZ3syhOq8TV1DpRECCEvAnDIzJ3hGSW"
         super().__init__(driver=driver, rules=rules, keywords=keywords, rankings=rankings,
-                         locations_desired=locations_desired, locations_secondary=locations_secondary,
-                         locations=locations)
+                         salary_bearable=salary_bearable, locations=locations,
+                         locations_desired=locations_desired, locations_secondary=locations_secondary
+                         )
         
     def load_job(self, url, close_popup=False,
                  popup_wait=5.0, post_click_wait=1.0,
@@ -884,14 +895,16 @@ class KarriereATScraper(BaseScraper):
                 postings = self.find_keywords_in_postings(postings)
 
         postings = self.rank_postings(postings)
+        postings = {k: v for k, v in sorted(postings.items(), key=lambda item: item[1]["points"], reverse=True)}
         if save_data:
             self.save_data(postings, name=f"karriere_at", with_date=True)
         return postings
 
     
 class RaiffeisenScraper(BaseScraper):
-    def __init__(self, driver="", rules = BASE_RULES, keywords = BASE_KEYWORDS, rankings = BASE_RANKINGS,
-                 locations_desired=LOCATIONS_DESIRED, locations_secondary=LOCATIONS_SECONDARY, locations=None):
+    def __init__(self, driver="", rules = BASE_RULES, keywords = BASE_KEYWORDS,
+                  rankings = BASE_RANKINGS, salary_bearable = SALARY_BEARABLE, locations = None,
+                 locations_desired=LOCATIONS_DESIRED, locations_secondary=LOCATIONS_SECONDARY):
         rules["website"] = "raiffeisen_international"
         rules["usecase"] = "http"
         rules["scraping_base_url"] = "https://jobs.rbinternational.com/search/?q="
@@ -910,8 +923,9 @@ class RaiffeisenScraper(BaseScraper):
         keywords["titlewords"] += ["machine", "engineer", "scientist"]
         
         super().__init__(driver=driver, rules=rules, keywords=keywords, rankings=rankings,
+                         salary_bearable=salary_bearable, locations=locations,
                          locations_desired=locations_desired, locations_secondary=locations_secondary, 
-                         locations=locations)
+                         )
 
     def construct_page_urls(self, base_url = None, titlewords = None):
         if base_url is None:
