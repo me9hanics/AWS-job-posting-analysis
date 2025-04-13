@@ -404,11 +404,15 @@ class BaseScraper:
     def salary_from_description(self, text,
                                 regexes = [r'(Salary|Gehalt|Compensation|Vergütung):.*',
                                            r'\b(Gross|Brutto|Net|Netto)\b:.*',
-                                           r'(\d{5}[.,]\d+)(?:(?!\d{5}[.,]?\d*).)*?\b(netto|brutto|gross)\b', #select last such number
+                                           r'(\d{5}[.,]\d+)(?:(?!\d{5}[.,]?\d*).)*?\b(netto|brutto|gross)\b',#select last such number
+                                           r'(\d{2}[.,]\d{3}[.,]\d+)(?:(?!\d{2}[.,]\d{3}[.,]\d*).)*?\b(netto|brutto|gross)\b',
                                            r'(\d{4}[.,]\d+)(?:(?!\d{4}[.,]?\d*).)*?\b(netto|brutto|gross)\b',
+                                           r'(\d{1}[.,]\d{3}[.,]\d+)(?:(?!\d{1}[.,]\d{3}[.,]\d*).)*?\b(netto|brutto|gross)\b',
                                            r'(\d{5})(?:(?!\d{5}).)*?\b(netto|brutto|gross)\b',
+                                           r'(\d{2}[.,]\d{3})(?:(?!\d{2}[.,]\d{3}).)*?\b(netto|brutto|gross)\b',
                                            r'(\d{5}[.,]\d+)(?:(?!\d{5}[.,]?\d*).)*?\b(net|taxes|tax)\b',
                                            r'(\d{4}[.,]\d+)(?:(?!\d{4}[.,]?\d*).)*?\b(net|taxes|tax)\b',
+                                           r'(\d{1}[.,]\d{3})(?:(?!\d{1}[.,]\d{3}).)*?\b(netto|brutto|gross)\b',
                                            r'\d{4,5}[.,]\d{2}',
                                            r'(\d{5})(?:(?!\d{5}).)*?\b(net|taxes|tax)\b',
                                            ],
