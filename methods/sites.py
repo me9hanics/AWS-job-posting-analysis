@@ -21,7 +21,7 @@ SCROLL_DOWN_SCRIPT = "window.scrollTo(0, document.body.scrollHeight);" #scroll t
 SCROLL_1000_SCRIPT = "window.scrollTo(0, 1000);"
 CSS_SELECTOR = "css selector" #can use instead: from selenium.webdriver.common.by import By, then By.CSS_SELECTOR
 
-SALARY_BEARABLE = 3300
+SALARY_BEARABLE = 3400
 
 BASE_RULES = {"website":"karriere.at",
               "scraping_base_url": "https://www.karriere.at/jobs",
@@ -62,29 +62,33 @@ BASE_RANKINGS ={
     "ranking_pos":{
                 #graphs/networks
                 "graph":1.5, "network science":2, "graph theory":2, "graph data":1, "graph machine learning": 1,
-                "graph database":0.5, "geospatial":0.7, "maps":0.3,
+                "graph database":0.5, "geospatial":0.6, "spatial":0.4, "maps":0.3, "geometry":0.3,
                 #general fields
-                "machine learning":1, "intelligence":1, "complexity science":2, "math":1, "data":0.25,
+                "machine learning":1, "intelligence":1, "complexity science":2, "math":1, "data":0.35,
                 #titles
-                "engineer": 0.4, "developer": 0.35, "scientist": 0.9, "researcher": 0.5, "research": 0.4, "analyst": 0.1,
+                "engineer": 0.45, "developer": 0.4, "scientist": 1, "researcher": 0.5, "research": 0.4, "analyst": 0.1,
                 #data science
-                "data science":1, "data engineering": 1.1, "data management":1, "full stack":1.1, "full-stack":1.1, "data collection":0.5,
+                "data science":1, "data engineering": 0.8, "data management":0.5, "full stack":0.7, "full-stack":0.7,
+                "data collection":0.6, "data analysis":0.3, "data mining":0.6, "analytics":0.2, "pipeline":0.1,
+                "data modeling": 0.4, "data modelling": 0.4,
                 #other fields
-                "operations research":1, "optimization":1, "algorithms":1,
+                "operations research":1, "optimization":1, "algorithms":1, "numerical":0.1, "modelling":0.5, "modeling":0.5,
                 #tech stack
-                "python":1, "sql":0.3, "c++":0.1, "algorithm":0.5, "web scraping":0.8,
-                "knime":1, "nlp": 0.5, "neo4j":1, "mysql":0.2, "machine learning engineer":1,
+                "python":1, "sql":0.3, "c++":0.1, "algorithm":0.7, "web scraping":0.9, "postgres":0.2, "vector":0.1,
+                "knime":0.8, "nlp": 0.5, "neo4j":1, "mysql":0.2, "machine learning engineer":1, "docker":0.2,
+                "qlik":0.3,
                 #engineering
-                "lidar": 0.5, "radar": 0.5, "sensor": 0.2, "vision":0.3, "robot":0.4,
+                "lidar": 0.5, "radar": 0.5, "vision":0.3, "sensor": 0.3, "robot":0.4, "embedded":0.4, "electrical":0.1,
                 #details
-                "conference":0.6, "home office":0.1,
+                "conference":0.7, "home office":0.15, "open source":0.2,
                 #languages
-                "hungarian":1.5,
+                "hungarian":1.3, "hungary":0.5,
                 },
-    "ranking_pos_capital":{"ETL":1, "ELT":1, "AI":0.5, "ML":0.6, "API":0.3, "REST":0.1, "CI/CD":0.2, "CI CD":0.2,},
+    "ranking_pos_capital":{"ETL":1, "ELT":1, "AI":0.5, "ML":0.6, "API":0.3, "REST":0.1, "CI/CD":0.2, "CI CD":0.2, "AWS":0.2,},
     "ranking_neg":{
                     #type of work
-                    "consultant":-0.7, "consulting":-0.7, "audit":-1, "risk":-0.5, "control":-1, "holding":-1, "purchasing":-1, "thesis":-0.5,
+                    "consultant":-0.7, "consulting":-0.7, "audit":-1, "risk":-0.5, "control":-1, "holding":-1,
+                    "purchasing":-1, "accounting": -1, "accountant": -1, "marketing": -1, "sales": -1, "thesis":-0.5,
                     #high rank
                     "leiter":-1.5, "leader":-0.5, "lead": -1, "manager":-1, "management":-1, "owner":-1, "officer":-1, "head":-0.7,
                     #tech
@@ -94,24 +98,23 @@ BASE_RANKINGS ={
                     "senior":-0.2, "student":-0.2, "architect":-0.5, "support":-0.5,
                     #work related keywords
                     "product": -0.5, "agile":-0.5, "requirement":-0.5, "scrum":-0.5,
-                    "accounting": -1, "accountant": -1, "marketing": -1, "sales": -1,
                     "merger": -0.6, "acquisition": -0.6, "real estate": -1, "assurance": -0.5,
                     #other
                     "technik":-1, "dissertation": -1, #"phd": -0.5,
                     },
     "ranking_neg_capital":{"SAP":-1, "HR":-1, "SAS":-0.5,},
     "neutral":[#dataviz
-        "visualization", "tableau", "power bi", "dashboard", "qlik", "d3", "matplotlib", "seaborn", "shiny",
+        "visualization", "tableau", "power bi", "dashboard", "d3", "matplotlib", "seaborn", "shiny",
         #data
         "daten", "llm", "quantitative", "quantitative", "big data", "data warehous",#e/ing
         #data software
-        "postgres", "cloudpak", "django", "scala", "spark", "hadoop", "kafka", "airflow", "apache",
+        "cloudpak", "django", "scala", "spark", "hadoop", "kafka", "airflow", "apache",
         #web
         "html", "javascript", "react", "angular", "node", "flask",
         #IT
-        "cloud", "git", "open source", "workflow", #"ci/cd", "ci cd",
+        "cloud", "git", "workflow", #"ci/cd", "ci cd",
         #IT software
-        "docker", "kubernetes", "jenkins", "terraform", "aws", "azure", "gcp", "github", "gitlab", "bitbucket",
+        "kubernetes", "jenkins", "terraform", "azure", "gcp", "github", "gitlab", "bitbucket",
         "excel", "powerpoint", 
         #other
         "b2c", "b2b", "lean", "kanban", "data-driven", "data driven", "kpi", "customer service", "communication",
