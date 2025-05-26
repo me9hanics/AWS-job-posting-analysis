@@ -86,7 +86,7 @@ def load_list_items(files=None, folder_path = "source/save/postings/", type_ = "
             contents.append(load_file_if_str(f"{folder_path}{file}", type_))
     return contents
 
-def load_file_from_dir(path = "source/save/postings/", prefix = "postings", ascending = True,
+def get_filename_from_dir(path = "source/save/postings/", prefix = "postings", ascending = True,
                        ending = ".json", index = 0):
     """
     Load the last file in a directory, optionally with a prefix.
