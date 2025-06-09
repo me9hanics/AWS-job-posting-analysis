@@ -1,4 +1,4 @@
-from .datacollect import get_postings
+from datacollect import get_postings
 import sys
 import os
 schedule_path = os.path.dirname(os.path.abspath(__file__))
@@ -35,12 +35,17 @@ def get_tech_postings(keywords=BASE_KEYWORDS, rankings=BASE_RANKINGS, salary_bea
     return data
 
 if __name__ == "__main__":
+    print("Collecting tech job postings...")
     data = get_tech_postings(
         keywords=BASE_KEYWORDS, 
         rankings=BASE_RANKINGS,
         salary_bearable=SALARY_BEARABLE,
     )
     results = data["results"]
-    added = data["added"]
-    removed = data["removed"]
+    added = [instance["title"] for instance in data["added"] if "title" in instance]
+    removed = [instance["title"] for instance in data["removed"] if "title" in instance]
     companies = data["companies"]
+    print(f"Collected: {len(results)} postings.")
+    print(f"Added postings: {(added)}")
+    print(f"Removed postings: {(removed)}")
+
