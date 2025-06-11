@@ -1003,15 +1003,14 @@ class RaiffeisenScraper(BaseScraper):
             role = contexts[0].text if contexts else None
             requirements = contexts[1].text if len(contexts)>1 else None
             benefits = contexts[2].text if len(contexts)>2 else None
-            
+            nice_to_have = None
+
             if len(contexts)==3:
-                nice_to_have = None
                 benefits = contexts[2].text
             elif len(contexts)==4:
                 nice_to_have = contexts[2].text
                 benefits = contexts[3].text
             elif len(contexts)>4:
-                nice_to_have = None
                 #join all contexts
                 benefits = "\n ".join([context.text for context in contexts[2:]])
 
