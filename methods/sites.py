@@ -4,6 +4,7 @@ import re
 import time
 import json
 import os
+from copy import deepcopy
 try:
     from methods import scrape
     from methods import urls
@@ -926,7 +927,7 @@ class RaiffeisenScraper(BaseScraper):
                 rules[key] = value
 
         if not keywords:
-            keywords = BASE_KEYWORDS
+            keywords = deepcopy(BASE_KEYWORDS)
         keywords["titlewords"] += ["machine", "engineer", "scientist"]
         
         super().__init__(driver=driver, rules=rules, keywords=keywords, rankings=rankings,
@@ -1016,6 +1017,7 @@ class RaiffeisenScraper(BaseScraper):
 
             description = posting.text
             salary = None
+            salary_monthly = None
             if benefits:
                 salary = self.salary_from_description(benefits, decimal_separator=".", clarity_comma_char=",")
                 if not salary:
