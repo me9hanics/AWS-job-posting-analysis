@@ -1,9 +1,12 @@
-from datacollect import get_postings
 import sys
 import os
 schedule_path = os.path.dirname(os.path.abspath(__file__))
 parent_path = os.path.join(schedule_path, "..")
 sys.path.append(parent_path)
+try:
+    from datacollect import get_postings
+except:
+    from .datacollect import get_postings
 from methods.sites import SALARY_BEARABLE, BASE_KEYWORDS, BASE_RANKINGS
 
 def get_tech_postings(keywords=BASE_KEYWORDS, rankings=BASE_RANKINGS, salary_bearable=SALARY_BEARABLE,
@@ -34,7 +37,7 @@ def get_tech_postings(keywords=BASE_KEYWORDS, rankings=BASE_RANKINGS, salary_bea
     #companies = data["companies"]
     return data
 
-if __name__ == "__main__":
+def main():
     print("Collecting tech job postings...")
     data = get_tech_postings(
         keywords=BASE_KEYWORDS, 
@@ -44,8 +47,9 @@ if __name__ == "__main__":
     results = data["results"]
     added = [instance["title"] for instance in data["added"] if "title" in instance]
     removed = [instance["title"] for instance in data["removed"] if "title" in instance]
-    companies = data["companies"]
-    print(f"Collected: {len(results)} postings.")
     print(f"Added postings: {(added)}")
     print(f"Removed postings: {(removed)}")
+    companies = data["companies"]
 
+if __name__ == "__main__":
+    main()
