@@ -63,15 +63,17 @@ BASE_RANKINGS ={
     "ranking_pos":{
                 #graphs/networks
                 "graph":1.5, "network science":2, "graph theory":2, "graph data":1, "graph machine learning": 1,
-                "graph database":0.5, "geospatial":0.6, "spatial":0.4, "maps":0.3, "geometry":0.3,
+                "graph database":0.7, "geospatial":0.6, "spatial":0.4, "maps":0.3, "geometry":0.3, "geodata": 0.3,
                 #general fields
                 "machine learning":1, "intelligence":1, "complexity science":2, "math":1, "data":0.35,
                 #titles
                 "engineer": 0.45, "developer": 0.4, "scientist": 1, "researcher": 0.5, "research": 0.4, "analyst": 0.1,
+                #rank
+                "senior": 0.15,
                 #data science
                 "data science":1, "data engineering": 0.8, "data management":0.5, "full stack":0.7, "full-stack":0.7,
                 "data collection":0.6, "data analysis":0.3, "data mining":0.6, "analytics":0.2, "pipeline":0.1,
-                "data modeling": 0.4, "data modelling": 0.4,
+                "data modeling": 0.4, "data modelling": 0.4, "design":0.15,
                 #other fields
                 "operations research":1, "optimization":1, "algorithms":1, "numerical":0.1, "modelling":0.5, "modeling":0.5,
                 #tech stack
@@ -85,18 +87,17 @@ BASE_RANKINGS ={
                 #languages
                 "hungarian":1.3, "hungary":0.5,
                 },
-    "ranking_pos_capital":{"ETL":1, "ELT":1, "AI":0.5, "ML":0.6, "API":0.3, "REST":0.1, "CI/CD":0.2, "CI CD":0.2, "AWS":0.2,},
+    "ranking_pos_capital":{"ETL":1, "ELT":1, "AI":0.5, "ML":0.6, "API":0.3, "REST":0.15, "CI/CD":0.2, "CI CD":0.2, "AWS":0.2, "GIS": 0.1},
     "ranking_neg":{
                     #type of work
                     "consultant":-0.7, "consulting":-0.7, "audit":-1, "risk":-0.5, "control":-1, "holding":-1,
                     "purchasing":-1, "accounting": -1, "accountant": -1, "marketing": -1, "sales": -1, "thesis":-0.5,
-                    #high rank
-                    "leiter":-1.5, "leader":-0.5, "lead": -1, "manager":-1, "management":-1, "owner":-1, "officer":-1, "head":-0.7,
+                    #rank
+                    "leiter":-1.5, "leader":-0.5, "lead": -1, "manager":-1, "management":-1, "owner":-1, "officer":-1,
+                    "head":-0.7, "architect":-0.5, "student":-0.5, "support":-0.3,
                     #tech
                     "cyber":-0.5, "security":-0.5, "devops":-0.1, "java":-0.1, "test":-0.3,
                     "web":-0.3, "stack developer":-0.6, "linux":-0.5, "safety":-0.5, "quality":-0.3,
-                    #general rank
-                    "senior":-0.2, "student":-0.2, "architect":-0.5, "support":-0.5,
                     #work related keywords
                     "product": -0.5, "agile":-0.5, "requirement":-0.5, "scrum":-0.5,
                     "merger": -0.6, "acquisition": -0.6, "real estate": -1, "assurance": -0.5,
