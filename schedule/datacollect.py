@@ -21,9 +21,10 @@ def reduce_url(url):
     return url.split("www.")[1] if "www." in url else url.split("://")[1] if "://" in url else url
 
 def get_postings(keywords =KEYWORDS, rankings=RANKINGS, salary_bearable=SALARY_BEARABLE, prefix ="postings",
-                 path="source/save/postings/", path_excel="source/save/excels/"):
+                 path="source/save/postings/", path_excel="source/save/excels/", verbose=False, verbose_data_gathering=False):
+    keywords['titlewords'] = list(set(keywords['titlewords']))
     karriere_at = sites.KarriereATScraper(keywords=keywords, rankings=rankings, salary_bearable=salary_bearable)
-    results = karriere_at.gather_data(verbose=False, descriptions=True)
+    results = karriere_at.gather_data(verbose=verbose_data_gathering, descriptions=True)
     desired_order = ["title", "company",  "salary_monthly_guessed",
                      "locations", "keywords",
                      "points", "url", 
@@ -32,18 +33,24 @@ def get_postings(keywords =KEYWORDS, rankings=RANKINGS, salary_bearable=SALARY_B
                      "collected_on", "date", "id", "isHomeOffice", "isActive", "source"]
 
     results = {
-        key: OrderedDict(
+        key: dict(OrderedDict( #TODO Write function to sort dict keys, use actions.reorder_dict
             sorted(value.items(), key=lambda item: desired_order.index(item[0]) if item[0] in desired_order else len(desired_order))
-        )
+        ))
         for key, value in results.items()
     }
+    if verbose:
+        print(f"Found {len(results)} postings on Karriere.at")
 
     raiffeisen = sites.RaiffeisenScraper(rules={"request_wait_time": 0.3}, keywords=keywords, rankings=rankings,
                                          salary_bearable=salary_bearable)
-    results2 = raiffeisen.gather_data(descriptions=True, verbose=False)
+    results2 = raiffeisen.gather_data(descriptions=True, verbose=verbose_data_gathering)
 
+    if verbose:
+        print(f"Found {len(results2)} postings on Raiffeisen.at")
     results = {**results, **results2}
     results = {k: v for k, v in sorted(results.items(), key=lambda item: item[1]["points"], reverse=True)}
+    if verbose:
+        print(f"Found {len(results)} postings in total")
     actions.save_data(results, with_date=True, path=path)
 
     gf_df = pd.DataFrame.from_dict(results,
@@ -56,7 +63,8 @@ def get_postings(keywords =KEYWORDS, rankings=RANKINGS, salary_bearable=SALARY_B
     companies = list(x[x['locations'].apply(lambda locs: any("wien" in loc.lower() or "vienna" in loc.lower() for loc in locs))]['company'].unique())
     file_name = actions.get_filename_from_dir(path, index = -2)
     added, removed = actions.compare_postings(results, f'{path}{file_name}', print_attrs =[])
-
+    if verbose:
+        print(f"Added {len(added)} postings, removed {len(removed)} postings")
     excel_file_path = None
     if path_excel:
         excel_file_path =f"{path_excel}{prefix}_{datetime.datetime.now().strftime('%Y-%m-%d')}.xlsx"
