@@ -45,8 +45,8 @@ def main():
         salary_bearable=SALARY_BEARABLE,
     )
     results = data["results"]
-    added = [instance["title"] for instance in data["added"] if "title" in instance]
-    removed = [instance["title"] for instance in data["removed"] if "title" in instance]
+    added = [instance["title"] for key, instance in data["added"].items() if "title" in instance]
+    removed = [instance["title"] for key, instance in data["removed"].items() if "title" in instance]
     print(f"Added postings: {(added)}")
     print(f"Removed postings: {(removed)}")
     companies = data["companies"]
