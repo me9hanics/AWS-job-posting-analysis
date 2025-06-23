@@ -45,10 +45,15 @@ def main():
         salary_bearable=SALARY_BEARABLE,
     )
     results = data["results"]
+    print(f"Found {len(results)} postings in total")
     added = [instance["title"] for key, instance in data["added"].items() if "title" in instance]
     removed = [instance["title"] for key, instance in data["removed"].items() if "title" in instance]
-    print(f"Added postings: {(added)}")
-    print(f"Removed postings: {(removed)}")
+    print(f"\nAdded postings:\n")
+    for title in added:
+        print(title)
+    #print(f"\nRemoved postings:\n")
+    #for title in removed:
+    #    print(title)
     companies = data["companies"]
 
 if __name__ == "__main__":
