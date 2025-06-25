@@ -238,3 +238,6 @@ def combine_postings(postings=None, folder_path="source/save/postings/asd/", ext
                     all_postings[key] = [all_postings[key]]
                 all_postings[key].extend(value)
     return all_postings
+
+def reorder_dict(d, keys_order):
+    return {k: d[k] for k in keys_order if k in d}
