@@ -61,8 +61,8 @@ def get_postings(keywords =KEYWORDS, rankings=RANKINGS, salary_bearable=SALARY_B
     x = pd.DataFrame.from_dict(results, orient='index')
     x["locations"] = x["locations"].apply(lambda x: x if type(x) == list else [])
     companies = list(x[x['locations'].apply(lambda locs: any("wien" in loc.lower() or "vienna" in loc.lower() for loc in locs))]['company'].unique())
-    file_name = actions.get_filename_from_dir(path, index = -2)
-    added, removed = actions.compare_postings(results, f'{path}{file_name}', print_attrs =[])
+    file_name = actions.get_filename_from_dir(path, index = -2) #if there is no file, returns None
+    added, removed = actions.compare_postings(results, f'{path}{file_name}' if file_name else [], print_attrs =[])
     if verbose:
         print(f"Added {len(added)} postings, removed {len(removed)} postings")
     excel_file_path = None

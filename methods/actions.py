@@ -103,9 +103,10 @@ def get_filename_from_dir(path = "source/save/postings/", prefix = "postings", a
     files = [f for f in os.listdir(path) if f.startswith(prefix) and f.endswith(ending)]
     files.sort(reverse = not ascending)
     if files:
-        return files[index]
-    else:
-        return None
+        #check if index is within the range of files
+        if index < len(files) and index >= -len(files): 
+            return files[index]
+    return None
 
 def sort_dict_by_key(x, key="points", descending = True):
     return {k: v for k, v in sorted(x.items(), key=lambda item: item[1][key], reverse = descending)} if x else {}
