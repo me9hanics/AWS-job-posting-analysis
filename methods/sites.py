@@ -73,7 +73,7 @@ BASE_RANKINGS ={
                 #data science
                 "data science":1, "data engineering": 0.8, "data management":0.5, "full stack":0.7, "full-stack":0.7,
                 "data collection":0.6, "data analysis":0.3, "data mining":0.6, "analytics":0.2, "pipeline":0.1,
-                "data modeling": 0.4, "data modelling": 0.4, "design":0.15,
+                "data modeling": 0.4, "data modelling": 0.4, "design":0.15, "time series":0.6,
                 #other fields
                 "operations research":1, "optimization":1, "algorithms":1, "numerical":0.1, "modelling":0.5, "modeling":0.5,
                 #tech stack
@@ -153,6 +153,7 @@ LOCATIONS_SECONDARY = ["st. pölten", "sankt pölten", "wiener neudorf", "linz",
 
 class BaseScraper:
     def __init__(self, driver=None, rules = BASE_RULES, keywords = BASE_KEYWORDS,
+                 extra_keywords = {}, extra_titlewords = [], extra_locations = [],
                  rankings = BASE_RANKINGS, salary_bearable = SALARY_BEARABLE, locations = None,
                  locations_desired = LOCATIONS_DESIRED, locations_secondary = LOCATIONS_SECONDARY):
         if driver is None:
@@ -166,9 +167,17 @@ class BaseScraper:
         self.rules = rules
         self.BASE_RULES = rules
 
-        self.keywords = keywords
-        self.BASE_KEYWORDS = keywords
+        self.keywords = deepcopy(keywords)
+        if extra_keywords:
+            for key_type, key_values in extra_keywords.items():
+                self.keywords[key_type] = list(set(self.keywords.get(key_type, []) + key_values))
+        if extra_titlewords:
+            self.keywords["titlewords"] = list(set(self.keywords.get("titlewords", []) + extra_titlewords))
+        if extra_locations:
+            self.keywords["locations"] = list(set(self.keywords.get("locations", []) + extra_locations))
+        self.BASE_KEYWORDS = deepcopy(self.keywords)
 
+        #TODO same with rankings
         self.rankings = rankings
         self.BASE_RANKINGS = rankings
         
@@ -679,6 +688,7 @@ class BaseScraper:
 
 class KarriereATScraper(BaseScraper):
     def __init__(self, driver="", rules = BASE_RULES, keywords = BASE_KEYWORDS,
+                 extra_keywords = {}, extra_titlewords = [], extra_locations = [],
                  rankings = BASE_RANKINGS, salary_bearable = SALARY_BEARABLE, locations = None,
                  locations_desired = LOCATIONS_DESIRED, locations_secondary = LOCATIONS_SECONDARY):
         """
@@ -699,7 +709,8 @@ class KarriereATScraper(BaseScraper):
 
         self.X_CSRF_TOKEN = "GVJiHEzc3AZ3syhOq8TV1DpRECCEvAnDIzJ3hGSW"
         super().__init__(driver=driver, rules=rules, keywords=keywords, rankings=rankings,
-                         salary_bearable=salary_bearable, locations=locations,
+                         extra_keywords = extra_keywords, extra_titlewords=extra_titlewords,
+                         extra_locations=extra_locations, salary_bearable=salary_bearable, locations=locations,
                          locations_desired=locations_desired, locations_secondary=locations_secondary
                          )
         
@@ -912,7 +923,8 @@ class KarriereATScraper(BaseScraper):
     
 class RaiffeisenScraper(BaseScraper):
     def __init__(self, driver="", rules = BASE_RULES, keywords = BASE_KEYWORDS,
-                  rankings = BASE_RANKINGS, salary_bearable = SALARY_BEARABLE, locations = None,
+                 extra_keywords = {}, extra_titlewords = [], extra_locations = [],
+                 rankings = BASE_RANKINGS, salary_bearable = SALARY_BEARABLE, locations = None,
                  locations_desired=LOCATIONS_DESIRED, locations_secondary=LOCATIONS_SECONDARY):
         rules["website"] = "raiffeisen_international"
         rules["usecase"] = "http"
@@ -929,10 +941,11 @@ class RaiffeisenScraper(BaseScraper):
 
         if not keywords:
             keywords = deepcopy(BASE_KEYWORDS)
-        keywords["titlewords"] += ["machine", "engineer", "scientist"]
+        extra_keywords["titlewords"] += ["machine", "engineer", "scientist"]
         
         super().__init__(driver=driver, rules=rules, keywords=keywords, rankings=rankings,
-                         salary_bearable=salary_bearable, locations=locations,
+                         extra_keywords = extra_keywords, extra_titlewords=extra_titlewords,
+                         extra_locations=extra_locations, salary_bearable=salary_bearable, locations=locations,
                          locations_desired=locations_desired, locations_secondary=locations_secondary, 
                          )
 
