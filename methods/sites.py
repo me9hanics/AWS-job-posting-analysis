@@ -173,8 +173,10 @@ class BaseScraper:
                 self.keywords[key_type] = list(set(self.keywords.get(key_type, []) + key_values))
         if extra_titlewords:
             self.keywords["titlewords"] = list(set(self.keywords.get("titlewords", []) + extra_titlewords))
+        locations = locations if locations else keywords.get("locations", LOCATIONS_DESIRED)
         if extra_locations:
-            self.keywords["locations"] = list(set(self.keywords.get("locations", []) + extra_locations))
+            locations = list(set(locations + extra_locations))
+        self.keywords["locations"] = locations
         self.BASE_KEYWORDS = deepcopy(self.keywords)
 
         #TODO same with rankings
@@ -185,7 +187,7 @@ class BaseScraper:
 
         self.salary_bearable = salary_bearable
 
-        self.locations = locations if locations else keywords.get("locations", LOCATIONS_DESIRED)
+        self.locations = locations
         self.LOCATIONS_DESIRED = locations_desired
         self.LOCATIONS_SECONDARY = locations_secondary
 
@@ -941,7 +943,6 @@ class RaiffeisenScraper(BaseScraper):
 
         if not keywords:
             keywords = deepcopy(BASE_KEYWORDS)
-        extra_keywords["titlewords"] += ["machine", "engineer", "scientist"]
         
         super().__init__(driver=driver, rules=rules, keywords=keywords, rankings=rankings,
                          extra_keywords = extra_keywords, extra_titlewords=extra_titlewords,

@@ -10,8 +10,9 @@ except:
 from methods.sites import SALARY_BEARABLE, BASE_KEYWORDS, BASE_RANKINGS
 
 def get_tech_postings(keywords=BASE_KEYWORDS, rankings=BASE_RANKINGS, salary_bearable=SALARY_BEARABLE,
-                      prefix ="postings", path="C:/GitHubRepo/AWS-job-posting-analysis/source/save/postings/",
-                      path_excel="C:/GitHubRepo/AWS-job-posting-analysis/source/save/excels/"):
+                      prefix ="postings", path="C:/GitHubRepo/AWS-job-posting-analysis/source/save/postings/tech/",
+                      path_excel="C:/GitHubRepo/AWS-job-posting-analysis/source/save/excels/excel_tech/",
+                      **kwargs):
     """
     Collect legal job postings from various websites.
     
@@ -23,6 +24,7 @@ def get_tech_postings(keywords=BASE_KEYWORDS, rankings=BASE_RANKINGS, salary_bea
     Returns:
     dict: A dictionary containing the results, added and removed postings, and companies.
     """
+    kwargs['raiffeisen_extra_titlewords'] = kwargs.get('raiffeisen_extra_titlewords', ["machine", "engineer", "scientist"])
     data = get_postings(
         keywords=keywords, 
         rankings=rankings, 
@@ -30,6 +32,7 @@ def get_tech_postings(keywords=BASE_KEYWORDS, rankings=BASE_RANKINGS, salary_bea
         prefix=prefix,
         path=path,
         path_excel=path_excel
+        **kwargs
     )
     #results = data["results"]
     #added = data["added"]
@@ -46,8 +49,8 @@ def main():
     )
     results = data["results"]
     print(f"Found {len(results)} postings in total")
-    added = [instance["title"] for key, instance in data["added"].items() if "title" in instance]
-    removed = [instance["title"] for key, instance in data["removed"].items() if "title" in instance]
+    added = [instance["title"] + " - at - " + instance["company"] for key, instance in data["added"].items() if "title" in instance]
+    removed = [instance["title"] + " - at - " + instance["company"] for key, instance in data["removed"].items() if "title" in instance]
     print(f"\nAdded postings:\n")
     for title in added:
         print(title)

@@ -20,8 +20,8 @@ SALARY_BEARABLE = sites.SALARY_BEARABLE
 def reduce_url(url):
     return url.split("www.")[1] if "www." in url else url.split("://")[1] if "://" in url else url
 
-def get_postings(keywords =KEYWORDS, rankings=RANKINGS, salary_bearable=SALARY_BEARABLE, prefix ="postings",
-                 path="source/save/postings/", path_excel="source/save/excels/", verbose=False, verbose_data_gathering=False):
+def get_postings(keywords =KEYWORDS, rankings=RANKINGS, salary_bearable=SALARY_BEARABLE, prefix ="postings", path="source/save/postings/", 
+                 path_excel="source/save/excels/", verbose=False, verbose_data_gathering=False, **kwargs):
     keywords['titlewords'] = list(set(keywords['titlewords']))
     karriere_at = sites.KarriereATScraper(keywords=keywords, rankings=rankings, salary_bearable=salary_bearable)
     results = karriere_at.gather_data(verbose=verbose_data_gathering, descriptions=True)
@@ -41,8 +41,12 @@ def get_postings(keywords =KEYWORDS, rankings=RANKINGS, salary_bearable=SALARY_B
     if verbose:
         print(f"Found {len(results)} postings on Karriere.at")
 
-    raiffeisen = sites.RaiffeisenScraper(rules={"request_wait_time": 0.3}, keywords=keywords, rankings=rankings,
-                                         salary_bearable=salary_bearable)
+    raiffeisen = sites.RaiffeisenScraper(rules={"request_wait_time": 0.3}, keywords=keywords,
+                                         extra_keywords=kwargs.get("raiffeisen_extra_keywords", kwargs.get("extra_keywords", {})),
+                                         extra_titlewords=kwargs.get("raiffeisen_extra_titlewords", kwargs.get("extra_titlewords", [])),
+                                         extra_locations=kwargs.get("raiffeisen_extra_locations", kwargs.get("extra_locations", [])),
+                                         rankings=rankings, salary_bearable=salary_bearable)
+    print(f"Titlewords for Raiffeisen: {raiffeisen.keywords['titlewords']}")
     results2 = raiffeisen.gather_data(descriptions=True, verbose=verbose_data_gathering)
 
     if verbose:
