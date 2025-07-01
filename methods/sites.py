@@ -1046,7 +1046,6 @@ class RaiffeisenScraper(BaseScraper):
                                 "description": description}
         return descriptions
                 
-
     def gather_data(self, url_links=[], descriptions=False, verbose=False):
         titles_pattern = self.rules["gather_data_selector"]
         website = self.rules["website"]

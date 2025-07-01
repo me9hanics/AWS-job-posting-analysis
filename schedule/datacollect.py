@@ -23,7 +23,10 @@ def reduce_url(url):
 def get_postings(keywords =KEYWORDS, rankings=RANKINGS, salary_bearable=SALARY_BEARABLE, prefix ="postings", path="source/save/postings/", 
                  path_excel="source/save/excels/", verbose=False, verbose_data_gathering=False, **kwargs):
     keywords['titlewords'] = list(set(keywords['titlewords']))
-    karriere_at = sites.KarriereATScraper(keywords=keywords, rankings=rankings, salary_bearable=salary_bearable)
+    karriere_at = sites.KarriereATScraper(keywords=keywords, rankings=rankings, salary_bearable=salary_bearable,
+                                          extra_keywords=kwargs.get("karriereat_extra_keywords", kwargs.get("extra_keywords", {})),
+                                          extra_titlewords=kwargs.get("karriereat_extra_titlewords", kwargs.get("extra_titlewords", [])),
+                                          extra_locations=kwargs.get("karriereat_extra_locations", kwargs.get("extra_locations", [])))
     results = karriere_at.gather_data(verbose=verbose_data_gathering, descriptions=True)
     desired_order = ["title", "company",  "salary_monthly_guessed",
                      "locations", "keywords",
@@ -46,7 +49,6 @@ def get_postings(keywords =KEYWORDS, rankings=RANKINGS, salary_bearable=SALARY_B
                                          extra_titlewords=kwargs.get("raiffeisen_extra_titlewords", kwargs.get("extra_titlewords", [])),
                                          extra_locations=kwargs.get("raiffeisen_extra_locations", kwargs.get("extra_locations", [])),
                                          rankings=rankings, salary_bearable=salary_bearable)
-    print(f"Titlewords for Raiffeisen: {raiffeisen.keywords['titlewords']}")
     results2 = raiffeisen.gather_data(descriptions=True, verbose=verbose_data_gathering)
 
     if verbose:

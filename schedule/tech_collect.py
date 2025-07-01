@@ -31,7 +31,7 @@ def get_tech_postings(keywords=BASE_KEYWORDS, rankings=BASE_RANKINGS, salary_bea
         salary_bearable=salary_bearable,
         prefix=prefix,
         path=path,
-        path_excel=path_excel
+        path_excel=path_excel,
         **kwargs
     )
     #results = data["results"]
