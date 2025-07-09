@@ -45,12 +45,12 @@ BASE_KEYWORDS = {
                    "data engineer", "data engineering", "data engineering developer", "Python engineer", "DataOps",
                    "data analysis", "data analytics", "data analyst",
                    "graph theory", "network science", "graph database",
-                   "business intelligence", "business intelligence analyst", "bi analyst", "business analyst",
-                   #"complexity science",
+                   "complexity science", "statistician", #"network science", "mathematician", "combinatorics",
+                   "business intelligence", "bi analyst", "business analyst", #"business intelligence analyst",
                   ],
-    "banned_words": ["manager", "professor", "team leader", "teamleader", "teamleiter", "team leiter", "geschäft",
+    "banned_words": ["manager", "team leader", "teamleader", "teamleiter", "team leiter", "geschäft",
                     "jurist", "lawyer", "rechsanwalt", "legal", "audit", "advisor", "owner", "officer", "controller",
-                    "head of", "director", "leitung", "professor", "professur", "secretary",
+                    "head of", "director", "leitung", "secretary", "professur", #"professor", 
                     "ärtzin",
                     "microsoft", "m365", "azure", "cyber security",
                     "praktikum", "praktikant", #"internship", "intern", "trainee",
@@ -64,8 +64,9 @@ BASE_RANKINGS ={
                 #graphs/networks
                 "graph":1.5, "network science":2, "graph theory":2, "graph data":1, "graph machine learning": 1,
                 "graph database":0.7, "geospatial":0.6, "spatial":0.4, "maps":0.3, "geometry":0.3, "geodata": 0.3,
-                #general fields
-                "machine learning":1, "intelligence":1, "complexity science":2, "math":1, "data":0.35,
+                #general terms
+                "machine learning":1, "intelligence":1, "math":1, "data":0.35, "combinatori":0.4,
+                "complexity science":2, "complexity":0.3, "statistic":0.25, "social network":0.3,
                 #titles
                 "engineer": 0.45, "developer": 0.4, "scientist": 1, "researcher": 0.5, "research": 0.4, "analyst": 0.1,
                 #rank
@@ -74,6 +75,8 @@ BASE_RANKINGS ={
                 "data science":1, "data engineering": 0.8, "data management":0.5, "full stack":0.7, "full-stack":0.7,
                 "data collection":0.6, "data analysis":0.3, "data mining":0.6, "analytics":0.2, "pipeline":0.1,
                 "data modeling": 0.4, "data modelling": 0.4, "design":0.15, "time series":0.6,
+                #machine learning
+                "gnn":1.2, "neural network":0.3, "deep learning":0.3, "reinforcement learning":0.3,
                 #other fields
                 "operations research":1, "optimization":1, "algorithms":1, "numerical":0.1, "modelling":0.5, "modeling":0.5,
                 #tech stack

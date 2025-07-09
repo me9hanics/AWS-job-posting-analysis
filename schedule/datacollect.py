@@ -60,7 +60,7 @@ def get_postings(keywords =KEYWORDS, rankings=RANKINGS, salary_bearable=SALARY_B
     actions.save_data(results, with_date=True, path=path)
 
     gf_df = pd.DataFrame.from_dict(results,
-                        orient = 'index')[['title', 'company', 'salary_monthly_guessed', 'locations', 'keywords', 'url', 'description', 'isHomeOffice', 'points']]
+                        orient = 'index')[['title', 'company', 'salary_monthly_guessed', 'locations', 'keywords', 'url', 'isHomeOffice', 'points', 'description',]]
     gf_df = gf_df.rename(columns ={"points": "hanics_points"})
     gf_df["url"] = gf_df["url"].apply(lambda x: reduce_url(x))
 
@@ -85,21 +85,29 @@ def get_postings(keywords =KEYWORDS, rankings=RANKINGS, salary_bearable=SALARY_B
             "D": 14.33,
             "E": 50.44,
             "F": 20.44,
-            "G": 32,
-            "H": 8,
-            "I": 11,
+            "G": 6,
+            "H": 11,
+            "I": 34,
         }
         for column, width in column_widths.items():
             sheet.column_dimensions[column].width = width
 
         #Make row bold, and columns bold
         for cell in sheet[1]:
-            cell.font = Font(bold=True)
+            cell.font = cell.font + Font(bold=True)
+
+        #Make those rows green text which are in the added postings
+        added_titles = [instance["title"] for instance in added.values()]
+        for row in sheet.iter_rows(min_row=2, max_row=len(gf_df)+1):
+            if row[0].value in added_titles:
+                for cell in row:
+                    if cell.column_letter in ["A", "E"]:
+                        cell.font = cell.font + Font(color="229F22")
 
         for row in sheet.iter_rows(min_row=1, max_row=len(gf_df)+1):
             for cell in row:
                 if cell.column_letter in ["B", "D", "E"]:
-                    cell.font = Font(bold=True)
+                    cell.font = cell.font + Font(bold=True)
                 if cell.column_letter == "F" and cell.row > 1:
                     #make it point to a link
                     cell.hyperlink = cell.value #"https://www." + cell.value
