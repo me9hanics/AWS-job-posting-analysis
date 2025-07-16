@@ -5,6 +5,7 @@ import pandas as pd
 from openpyxl import load_workbook
 from openpyxl.styles import Font
 import time
+from copy import copy
 
 import sys
 import os
@@ -87,7 +88,7 @@ def get_postings(keywords =KEYWORDS, rankings=RANKINGS, salary_bearable=SALARY_B
             "F": 20.44,
             "G": 6,
             "H": 11,
-            "I": 34,
+            "I": 74, #34
         }
         for column, width in column_widths.items():
             sheet.column_dimensions[column].width = width
@@ -102,7 +103,15 @@ def get_postings(keywords =KEYWORDS, rankings=RANKINGS, salary_bearable=SALARY_B
             if row[0].value in added_titles:
                 for cell in row:
                     if cell.column_letter in ["A", "E"]:
-                        cell.font = cell.font + Font(color="229F22")
+                        font = copy(cell.font)
+                        font.color = "FF229F22"
+                        cell.font = font
+            if any(company_title in row[1].value.lower() for company_title in keywords["highlighted_company_titles"]):
+                for cell in row:
+                    if cell.column_letter in ["B"]:
+                        font = copy(cell.font)
+                        font.color = "E30A0A"
+                        cell.font = font
 
         for row in sheet.iter_rows(min_row=1, max_row=len(gf_df)+1):
             for cell in row:

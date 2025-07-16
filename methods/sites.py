@@ -56,6 +56,11 @@ BASE_KEYWORDS = {
                     "praktikum", "praktikant", #"internship", "intern", "trainee",
                     ],
     "banned_capital_words": ["SAP", "HR"],
+    "highlighted_company_titles": ["graph", "science", "research", "engineer", "data", "algo", "math",
+                                   "optimization", "complexity", "analytics", "analysis", "conference",
+                                   "lab", "center", "institute", "university",
+                                   "aithyra", "amazon", "google", "meta", "microsoft", "nvidia", "ibm",
+                                   ],
 }
 BASE_KEYWORDS["titlewords_dashed"] = [word.replace(" ", "-") for word in BASE_KEYWORDS["titlewords"]]
 
@@ -72,7 +77,7 @@ BASE_RANKINGS ={
                 #rank
                 "senior": 0.15,
                 #data science
-                "data science":1, "data engineering": 0.8, "data management":0.5, "full stack":0.7, "full-stack":0.7,
+                "data science":1, "data engineering": 0.8, "data management":0.5, "full stack":0.4, "full-stack":0.4,
                 "data collection":0.6, "data analysis":0.3, "data mining":0.6, "analytics":0.2, "pipeline":0.1,
                 "data modeling": 0.4, "data modelling": 0.4, "design":0.15, "time series":0.6,
                 #machine learning
@@ -84,11 +89,13 @@ BASE_RANKINGS ={
                 "knime":0.8, "nlp": 0.5, "neo4j":1, "mysql":0.2, "machine learning engineer":1, "docker":0.2,
                 "qlik":0.3,
                 #engineering
-                "lidar": 0.5, "radar": 0.5, "vision":0.3, "sensor": 0.3, "robot":0.4, "embedded":0.4, "electrical":0.1,
+                "lidar": 0.5, "radar": 0.5, "vision":0.3, "sensor": 0.3, "robot":0.4, "embedded":0.4, "electrical":0.15,
                 #details
                 "conference":0.7, "home office":0.15, "open source":0.2,
                 #languages
                 "hungarian":1.3, "hungary":0.5,
+                #other
+                "aithyra":1.8, "deepmind":0.6,
                 },
     "ranking_pos_capital":{"ETL":1, "ELT":1, "AI":0.5, "ML":0.6, "API":0.3, "REST":0.15, "CI/CD":0.2, "CI CD":0.2, "AWS":0.2, "GIS": 0.1},
     "ranking_neg":{
