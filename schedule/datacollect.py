@@ -14,9 +14,12 @@ parent_path = os.path.join(schedule_path, "..")
 sys.path.append(parent_path)
 from methods import actions, sites
 
-KEYWORDS = sites.BASE_KEYWORDS
-RANKINGS = sites.BASE_RANKINGS
+KEYWORDS = sites.BASE_KEYWORDS.copy()
+RANKINGS = sites.BASE_RANKINGS.copy()
 SALARY_BEARABLE = sites.SALARY_BEARABLE
+COLUMN_WIDTHS = {"A": 38, "B": 24, "C": 6.56, "D": 14.33, "E": 50.44,
+                 "F": 20.44, "G": 6, "H": 11, "I": 114,
+                } #TODO put macros in a separate file
 
 def reduce_url(url):
     return url.split("www.")[1] if "www." in url else url.split("://")[1] if "://" in url else url
@@ -79,31 +82,20 @@ def get_postings(keywords =KEYWORDS, rankings=RANKINGS, salary_bearable=SALARY_B
         time.sleep(1)
         workbook = load_workbook(excel_file_path)
         sheet = workbook.active
-        column_widths = {
-            "A": 38,
-            "B": 24,
-            "C": 6.56,
-            "D": 14.33,
-            "E": 50.44,
-            "F": 20.44,
-            "G": 6,
-            "H": 11,
-            "I": 74, #34
-        }
-        for column, width in column_widths.items():
+        for column, width in COLUMN_WIDTHS.items():
             sheet.column_dimensions[column].width = width
 
         #Make row bold, and columns bold
         for cell in sheet[1]:
             cell.font = cell.font + Font(bold=True)
 
-        #Make those rows green text which are in the added postings
+        #Make those rows green text which are in the added postings, and highlight title companies with red names
         added_titles = [instance["title"] for instance in added.values()]
         for row in sheet.iter_rows(min_row=2, max_row=len(gf_df)+1):
             if row[0].value in added_titles:
                 for cell in row:
                     if cell.column_letter in ["A", "E"]:
-                        font = copy(cell.font)
+                        font = copy(cell.font) #TODO pack this into a function - or class method e.g. cell.update_font(color = ..., ...)
                         font.color = "FF229F22"
                         cell.font = font
             if any(company_title in row[1].value.lower() for company_title in keywords["highlighted_company_titles"]):
@@ -113,13 +105,14 @@ def get_postings(keywords =KEYWORDS, rankings=RANKINGS, salary_bearable=SALARY_B
                         font.color = "E30A0A"
                         cell.font = font
 
+        #Bold columns, hyperlink
         for row in sheet.iter_rows(min_row=1, max_row=len(gf_df)+1):
             for cell in row:
                 if cell.column_letter in ["B", "D", "E"]:
                     cell.font = cell.font + Font(bold=True)
                 if cell.column_letter == "F" and cell.row > 1:
                     #make it point to a link
-                    cell.hyperlink = cell.value #"https://www." + cell.value
+                    cell.hyperlink = cell.value #"https://www." + cell.value #TODO Fix - wrong links
                     cell.style = 'Hyperlink'
 
         workbook.save(excel_file_path)

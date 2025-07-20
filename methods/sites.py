@@ -65,7 +65,7 @@ BASE_KEYWORDS = {
 BASE_KEYWORDS["titlewords_dashed"] = [word.replace(" ", "-") for word in BASE_KEYWORDS["titlewords"]]
 
 BASE_RANKINGS ={
-    "ranking_pos":{
+    "ranking_lowercase":{
                 #graphs/networks
                 "graph":1.5, "network science":2, "graph theory":2, "graph data":1, "graph machine learning": 1,
                 "graph database":0.7, "geospatial":0.6, "spatial":0.4, "maps":0.3, "geometry":0.3, "geodata": 0.3,
@@ -89,33 +89,36 @@ BASE_RANKINGS ={
                 "knime":0.8, "nlp": 0.5, "neo4j":1, "mysql":0.2, "machine learning engineer":1, "docker":0.2,
                 "qlik":0.3,
                 #engineering
-                "lidar": 0.5, "radar": 0.5, "vision":0.3, "sensor": 0.3, "robot":0.4, "embedded":0.4, "electrical":0.15,
+                "lidar": 0.5, "radar": 0.5, "vision":0.3, "sensor": 0.3, "robot":0.4, "embedded":0.4, "electrical":0.25,
                 #details
                 "conference":0.7, "home office":0.15, "open source":0.2,
                 #languages
                 "hungarian":1.3, "hungary":0.5,
                 #other
                 "aithyra":1.8, "deepmind":0.6,
+
+                ####Negative rankings
+                #type of work
+                "consultant":-0.7, "consulting":-0.7, "audit":-1, "risk":-0.5, "control":-1, "holding":-1,
+                "purchasing":-1, "accounting": -1, "accountant": -1, "marketing": -1, "sales": -1, "thesis":-0.5,
+                #rank
+                "leiter":-1.5, "leader":-0.5, "lead": -1, "manager":-1, "management":-1, "owner":-1, "officer":-1,
+                "head":-0.7, "architect":-0.5, "student":-0.5, "support":-0.3,
+                #tech
+                "cyber":-0.5, "security":-0.5, "devops":-0.1, "java":-0.1, "test":-0.3,
+                "web":-0.3, "stack developer":-0.6, "linux":-0.5, "safety":-0.5, "quality":-0.3,
+                #work related keywords
+                "product": -0.5, "agile":-0.5, "requirement":-0.5, "scrum":-0.5,
+                "merger": -0.6, "acquisition": -0.6, "real estate": -1, "assurance": -0.5,
+                #other
+                "technik":-1, "dissertation": -1, #"phd": -0.5,
                 },
-    "ranking_pos_capital":{"ETL":1, "ELT":1, "AI":0.5, "ML":0.6, "API":0.3, "REST":0.15, "CI/CD":0.2, "CI CD":0.2, "AWS":0.2, "GIS": 0.1},
-    "ranking_neg":{
-                    #type of work
-                    "consultant":-0.7, "consulting":-0.7, "audit":-1, "risk":-0.5, "control":-1, "holding":-1,
-                    "purchasing":-1, "accounting": -1, "accountant": -1, "marketing": -1, "sales": -1, "thesis":-0.5,
-                    #rank
-                    "leiter":-1.5, "leader":-0.5, "lead": -1, "manager":-1, "management":-1, "owner":-1, "officer":-1,
-                    "head":-0.7, "architect":-0.5, "student":-0.5, "support":-0.3,
-                    #tech
-                    "cyber":-0.5, "security":-0.5, "devops":-0.1, "java":-0.1, "test":-0.3,
-                    "web":-0.3, "stack developer":-0.6, "linux":-0.5, "safety":-0.5, "quality":-0.3,
-                    #work related keywords
-                    "product": -0.5, "agile":-0.5, "requirement":-0.5, "scrum":-0.5,
-                    "merger": -0.6, "acquisition": -0.6, "real estate": -1, "assurance": -0.5,
-                    #other
-                    "technik":-1, "dissertation": -1, #"phd": -0.5,
-                    },
-    "ranking_neg_capital":{"SAP":-1, "HR":-1, "SAS":-0.5,},
-    "neutral":[#dataviz
+    "ranking_case_sensitive":{"ETL":1, "ELT":1, "AI":0.5, "ML":0.6, "API":0.3, "REST":0.15,
+                           "CI/CD":0.2, "CI CD":0.2, "AWS":0.2, "GIS": 0.1,
+                           #Negative rankings
+                           "SAP":-0.7, "HR":-0.7, "SAS":-0.5,
+                           },
+    "neutral":[#dataviz, reporting
         "visualization", "tableau", "power bi", "dashboard", "d3", "matplotlib", "seaborn", "shiny",
         #data
         "daten", "llm", "quantitative", "quantitative", "big data", "data warehous",#e/ing
@@ -143,14 +146,12 @@ def get_all_keywords(keywords = BASE_KEYWORDS, rankings = BASE_RANKINGS):
         (keywords.get("titlewords", []) +
          keywords.get("banned_words", []) +
          keywords.get("banned_capital_words", []) +
-         list(rankings.get("ranking_pos", {}).keys()) +
-         list(rankings.get("ranking_neg", {}).keys()) +
+         list(rankings.get("ranking_lowercase", {}).keys()) +
          rankings.get("neutral", []))
     ))
 
     all_keywords_capital = list(set(
-        list(rankings.get("ranking_pos_capital", {}).keys()) +
-        list(rankings.get("ranking_neg_capital", {}).keys())
+        list(rankings.get("ranking_case_sensitive", {}).keys())
     ))
 
     return all_keywords_noncapital, all_keywords_capital
@@ -192,6 +193,7 @@ class BaseScraper:
         #TODO same with rankings
         self.rankings = rankings
         self.BASE_RANKINGS = rankings
+        #self.signed_rankings = rankings.get("ranking_case_sensitive", {}).copy().update(rankings.get("ranking_lowercase", {}))
         
         self.all_keywords_noncapital, self.all_keywords_capital = get_all_keywords(keywords=keywords, rankings=rankings)
 
@@ -561,22 +563,12 @@ class BaseScraper:
             description = posting["description"] if "description" in posting.keys() else ""
             salary = posting["salary_monthly_guessed"]
             points = 0
-            for keyword, value in keyword_points["ranking_pos"].items():
+            for keyword, value in keyword_points["ranking_lowercase"].items():
                 if keyword in title.lower():
                     points += value
                 if keyword in description.lower():
                     points += value*desc_ratio
-            for keyword, value in keyword_points["ranking_pos_capital"].items():
-                if keyword in title:
-                    points += value
-                if keyword in description:
-                    points += value*desc_ratio
-            for keyword, value in keyword_points["ranking_neg"].items():
-                if keyword in title.lower():
-                    points += value
-                if keyword in description.lower():
-                    points += value*desc_ratio
-            for keyword, value in keyword_points["ranking_neg_capital"].items():
+            for keyword, value in keyword_points["ranking_case_sensitive"].items():
                 if keyword in title:
                     points += value
                 if keyword in description:
@@ -613,7 +605,7 @@ class BaseScraper:
 
         if sort:
             found = sorted(found,
-                key=lambda k: -abs(rankings.get("ranking_pos", {}).get(k, 0) or rankings.get("ranking_neg", {}).get(k, 0))
+                key=lambda k: -abs(rankings.get("ranking_lowercase", {}).get(k, 0))
             )
         return found
     
