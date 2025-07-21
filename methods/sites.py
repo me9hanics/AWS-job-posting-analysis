@@ -66,30 +66,33 @@ BASE_KEYWORDS["titlewords_dashed"] = [word.replace(" ", "-") for word in BASE_KE
 
 BASE_RANKINGS ={
     "ranking_lowercase":{
-                #graphs/networks
-                "graph":1.5, "network science":2, "graph theory":2, "graph data":1, "graph machine learning": 1,
-                "graph database":0.7, "geospatial":0.6, "spatial":0.4, "maps":0.3, "geometry":0.3, "geodata": 0.3,
+                #TODO organize them into categories (nested dict) - category to be used in figuring out the type of job e.g. research
                 #general terms
-                "machine learning":1, "intelligence":1, "math":1, "data":0.35, "combinatori":0.4,
-                "complexity science":2, "complexity":0.3, "statistic":0.25, "social network":0.3,
+                "math":1, "data":0.35, "combinatori":0.4, "statistic":0.25,
+                "complexity science":2, "complexity":0.3, "social network":0.3,
                 #titles
-                "engineer": 0.45, "developer": 0.4, "scientist": 1, "researcher": 0.5, "research": 0.4, "analyst": 0.1,
+                "engineer": 0.45, "developer": 0.4, "scientist": 1, "researcher": 0.7, "research": 0.6, "analyst": 0.1,
                 #rank
                 "senior": 0.15,
+                #graphs/networks/geo
+                "graph":1.4, "network science":2, "graph theory":2, "graph data":1.5, "graph machine learning": 1.1, "gnn":0.7,
+                "graph database":0.7, "geospatial":0.7, "spatial":0.4, "maps":0.4, "geometry":0.3, "geodata": 0.6,
                 #data science
                 "data science":1, "data engineering": 0.8, "data management":0.5, "full stack":0.4, "full-stack":0.4,
-                "data collection":0.6, "data analysis":0.3, "data mining":0.6, "analytics":0.2, "pipeline":0.1,
-                "data modeling": 0.4, "data modelling": 0.4, "design":0.15, "time series":0.6,
+                "pipeline":0.1, "data modeling": 0.4, "data modelling": 0.4, "design":0.15, 
+                #specialized data science
+                "data collection":0.6, "data mining":0.8, "data analysis":0.3, 
+                "analytics":0.6, "time series":0.7, "nlp": 0.5, "causal":0.4, "inference": 0.4,
                 #machine learning
-                "gnn":1.2, "neural network":0.3, "deep learning":0.3, "reinforcement learning":0.3,
+                "machine learning":0.9, "neural network":0.3, "deep learning":0.4, "reinforcement learning":0.3,
                 #other fields
                 "operations research":1, "optimization":1, "algorithms":1, "numerical":0.1, "modelling":0.5, "modeling":0.5,
                 #tech stack
                 "python":1, "sql":0.3, "c++":0.1, "algorithm":0.7, "web scraping":0.9, "postgres":0.2, "vector":0.1,
-                "knime":0.8, "nlp": 0.5, "neo4j":1, "mysql":0.2, "machine learning engineer":1, "docker":0.2,
-                "qlik":0.3,
+                "knime":0.8, "neo4j":1, "mysql":0.2, "machine learning engineer":1, "docker":0.2, "qlik":0.3,
                 #engineering
-                "lidar": 0.5, "radar": 0.5, "vision":0.3, "sensor": 0.3, "robot":0.4, "embedded":0.4, "electrical":0.25,
+                "lidar": 0.5, "radar": 0.5, "vision":0.2, "sensor": 0.3, "robot":0.4, "embedded":0.4, "electrical":0.25,
+                "microcontroller":0.3,
                 #details
                 "conference":0.7, "home office":0.15, "open source":0.2,
                 #languages
