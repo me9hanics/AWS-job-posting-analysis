@@ -39,13 +39,13 @@ BASE_RULES = {"website":"karriere.at",
 BASE_KEYWORDS = {
     "locations" : ["vienna"],
     "titlewords": ["machine learning", "machine learning engineer", "machine learning scientist",
-                   "ML scientist", "ML engineer", "ML researcher", "ML developer", "ML AI",
-                   "AI engineer", "AI scientist", "AI researcher", "AI developer", "AI ML",
+                   "ML engineer", "ML researcher", "ML developer", "AI ML",
+                   "AI engineer", "AI scientist", "AI researcher", "AI developer",
                    "data science", "data scientist", "data mining", "web scraping",
                    "data engineer", "data engineering", "data engineering developer", "Python engineer", "DataOps",
                    "data analysis", "data analytics", "data analyst",
                    "graph theory", "network science", "graph database",
-                   "complexity science", "statistician", #"network science", "mathematician", "combinatorics",
+                   "complexity science", "statistician", "scientist", #"network science", "mathematician", "combinatorics",
                    "business intelligence", "bi analyst", "business analyst", #"business intelligence analyst",
                   ],
     "banned_words": ["manager", "team leader", "teamleader", "teamleiter", "team leiter", "geschäft",
@@ -67,54 +67,56 @@ BASE_KEYWORDS["titlewords_dashed"] = [word.replace(" ", "-") for word in BASE_KE
 BASE_RANKINGS ={
     "ranking_lowercase":{
                 #TODO organize them into categories (nested dict) - category to be used in figuring out the type of job e.g. research
-                #general terms
-                "math":1, "data":0.35, "combinatori":0.4, "statistic":0.25,
-                "complexity science":2, "complexity":0.3, "social network":0.3,
+                #general and science terms
+                "math":1, "data":0.35, "combinatori":0.4, "statistic":0.25, "neural":0.1, "information":0.1, "algorithm":0.9,
+                "complexity science":3, "complexity":0.3, "social network":0.3, "scale":1.5, "physics":0.3, "probability":0.1,
+                "operations research":1, "optimization":1, "algorithms":1, "numerical":0.1, "modelling":0.5, "modeling":0.5,
                 #titles
                 "engineer": 0.45, "developer": 0.4, "scientist": 1, "researcher": 0.7, "research": 0.6, "analyst": 0.1,
                 #rank
                 "senior": 0.15,
-                #graphs/networks/geo
-                "graph":1.4, "network science":2, "graph theory":2, "graph data":1.5, "graph machine learning": 1.1, "gnn":0.7,
-                "graph database":0.7, "geospatial":0.7, "spatial":0.4, "maps":0.4, "geometry":0.3, "geodata": 0.6,
+                #graphs/networks/geo (extra points as most terms are part of the description, never in title)
+                "graph":2, "network science":3, "graph theory":2.6, "graph data":2.5, "graph machine learning": 2.2, "gnn":0.7,
+                "graph database":1.7, "geospatial":1.4, "spatial":0.7, "maps":0.4, "geometry":0.4, "geodata": 0.8,
                 #data science
-                "data science":1, "data engineering": 0.8, "data management":0.5, "full stack":0.4, "full-stack":0.4,
-                "pipeline":0.1, "data modeling": 0.4, "data modelling": 0.4, "design":0.15, 
+                "data science":1.2, "data scientist":1.3, "data management":0.5, "full stack":0.4, "full-stack":0.4,
+                "data engineering": 0.7, "data engineer": 0.5, "big data":0.3, "data warehous":0.2,#e/ing
+                "pipeline":0.1, "data modeling": 0.4, "data modelling": 0.4, "design":0.15,
                 #specialized data science
-                "data collection":0.6, "data mining":0.8, "data analysis":0.3, 
-                "analytics":0.6, "time series":0.7, "nlp": 0.5, "causal":0.4, "inference": 0.4,
+                "data collection":0.7, "data mining":0.8, "data analysis":0.3, "forecasting":0.5, "predictive":0.5,
+                "analytics":0.8, "time series":1.1, "nlp": 0.5, "causal":0.6, "inference": 0.7, "estimation":0.4,
                 #machine learning
-                "machine learning":0.9, "neural network":0.3, "deep learning":0.4, "reinforcement learning":0.3,
-                #other fields
-                "operations research":1, "optimization":1, "algorithms":1, "numerical":0.1, "modelling":0.5, "modeling":0.5,
+                "machine learning":0.9, "neural network":0.4, "deep learning":0.3, "reinforcement learning":0.4,
+                "image processing":0.2, "pattern recognition":0.3, "computer vision":0.1, "machine learning engineer":1,
                 #tech stack
-                "python":1, "sql":0.3, "c++":0.1, "algorithm":0.7, "web scraping":0.9, "postgres":0.2, "vector":0.1,
-                "knime":0.8, "neo4j":1, "mysql":0.2, "machine learning engineer":1, "docker":0.2, "qlik":0.3,
+                "python":1, "sql":0.3, "c++":0.1, "web scraping":0.9, "postgres":0.2, "vector":0.1,
+                "knime":0.8, "neo4j":1, "mysql":0.2, "docker":0.2, "qlik":0.3,
                 #engineering
-                "lidar": 0.5, "radar": 0.5, "vision":0.2, "sensor": 0.3, "robot":0.4, "embedded":0.4, "electrical":0.25,
-                "microcontroller":0.3,
+                "lidar": 0.7, "radar": 0.7, "vision":0.2, "sensor": 0.6, "robot":0.4, "embedded":0.5, "electrical":0.25,
+                "electric":0.2, "electro":0.3, "microcontroller":0.3, "hardware":0.15,"digital":0.1, "compression":0.1, 
+                "spectral":0.15, "media":0.1, "signal":0.35, "audio":0.2, "video":0.2, "wireless":0.15, "telecom":0.1,
+                "circuit":0.25, "energy":0.2, "power":0.1, "semiconductor":0.15, "fpga":0.1, "verilog":0.1, "smart":0.2,
                 #details
-                "conference":0.7, "home office":0.15, "open source":0.2,
+                "conference":0.9, "home office":0.15, "open source":0.45,
                 #languages
-                "hungarian":1.3, "hungary":0.5,
+                "hungarian":1.9, "hungary":0.7,
                 #other
                 "aithyra":1.8, "deepmind":0.6,
 
                 ####Negative rankings
                 #type of work
-                "consultant":-0.7, "consulting":-0.7, "audit":-1, "risk":-0.5, "control":-1, "holding":-1,
+                "consultant":-0.7, "consulting":-0.7, "audit":-1, "risk":-0.4, "control":-1, "holding":-1,
                 "purchasing":-1, "accounting": -1, "accountant": -1, "marketing": -1, "sales": -1, "thesis":-0.5,
+                "technik":-1, "dissertation": -0.5, #"phd": -0.3,
                 #rank
-                "leiter":-1.5, "leader":-0.5, "lead": -1, "manager":-1, "management":-1, "owner":-1, "officer":-1,
+                "leiter":-1.5, "leader":-0.5, "lead": -0.7, "manager":-1, "management":-0.7, "owner":-1, "officer":-0.8,
                 "head":-0.7, "architect":-0.5, "student":-0.5, "support":-0.3,
                 #tech
-                "cyber":-0.5, "security":-0.5, "devops":-0.1, "java":-0.1, "test":-0.3,
-                "web":-0.3, "stack developer":-0.6, "linux":-0.5, "safety":-0.5, "quality":-0.3,
+                "cyber":-0.2, "security":-0.5, "devops":-0.1, "java":-0.1, "test":-0.3,
+                "web":-0.2, "stack developer":-0.6, "linux":-0.4, "safety":-0.5, "quality":-0.2,
                 #work related keywords
-                "product": -0.5, "agile":-0.5, "requirement":-0.5, "scrum":-0.5,
-                "merger": -0.6, "acquisition": -0.6, "real estate": -1, "assurance": -0.5,
-                #other
-                "technik":-1, "dissertation": -1, #"phd": -0.5,
+                "product": -0.5, "agile":-0.5, "requirement":-0.3,
+                "merger": -0.6, "acquisition": -0.6, "real estate": -1, "assurance": -0.3,
                 },
     "ranking_case_sensitive":{"ETL":1, "ELT":1, "AI":0.5, "ML":0.6, "API":0.3, "REST":0.15,
                            "CI/CD":0.2, "CI CD":0.2, "AWS":0.2, "GIS": 0.1,
@@ -124,7 +126,7 @@ BASE_RANKINGS ={
     "neutral":[#dataviz, reporting
         "visualization", "tableau", "power bi", "dashboard", "d3", "matplotlib", "seaborn", "shiny",
         #data
-        "daten", "llm", "quantitative", "quantitative", "big data", "data warehous",#e/ing
+        "daten", "llm", "quantitative", "quantitative",
         #data software
         "cloudpak", "django", "scala", "spark", "hadoop", "kafka", "airflow", "apache",
         #web
@@ -136,7 +138,7 @@ BASE_RANKINGS ={
         "excel", "powerpoint", 
         #other
         "b2c", "b2b", "lean", "kanban", "data-driven", "data driven", "kpi", "customer service", "communication",
-        "stakeholder", "marketing", "sales", "banking", "finance", "insurance", "health",
+        "stakeholder", "marketing", "sales", "banking", "finance", "insurance", "health", "scrum",
     ]
 }
 
