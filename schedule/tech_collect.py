@@ -9,6 +9,8 @@ except:
     from .datacollect import get_postings
 from methods.sites import SALARY_BEARABLE, BASE_KEYWORDS, BASE_RANKINGS
 
+MAIN_DESCRIPTION_KEYWORDS = ["graph data", "sensor", "time series", "graph", "operations research", "science", "analytics"]
+
 def get_tech_postings(keywords=BASE_KEYWORDS, rankings=BASE_RANKINGS, salary_bearable=SALARY_BEARABLE,
                       prefix ="postings", path="C:/GitHubRepo/AWS-job-posting-analysis/source/save/postings/tech/",
                       path_excel="C:/GitHubRepo/AWS-job-posting-analysis/source/save/excels/excel_tech/",
@@ -51,6 +53,9 @@ def main():
     print(f"Found {len(results)} postings in total")
     added = [instance["title"] + " - at - " + instance["company"] for key, instance in data["added"].items() if "title" in instance]
     removed = [instance["title"] + " - at - " + instance["company"] for key, instance in data["removed"].items() if "title" in instance]
+    keyword_counts = {keyword: sum(keyword in instance["keywords"]
+                                   for instance in results.values()) for keyword in MAIN_DESCRIPTION_KEYWORDS}
+    print(f"\nKeyword counts in descriptions:\n{keyword_counts}")
     print(f"\nAdded postings:\n")
     for title in added:
         print(title)
