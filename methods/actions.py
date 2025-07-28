@@ -64,7 +64,20 @@ def load_file_if_str(file, type_ = "dict"):
                 file = f.read().splitlines()
     return file
 
-def load_list_items(files=None, folder_path = "source/save/postings/", type_ = "dict"):
+def explore_nested_folder(folder_path = "source/save/postings/"):
+    if folder_path[-1] != "/":
+        folder_path += "/"
+    files = []
+    for root, _, filenames in os.walk(folder_path):
+        if not root.endswith("/"):
+            root += "/"
+        for filename in filenames:
+            if filename.endswith(".json"):
+                files.append(root + filename)
+    return files
+
+def load_list_items(files=None, folder_path = "source/save/postings/",
+                    type_ = "dict", nested = False):
     """
     Load a list of files, optionally from a directory path.
     
@@ -78,12 +91,17 @@ def load_list_items(files=None, folder_path = "source/save/postings/", type_ = "
     """
     if folder_path[-1] != "/":
         folder_path += "/"
-    if not isinstance(files, list): #e.g. string
-        files = [f for f in os.listdir(folder_path) if f.endswith(".json")]
+    if isinstance(files, str):
+        files = [files]
+    if not isinstance(files, list):
+        if nested:
+            files = explore_nested_folder(folder_path)
+        else:
+            files = [folder_path + f for f in os.listdir(folder_path) if f.endswith(".json")]
     contents = []
     for i, file in enumerate(files):
         if isinstance(file, str):
-            contents.append(load_file_if_str(f"{folder_path}{file}", type_))
+            contents.append(load_file_if_str(file, type_))
     return contents
 
 def get_filename_from_dir(path = "source/save/postings/", prefix = "postings", ascending = True,
