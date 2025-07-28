@@ -155,7 +155,8 @@ def get_nested_dict_keys(dictionary, appear = "any", return_type=list):
         
     return return_type(keys)
 
-def compare_lists(new, previous, print_out="complete_lists", printed_text_max_length = None):
+def compare_lists(new, previous, print_out="complete_lists", printed_text_max_length = None,
+                  points_threshold = 0.1):
     """
     Compare two lists and return the differences.
     (If any of the lists are given as a string, it is interpreted as a file path,
@@ -175,9 +176,9 @@ def compare_lists(new, previous, print_out="complete_lists", printed_text_max_le
     previous = load_file_if_str(previous, "dict")
     added_keys = list(set(new) - set(previous))
     removed_keys = list(set(previous) - set(new))
-    added = {key: new[key] for key in added_keys}
+    added = {key: new[key] for key in added_keys if (points_threshold is None) or (new[key].get("points", 0) >= points_threshold)}
+    removed = {key: previous[key] for key in removed_keys if (points_threshold is None) or (previous[key].get("points", 0) >= points_threshold)}
     added = sort_dict_by_key(added, key="points", descending = True) if added else {}
-    removed = {key: previous[key] for key in removed_keys}
     removed = sort_dict_by_key(removed, key="points", descending = True) if removed else {}
 
     if print_out=="complete_lists":
@@ -203,18 +204,19 @@ def compare_lists(new, previous, print_out="complete_lists", printed_text_max_le
                          else v for k,v in value.items()} for key, value in removed.items()}
 
     if type(print_out) == list:
-        print("New items: ")
+        print("New items above points threshold: ")
         for posting_key in print_added:
             text = ",\n\t".join([str(u)+": "+str(v) for u,v in (print_added[posting_key].items()) if u in print_out])     
             print(f"\n{posting_key}: \n\t{text}")
-        print("\n\n\nRemoved items: ")
+        print("\n\n\nRemoved items above points threshold: ")
         for posting_key in print_removed:
             text = ",\n\t".join([str(u)+": "+str(v) for u,v in (print_removed[posting_key].items()) if u in print_out])
             print(f"\n{posting_key}: \n\t{text}")
 
     return added, removed
 
-def compare_postings(new, previous, print_attrs=["title", "company", "points"], printed_text_max_length = 100):
+def compare_postings(new, previous, print_attrs=["title", "company", "points"], printed_text_max_length = 100,
+                     points_threshold = 0.01):
     """
     Compare two lists of postings and return the differences.
     If new or previous is a string, the list is read from a file.
@@ -230,9 +232,9 @@ def compare_postings(new, previous, print_attrs=["title", "company", "points"], 
     """
 
     print_out = print_attrs if print_attrs else "none"
-    return compare_lists(new, previous, print_out, printed_text_max_length)
+    return compare_lists(new, previous, print_out, printed_text_max_length, points_threshold)
 
-def combine_postings(postings=None, folder_path="source/save/postings/asd/", extend = False):
+def combine_postings(postings=None, folder_path="source/save/postings/tech/", extend = False):
     """
     Combine multiple lists of postings into one list.
     If postings is a string, the list is read from a file.
@@ -258,5 +260,7 @@ def combine_postings(postings=None, folder_path="source/save/postings/asd/", ext
                 all_postings[key].extend(value)
     return all_postings
 
-def reorder_dict(d, keys_order):
-    return {k: d[k] for k in keys_order if k in d}
+def reorder_dict(d, keys_order, nested=False):
+    return {k: d[k] for k in keys_order if k in d} if not nested else {
+        k: reorder_dict(d[k], keys_order, nested=False) for k in d.keys()
+    }
