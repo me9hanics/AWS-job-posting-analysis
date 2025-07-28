@@ -9,7 +9,8 @@ except:
     from .datacollect import get_postings
 from methods.sites import SALARY_BEARABLE, BASE_KEYWORDS, BASE_RANKINGS
 
-MAIN_DESCRIPTION_KEYWORDS = ["graph data", "sensor", "time series", "graph", "operations research", "science", "analytics"]
+MAIN_DESCRIPTION_KEYWORDS = ["graph data", "sensor", "time series", "graph", "operations research",
+                             "science", "analytics", "spatial", "geospatial", "geographical"]
 
 def get_tech_postings(keywords=BASE_KEYWORDS, rankings=BASE_RANKINGS, salary_bearable=SALARY_BEARABLE,
                       prefix ="postings", path="C:/GitHubRepo/AWS-job-posting-analysis/source/save/postings/tech/",
@@ -62,7 +63,7 @@ def main():
     #print(f"\nRemoved postings:\n")
     #for title in removed:
     #    print(title)
-    companies = data["companies"]
+    return data
 
 if __name__ == "__main__":
     main()
