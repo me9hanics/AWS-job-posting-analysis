@@ -55,7 +55,7 @@ def main():
     keyword_counts = {keyword: sum(keyword in instance["keywords"]
                                    for instance in results.values()) for keyword in MAIN_DESCRIPTION_KEYWORDS}
     print(f"\nKeyword counts in descriptions:\n{keyword_counts}")
-    print(f"\nAdded postings:\n")
+    print(f"\nAdded above threshold postings:\n")
     for title in added:
         print(title)
     #print(f"\nRemoved postings:\n")

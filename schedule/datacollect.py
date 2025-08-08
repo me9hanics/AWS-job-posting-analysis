@@ -13,6 +13,7 @@ schedule_path = os.path.dirname(os.path.abspath(__file__))
 parent_path = os.path.join(schedule_path, "..")
 sys.path.append(parent_path)
 from methods import actions, sites
+from methods.macros import *
 
 KEYWORDS = sites.BASE_KEYWORDS.copy()
 RANKINGS = sites.BASE_RANKINGS.copy()
@@ -24,8 +25,8 @@ COLUMN_WIDTHS = {"A": 38, "B": 24, "C": 6.56, "D": 14.33, "E": 50.44,
 def reduce_url(url):
     return url.split("www.")[1] if "www." in url else url.split("://")[1] if "://" in url else url
 
-def get_postings(keywords =KEYWORDS, rankings=RANKINGS, salary_bearable=SALARY_BEARABLE, prefix ="postings", path="RELATIVE_POSTINGS_PATH/", 
-                 path_excel="RELATIVE_EXCELS_PATH/", verbose=False, verbose_data_gathering=False, **kwargs):
+def get_postings(keywords =KEYWORDS, rankings=RANKINGS, salary_bearable=SALARY_BEARABLE, prefix ="postings", path=f"{RELATIVE_POSTINGS_PATH}/", 
+                 path_excel=f"{RELATIVE_EXCELS_PATH}/", verbose=False, verbose_data_gathering=False, **kwargs):
     keywords['titlewords'] = list(set(keywords['titlewords']))
     karriere_at = sites.KarriereATScraper(keywords=keywords, rankings=rankings, salary_bearable=salary_bearable,
                                           extra_keywords=kwargs.get("karriereat_extra_keywords", kwargs.get("extra_keywords", {})),

@@ -184,7 +184,7 @@ comprehend = boto3.client(service_name="comprehend", region_name="eu-west-1")
 # %%
 # Load job descriptions
 
-with open("RELATIVE_POSTINGS_PATH_2024-12-17.json", "r") as f:
+with open(f"{RELATIVE_POSTINGS_PATH}_2024-12-17.json", "r") as f:
     postings = json.load(f)
 
 # 462 job postings

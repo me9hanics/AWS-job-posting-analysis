@@ -19,7 +19,7 @@ def __main__():
         postings.update(results)
     
     date_today = time.strftime("%Y-%m-%d")
-    with open(f"RELATIVE_POSTINGS_PATH_{date_today}.json", "w") as f:
+    with open(f"{RELATIVE_POSTINGS_PATH}_{date_today}.json", "w") as f:
         json.dump(postings, f)
 
 
