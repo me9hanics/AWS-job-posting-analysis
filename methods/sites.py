@@ -8,9 +8,11 @@ from copy import deepcopy
 try:
     from methods import scrape
     from methods import urls
+    from methods.macros import *
 except ModuleNotFoundError:
     import scrape
     import urls
+    from macros import *
 
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
@@ -50,9 +52,9 @@ BASE_KEYWORDS = {
                   ],
     "banned_words": ["manager", "team leader", "teamleader", "teamleiter", "team leiter", "geschäft",
                     "jurist", "lawyer", "rechsanwalt", "legal", "audit", "advisor", "owner", "officer", "controller",
-                    "head of", "director", "leitung", "secretary", "professur", #"professor", 
+                    "head of", "director", "leitung", "secretary", "recruit", "professur", #"professor", 
                     "ärtzin",
-                    "microsoft", "m365", "azure", "cyber security",
+                    "m365", "azure", "cyber security", #"microsoft"
                     "praktikum", "praktikant", #"internship", "intern", "trainee",
                     ],
     "banned_capital_words": ["SAP", "HR"],
@@ -511,7 +513,7 @@ class BaseScraper:
                                            "salary_versions": salary_versions, "text": _text}
         return postings
 
-    def save_data(self, data, path = "data/save/postings/", name="", with_date = True, verbose = False):
+    def save_data(self, data, path = f"{RELATIVE_POSTINGS_PATH}/", name="", with_date = True, verbose = False):
         #check if path exists
         if not os.path.exists(path):
             os.makedirs(path)
@@ -569,17 +571,19 @@ class BaseScraper:
             description = posting["description"] if "description" in posting.keys() else ""
             salary = posting["salary_monthly_guessed"]
             points = 0
+            title_max_point = 0
             for keyword, value in keyword_points["ranking_lowercase"].items():
                 if keyword in title.lower():
-                    points += value
+                    title_max_point = max(title_max_point, value)
                 if keyword in description.lower():
                     points += value*desc_ratio
             for keyword, value in keyword_points["ranking_case_sensitive"].items():
                 if keyword in title:
-                    points += value
+                    title_max_point = max(title_max_point, value)
                 if keyword in description:
                     points += value*desc_ratio
-            
+            points += title_max_point
+
             if salary:
                 points += self.salary_points(salary, salary_bearable=salary_bearable, salary_ratio=salary_ratio,
                                              high_dropoff=True, dropoff_bearable_ratio=dropoff_bearable_ratio)
