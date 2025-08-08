@@ -19,7 +19,7 @@ def __main__():
         postings.update(results)
     
     date_today = time.strftime("%Y-%m-%d")
-    with open(f"source/save/postings_{date_today}.json", "w") as f:
+    with open(f"data/save/postings_{date_today}.json", "w") as f:
         json.dump(postings, f)
 
 

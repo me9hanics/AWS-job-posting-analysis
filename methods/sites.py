@@ -70,7 +70,7 @@ BASE_RANKINGS ={
                 #general and science terms
                 "math":1, "data":0.35, "combinatori":0.4, "statistic":0.25, "neural":0.1, "information":0.1, "algorithm":0.9,
                 "complexity science":3, "complexity":0.3, "social network":0.3, "scale":1.5, "physics":0.3, "probability":0.1,
-                "operations research":1, "optimization":1, "algorithms":1, "numerical":0.1, "modelling":0.5, "modeling":0.5,
+                "operations research":1.5, "optimization":1, "algorithms":1, "numerical":0.1, "modelling":0.5, "modeling":0.5,
                 #titles
                 "engineer": 0.45, "developer": 0.4, "scientist": 1, "researcher": 0.7, "research": 0.6, "analyst": 0.1,
                 #rank
@@ -89,10 +89,10 @@ BASE_RANKINGS ={
                 "machine learning":0.9, "neural network":0.4, "deep learning":0.3, "reinforcement learning":0.4,
                 "image processing":0.2, "pattern recognition":0.3, "computer vision":0.1, "machine learning engineer":1,
                 #tech stack
-                "python":1, "sql":0.3, "c++":0.1, "web scraping":0.9, "postgres":0.2, "vector":0.1,
+                "python":1, "sql":0.3, "c++":0.1, "web scraping":1.2, "postgres":0.2, "vector":0.1,
                 "knime":0.8, "neo4j":1, "mysql":0.2, "docker":0.2, "qlik":0.3,
                 #engineering
-                "lidar": 0.7, "radar": 0.7, "vision":0.2, "sensor": 0.6, "robot":0.4, "embedded":0.5, "electrical":0.25,
+                "lidar": 0.7, "radar": 0.7, "vision":0.2, "sensor": 0.6, "robot":0.6, "embedded":0.5, "electrical":0.25,
                 "electric":0.2, "electro":0.3, "microcontroller":0.3, "hardware":0.15,"digital":0.1, "compression":0.1, 
                 "spectral":0.15, "media":0.1, "signal":0.35, "audio":0.2, "video":0.2, "wireless":0.15, "telecom":0.1,
                 "circuit":0.25, "energy":0.2, "power":0.1, "semiconductor":0.15, "fpga":0.1, "verilog":0.1, "smart":0.2,
@@ -107,7 +107,7 @@ BASE_RANKINGS ={
                 #type of work
                 "consultant":-0.7, "consulting":-0.7, "audit":-1, "risk":-0.4, "control":-1, "holding":-1,
                 "purchasing":-1, "accounting": -1, "accountant": -1, "marketing": -1, "sales": -1, "thesis":-0.5,
-                "technik":-1, "dissertation": -0.5, #"phd": -0.3,
+                "technik":-0.6, "dissertation": -0.5, #"phd": -0.3,
                 #rank
                 "leiter":-1.5, "leader":-0.5, "lead": -0.7, "manager":-1, "management":-0.7, "owner":-1, "officer":-0.8,
                 "head":-0.7, "architect":-0.5, "student":-0.5, "support":-0.3,
@@ -118,7 +118,7 @@ BASE_RANKINGS ={
                 "product": -0.5, "agile":-0.5, "requirement":-0.3,
                 "merger": -0.6, "acquisition": -0.6, "real estate": -1, "assurance": -0.3,
                 },
-    "ranking_case_sensitive":{"ETL":1, "ELT":1, "AI":0.5, "ML":0.6, "API":0.3, "REST":0.15,
+    "ranking_case_sensitive":{"ETL":1, "ELT":1, "AI":0.5, "ML":0.7, "API":0.4, "REST":0.15,
                            "CI/CD":0.2, "CI CD":0.2, "AWS":0.2, "GIS": 0.1,
                            #Negative rankings
                            "SAP":-0.7, "HR":-0.7, "SAS":-0.5,
@@ -511,7 +511,7 @@ class BaseScraper:
                                            "salary_versions": salary_versions, "text": _text}
         return postings
 
-    def save_data(self, data, path = "source/save/postings/", name="", with_date = True, verbose = False):
+    def save_data(self, data, path = "data/save/postings/", name="", with_date = True, verbose = False):
         #check if path exists
         if not os.path.exists(path):
             os.makedirs(path)
@@ -552,7 +552,8 @@ class BaseScraper:
         return False
 
     def rank_postings(self, postings:dict, keyword_points=None, desc_ratio = 0.3,
-                      salary_bearable = None, salary_ratio = 0.15/100, 
+                      salary_bearable = None, salary_ratio = 0.15/100,
+                      dropoff_bearable_ratio = 1.4,
                       locations_desired=None, locations_secodary=None):
         if not salary_bearable:
             salary_bearable = getattr(self, "salary_bearable", SALARY_BEARABLE)
@@ -581,7 +582,7 @@ class BaseScraper:
             
             if salary:
                 points += self.salary_points(salary, salary_bearable=salary_bearable, salary_ratio=salary_ratio,
-                                             high_dropoff=True, dropoff_bearable_ratio=2.0)
+                                             high_dropoff=True, dropoff_bearable_ratio=dropoff_bearable_ratio)
             
             if posting.get("locations"):
                 if not self.check_locations(posting["locations"], locations_desired=locations_desired):

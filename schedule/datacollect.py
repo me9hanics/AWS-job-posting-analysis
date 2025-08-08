@@ -24,8 +24,8 @@ COLUMN_WIDTHS = {"A": 38, "B": 24, "C": 6.56, "D": 14.33, "E": 50.44,
 def reduce_url(url):
     return url.split("www.")[1] if "www." in url else url.split("://")[1] if "://" in url else url
 
-def get_postings(keywords =KEYWORDS, rankings=RANKINGS, salary_bearable=SALARY_BEARABLE, prefix ="postings", path="source/save/postings/", 
-                 path_excel="source/save/excels/", verbose=False, verbose_data_gathering=False, **kwargs):
+def get_postings(keywords =KEYWORDS, rankings=RANKINGS, salary_bearable=SALARY_BEARABLE, prefix ="postings", path="data/save/postings/", 
+                 path_excel="data/save/excels/", verbose=False, verbose_data_gathering=False, **kwargs):
     keywords['titlewords'] = list(set(keywords['titlewords']))
     karriere_at = sites.KarriereATScraper(keywords=keywords, rankings=rankings, salary_bearable=salary_bearable,
                                           extra_keywords=kwargs.get("karriereat_extra_keywords", kwargs.get("extra_keywords", {})),

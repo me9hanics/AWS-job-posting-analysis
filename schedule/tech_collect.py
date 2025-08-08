@@ -8,13 +8,11 @@ try:
 except:
     from .datacollect import get_postings
 from methods.sites import SALARY_BEARABLE, BASE_KEYWORDS, BASE_RANKINGS
-
-MAIN_DESCRIPTION_KEYWORDS = ["graph data", "sensor", "time series", "graph", "operations research",
-                             "science", "analytics", "spatial", "geospatial", "geographical"]
+from methods.macros import *
 
 def get_tech_postings(keywords=BASE_KEYWORDS, rankings=BASE_RANKINGS, salary_bearable=SALARY_BEARABLE,
-                      prefix ="postings", path="C:/GitHubRepo/AWS-job-posting-analysis/source/save/postings/tech/",
-                      path_excel="C:/GitHubRepo/AWS-job-posting-analysis/source/save/excels/excel_tech/",
+                      prefix ="postings", path=f"{POSTINGS_PATH}/tech/",
+                      path_excel=f"{EXCELS_PATH}/excel_tech/",
                       **kwargs):
     """
     Collect legal job postings from various websites.

@@ -163,5 +163,5 @@ cython_debug/
 
 # Own files
 *test*
-source/*
+data/*
 config.txt

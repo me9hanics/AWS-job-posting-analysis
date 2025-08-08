@@ -16,7 +16,7 @@ def save_list(list_, filename):
     with open(filename, 'w', encoding="utf-8") as f:
         json.dump(list_, f, indent=4, ensure_ascii=False)
 
-def save_data(data, path = "source/save/postings/", name="", with_date = True, verbose = False):
+def save_data(data, path = "data/save/postings/", name="", with_date = True, verbose = False):
     """
     Save data to a JSON file, optionally with a date in the name.
     
@@ -64,7 +64,7 @@ def load_file_if_str(file, type_ = "dict"):
                 file = f.read().splitlines()
     return file
 
-def explore_nested_folder(folder_path = "source/save/postings/"):
+def explore_nested_folder(folder_path = "data/save/postings/"):
     if folder_path[-1] != "/":
         folder_path += "/"
     files = []
@@ -76,7 +76,7 @@ def explore_nested_folder(folder_path = "source/save/postings/"):
                 files.append(root + filename)
     return files
 
-def load_list_items(files=None, folder_path = "source/save/postings/",
+def load_list_items(files=None, folder_path = "data/save/postings/",
                     type_ = "dict", nested = False):
     """
     Load a list of files, optionally from a directory path.
@@ -104,7 +104,7 @@ def load_list_items(files=None, folder_path = "source/save/postings/",
             contents.append(load_file_if_str(file, type_))
     return contents
 
-def get_filename_from_dir(path = "source/save/postings/", prefix = "postings", ascending = True,
+def get_filename_from_dir(path = "data/save/postings/", prefix = "postings", ascending = True,
                        ending = ".json", index = 0):
     """
     Load the last file in a directory, optionally with a prefix.
@@ -234,7 +234,7 @@ def compare_postings(new, previous, print_attrs=["title", "company", "points"], 
     print_out = print_attrs if print_attrs else "none"
     return compare_lists(new, previous, print_out, printed_text_max_length, points_threshold)
 
-def combine_postings(postings=None, folder_path="source/save/postings/tech/", extend = False):
+def combine_postings(postings=None, folder_path="data/save/postings/tech/", extend = False):
     """
     Combine multiple lists of postings into one list.
     If postings is a string, the list is read from a file.
