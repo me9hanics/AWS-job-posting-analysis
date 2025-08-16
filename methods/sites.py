@@ -70,25 +70,26 @@ BASE_RANKINGS ={
     "ranking_lowercase":{
                 #TODO organize them into categories (nested dict) - category to be used in figuring out the type of job e.g. research
                 #general and science terms
-                "math":1, "data":0.35, "combinatori":0.4, "statistic":0.25, "neural":0.1, "information":0.1, "algorithm":0.9,
-                "complexity science":3, "complexity":0.3, "social network":0.3, "scale":1.5, "physics":0.3, "probability":0.1,
-                "operations research":1.5, "optimization":1, "algorithms":1, "numerical":0.1, "modelling":0.5, "modeling":0.5,
+                "math":1, "data":0.35, "combinatori":0.8, "statistic":0.25, "neural":0.1, "information":0.1, "algorithm":1.2,
+                "complexity science":3, "complexity":0.3, "social network":0.3, "scale":0.2, "physics":0.4, "probability":0.2,
+                "operations research":1.5, "optimization":1, "numerical":0.1, "modelling":0.5, "modeling":0.5,
                 #titles
-                "engineer": 0.45, "developer": 0.4, "scientist": 1, "researcher": 0.7, "research": 0.6, "analyst": 0.1,
+                "engineer": 0.45, "developer": 0.4, "scientist": 1, "researcher": 0.9, "research": 0.7, "analyst": 0.1,
                 #rank
-                "senior": 0.15,
+                "senior": 0.1,
                 #graphs/networks/geo (extra points as most terms are part of the description, never in title)
-                "graph":2, "network science":3, "graph theory":2.6, "graph data":2.5, "graph machine learning": 2.2, "gnn":0.7,
-                "graph database":1.7, "geospatial":1.4, "spatial":0.7, "maps":0.4, "geometry":0.4, "geodata": 0.8,
+                "graph":2, "network science":3, "graph theory":2.6, "graph data":2.5, "graph database":1.6,
+                "graph machine learning": 1.8, "graph deep learning": 1.8, "gnn":0.8,
+                "geospatial":1.4, "spatial":0.7, "maps":0.4, "geometry":0.4, "geodata": 0.8,
                 #data science
                 "data science":1.2, "data scientist":1.3, "data management":0.5, "full stack":0.4, "full-stack":0.4,
                 "data engineering": 0.7, "data engineer": 0.5, "big data":0.3, "data warehous":0.2,#e/ing
                 "pipeline":0.1, "data modeling": 0.4, "data modelling": 0.4, "design":0.15,
                 #specialized data science
-                "data collection":0.7, "data mining":0.8, "data analysis":0.3, "forecasting":0.5, "predictive":0.5,
-                "analytics":0.8, "time series":1.1, "nlp": 0.5, "causal":0.6, "inference": 0.7, "estimation":0.4,
+                "data collection":0.8, "data mining":1.1, "data analysis":0.3, "forecasting":0.6, "predictive":0.5,
+                "analytics":0.8, "time series":1.1, "nlp": 0.4, "causal":0.7, "inference": 0.7, "estimation":0.4,
                 #machine learning
-                "machine learning":0.9, "neural network":0.4, "deep learning":0.3, "reinforcement learning":0.4,
+                "machine learning":0.9, "neural network":0.6, "deep learning":0.5, "reinforcement learning":0.4,
                 "image processing":0.2, "pattern recognition":0.3, "computer vision":0.1, "machine learning engineer":1,
                 #tech stack
                 "python":1, "sql":0.3, "c++":0.1, "web scraping":1.2, "postgres":0.2, "vector":0.1,
@@ -107,9 +108,9 @@ BASE_RANKINGS ={
 
                 ####Negative rankings
                 #type of work
-                "consultant":-0.7, "consulting":-0.7, "audit":-1, "risk":-0.4, "control":-1, "holding":-1,
+                "consultant":-0.7, "consulting":-0.7, "audit":-1, "risk":-0.4, "control":-0.4, "holding":-1,
                 "purchasing":-1, "accounting": -1, "accountant": -1, "marketing": -1, "sales": -1, "thesis":-0.5,
-                "technik":-0.6, "dissertation": -0.5, #"phd": -0.3,
+                "technik":-0.5, "dissertation": -0.5, #"phd": -0.3,
                 #rank
                 "leiter":-1.5, "leader":-0.5, "lead": -0.7, "manager":-1, "management":-0.7, "owner":-1, "officer":-0.8,
                 "head":-0.7, "architect":-0.5, "student":-0.5, "support":-0.3,
@@ -119,6 +120,8 @@ BASE_RANKINGS ={
                 #work related keywords
                 "product": -0.5, "agile":-0.5, "requirement":-0.3,
                 "merger": -0.6, "acquisition": -0.6, "real estate": -1, "assurance": -0.3,
+                #other
+                "microsoft": -0.6,
                 },
     "ranking_case_sensitive":{"ETL":1, "ELT":1, "AI":0.5, "ML":0.7, "API":0.4, "REST":0.15,
                            "CI/CD":0.2, "CI CD":0.2, "AWS":0.2, "GIS": 0.1,
@@ -574,12 +577,12 @@ class BaseScraper:
             title_max_point = 0
             for keyword, value in keyword_points["ranking_lowercase"].items():
                 if keyword in title.lower():
-                    title_max_point = max(title_max_point, value)
+                    title_max_point = value if abs(value) > abs(title_max_point) else title_max_point
                 if keyword in description.lower():
                     points += value*desc_ratio
             for keyword, value in keyword_points["ranking_case_sensitive"].items():
                 if keyword in title:
-                    title_max_point = max(title_max_point, value)
+                    title_max_point = value if abs(value) > abs(title_max_point) else title_max_point
                 if keyword in description:
                     points += value*desc_ratio
             points += title_max_point
