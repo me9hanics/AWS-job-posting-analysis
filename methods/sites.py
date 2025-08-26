@@ -69,6 +69,7 @@ BASE_KEYWORDS["titlewords_dashed"] = [word.replace(" ", "-") for word in BASE_KE
 BASE_RANKINGS ={
     "ranking_lowercase":{
                 #TODO organize them into categories (nested dict) - category to be used in figuring out the type of job e.g. research
+                #TODO refactor and put into separate file - have e.g. translations/synonyms/etc. for each keyword in its own dict. Basically groups of connected keywords
                 #general and science terms
                 "math":1, "data":0.35, "combinatori":0.8, "statistic":0.25, "neural":0.1, "information":0.1, "algorithm":1.2,
                 "complexity science":3, "complexity":0.3, "social network":0.3, "scale":0.2, "physics":0.4, "probability":0.2,
@@ -104,19 +105,22 @@ BASE_RANKINGS ={
                 #languages
                 "hungarian":1.9, "hungary":0.7,
                 #other
-                "aithyra":1.8, "deepmind":0.6,
+                "aithyra":1.8, "deepmind":0.6, "bioinformatics":0.3, "biological":0.2, "health":0.2, "healthcare":0.2,
+                "chemistry":0.1,
 
                 ####Negative rankings
                 #type of work
                 "consultant":-0.7, "consulting":-0.7, "audit":-1, "risk":-0.4, "control":-0.4, "holding":-1,
                 "purchasing":-1, "accounting": -1, "accountant": -1, "marketing": -1, "sales": -1, "thesis":-0.5,
                 "technik":-0.5, "dissertation": -0.5, #"phd": -0.3,
+                #field
+                "financ":-0.3, "finanz":-0.3, "bank":-0.3, "banking":-0.1, "insurance":-0.5, "steuer":-0.7, 
                 #rank
-                "leiter":-1.5, "leader":-0.5, "lead": -0.7, "manager":-1, "management":-0.7, "owner":-1, "officer":-0.8,
-                "head":-0.7, "architect":-0.5, "student":-0.5, "support":-0.3,
+                "leiter":-1.5, "leader":-0.5, "lead": -0.5, "manager":-1, "management":-0.7, "owner":-1, "officer":-0.8,
+                "head":-0.7, "architect":-0.3, "student":-0.5, "support":-0.3,
                 #tech
-                "cyber":-0.2, "security":-0.5, "devops":-0.1, "java":-0.1, "test":-0.3,
-                "web":-0.2, "stack developer":-0.6, "linux":-0.4, "safety":-0.5, "quality":-0.2,
+                "cyber":-0.1, "security":-0.4, "devops":-0.1, "java":-0.2, "test":-0.3,
+                "stack developer":-0.6, "linux":-0.3, "safety":-0.4, "quality":-0.2,
                 #work related keywords
                 "product": -0.5, "agile":-0.5, "requirement":-0.3,
                 "merger": -0.6, "acquisition": -0.6, "real estate": -1, "assurance": -0.3,
@@ -126,7 +130,7 @@ BASE_RANKINGS ={
     "ranking_case_sensitive":{"ETL":1, "ELT":1, "AI":0.5, "ML":0.7, "API":0.4, "REST":0.15,
                            "CI/CD":0.2, "CI CD":0.2, "AWS":0.2, "GIS": 0.1,
                            #Negative rankings
-                           "SAP":-0.7, "HR":-0.7, "SAS":-0.5,
+                           "SAP":-0.7, "HR":-0.7, "SAS":-0.5, "SEO": -0.5,
                            },
     "neutral":[#dataviz, reporting
         "visualization", "tableau", "power bi", "dashboard", "d3", "matplotlib", "seaborn", "shiny",
@@ -142,8 +146,8 @@ BASE_RANKINGS ={
         "kubernetes", "jenkins", "terraform", "azure", "gcp", "github", "gitlab", "bitbucket",
         "excel", "powerpoint", 
         #other
-        "b2c", "b2b", "lean", "kanban", "data-driven", "data driven", "kpi", "customer service", "communication",
-        "stakeholder", "marketing", "sales", "banking", "finance", "insurance", "health", "scrum",
+        "b2c", "b2b", "lean", "data-driven", "data driven", "kpi", "customer service", "communication",
+        "stakeholder", "scrum",
     ]
 }
 
