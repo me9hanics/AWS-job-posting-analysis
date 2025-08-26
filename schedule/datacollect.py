@@ -112,8 +112,10 @@ def get_postings(keywords =KEYWORDS, rankings=RANKINGS, salary_bearable=SALARY_B
                 if cell.column_letter in ["B", "D", "E"]:
                     cell.font = cell.font + Font(bold=True)
                 if cell.column_letter == "F" and cell.row > 1:
-                    #make it point to a link
-                    cell.hyperlink = cell.value #"https://www." + cell.value #TODO Fix - wrong links
+                    url = cell.value
+                    if url and not (str(url).startswith("https://") or str(url).startswith("http://")):
+                        url = "https://" + str(url)
+                    cell.hyperlink = url
                     cell.style = 'Hyperlink'
 
         workbook.save(excel_file_path)
