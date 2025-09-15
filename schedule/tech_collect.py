@@ -7,7 +7,6 @@ try:
     from datacollect import get_postings
 except:
     from .datacollect import get_postings
-from methods.sites import SALARY_BEARABLE, BASE_KEYWORDS, BASE_RANKINGS
 from methods.macros import *
 
 def get_tech_postings(keywords=BASE_KEYWORDS, rankings=BASE_RANKINGS, salary_bearable=SALARY_BEARABLE,
@@ -54,8 +53,8 @@ def main():
     removed = [instance["title"] + " - at - " + instance["company"] for key, instance in data["removed"].items() if "title" in instance]
     keyword_counts = {keyword: sum(keyword in instance["keywords"]
                                    for instance in results.values()) for keyword in MAIN_DESCRIPTION_KEYWORDS}
-    print(f"\nKeyword counts in descriptions:\n{keyword_counts}")
-    print(f"\nAdded above threshold postings:\n")
+    print(f"\nKeywords in number of descriptions:\n{keyword_counts}")
+    print(f"\nNew postings above threshold:\n")
     for title in added:
         print(title)
     #print(f"\nRemoved postings:\n")

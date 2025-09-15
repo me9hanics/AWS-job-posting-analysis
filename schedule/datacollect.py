@@ -12,12 +12,12 @@ import os
 schedule_path = os.path.dirname(os.path.abspath(__file__))
 parent_path = os.path.join(schedule_path, "..")
 sys.path.append(parent_path)
-from methods import actions, sites
+from methods import actions, sites, macros
 from methods.macros import *
 
-KEYWORDS = sites.BASE_KEYWORDS.copy()
-RANKINGS = sites.BASE_RANKINGS.copy()
-SALARY_BEARABLE = sites.SALARY_BEARABLE
+KEYWORDS = macros.BASE_KEYWORDS.copy()
+RANKINGS = macros.BASE_RANKINGS.copy()
+SALARY_BEARABLE = macros.SALARY_BEARABLE
 COLUMN_WIDTHS = {"A": 38, "B": 24, "C": 6.56, "D": 14.33, "E": 50.44,
                  "F": 20.44, "G": 6, "H": 11, "I": 114,
                 } #TODO put macros in a separate file
@@ -99,7 +99,7 @@ def get_postings(keywords =KEYWORDS, rankings=RANKINGS, salary_bearable=SALARY_B
                         font = copy(cell.font) #TODO pack this into a function - or class method e.g. cell.update_font(color = ..., ...)
                         font.color = "FF229F22"
                         cell.font = font
-            if any(company_title in row[1].value.lower() for company_title in keywords["highlighted_company_titles"]):
+            if any(company_title in row[1].value.lower() for company_title in keywords["highlighted_company_titles"] if type(row[1].value) == str):
                 for cell in row:
                     if cell.column_letter in ["B"]:
                         font = copy(cell.font)
