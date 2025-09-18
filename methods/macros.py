@@ -81,7 +81,7 @@ BASE_RANKINGS ={
                 "image processing":0.2, "pattern recognition":0.3, "computer vision":0.1, "machine learning engineer":1,
                 #tech stack
                 "python":1, "sql":0.5, "c++":0.1, "web scraping":1.2, "postgres":0.3, "vector":0.1,
-                "knime":0.8, "neo4j":1.2, "mysql":0.2, "docker":0.2,
+                "knime":0.8, "neo4j":1.3, "mysql":0.2, "docker":0.25, "jinja":0.1,
                 #engineering
                 "lidar": 0.7, "radar": 0.7, "vision":0.2, "sensor": 0.6, "robot":0.6, "embedded":0.5, "electrical":0.25,
                 "electric":0.2, "electro":0.3, "microcontroller":0.3, "hardware":0.15,"digital":0.1, "compression":0.1, 
@@ -141,8 +141,9 @@ BASE_RANKINGS ={
     ]
 }
 
-MAIN_DESCRIPTION_KEYWORDS = ["graph data", "time series", "operations research", "graph",
-                             "algorithm", "sensor", "spatial", "geospatial", "geographical",
-                             "web scraping", "machine learning", "analytics", "research", 
+MAIN_DESCRIPTION_KEYWORDS = ["graph data", "graph", "operations research", "algorithm",
+                             "time series", "spatial", "geospatial", "geographical", 
+                             "web scraping", "scraping", "machine learning", "analytics", "research", 
                              "data", "science", "math", "conference", "phd", "master", "msc",
-                             "radar", "lidar", "robotics", "artificial intelligence", "reinforcement learning",]
+                             "sensor", "radar", "lidar", "robotics", "robot", "embedded",
+                             "artificial intelligence", "reinforcement learning",]
