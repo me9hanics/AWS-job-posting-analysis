@@ -28,12 +28,13 @@ BASE_KEYWORDS = {
                    "ML engineer", "ML researcher", "ML developer", "AI ML",
                    "AI engineer", "AI scientist", "AI researcher", "AI developer",
                    "data science", "data scientist", "data mining", "web scraping",
-                   "data engineer", "data engineering", "data engineering developer", "Python engineer", "DataOps",
-                   "data analysis", "data analytics", "data analyst",
-                   "graph theory", "network science", "graph database",
+                   "data engineer", "data engineering", "data engineering developer",
+                   "data analysis", "data analytics", "data analyst",  "NLP engineer", "time series",
+                   "graph theory", "network science", "graph database", "operation research",
                    "complexity science", "statistician", "scientist", "mathematician", #"network science", "combinatorics",
                    "business intelligence", "business analyst", #"bi analyst", "business intelligence analyst",
-                   "software engineer", "software developer",
+                   "Python engineer", "DataOps", "full stack data scientist",
+                   "software engineer", "software developer", #"full stack developer",
                   ],
     "banned_words": ["manager", "team leader", "teamleader", "teamleiter", "team leiter", "geschäft",
                     "jurist", "lawyer", "rechsanwalt", "legal", "audit", "advisor", "owner", "officer", "controller",
@@ -57,15 +58,16 @@ BASE_RANKINGS ={
                 #TODO refactor and put into separate file - have e.g. translations/synonyms/etc. for each keyword in its own dict. Basically groups of connected keywords
                 #general and science terms
                 "math":1, "data":0.35, "combinatori":0.8, "statistic":0.25, "neural":0.1, "information":0.1, "algorithm":1.2,
-                "complexity science":3, "complexity":0.3, "social network":0.3, "scale":0.2, "physics":0.4, "probability":0.2,
-                "operations research":1.5, "optimization":1, "numerical":0.1, "modelling":0.5, "modeling":0.5,
+                "complexity science":3, "complexity":0.3, "theory":0.3, "research": 0.7, "scale":0.2, "physics":0.4,
+                "operations research":1.5, "optimization":1, "numerical":0.1, "modelling":0.5, "modeling":0.5, "probability":0.2,
+                "complex systems":1.2, "simulation":0.3,
                 #titles
-                "engineer": 0.45, "developer": 0.4, "scientist": 1, "researcher": 0.9, "research": 0.7, "analyst": 0.1,
+                "engineer": 0.45, "developer": 0.4, "scientist": 1, "researcher": 0.9, "analyst": 0.1, "r&d":0.4,
                 #rank
                 "senior": 0.1,
                 #graphs/networks/geo (extra points as most terms are part of the description, never in title)
                 "graph":2, "network science":3, "graph theory":2.6, "graph data":2.5, "graph database":1.6,
-                "graph machine learning": 1.8, "graph deep learning": 1.8, "gnn":0.8,
+                "graph machine learning": 1.8, "graph deep learning": 1.8, "gnn":0.8, "social network":0.4,
                 "geospatial":1.4, "spatial":0.7, "maps":0.4, "geometry":0.4, "geodata": 0.8,
                 #data science
                 "data science":1.2, "data scientist":1.3, "data management":0.5, "full stack":0.4, "full-stack":0.4,
@@ -141,9 +143,10 @@ BASE_RANKINGS ={
     ]
 }
 
-MAIN_DESCRIPTION_KEYWORDS = ["graph data", "graph", "operations research", "algorithm",
-                             "time series", "spatial", "geospatial", "geographical", 
-                             "web scraping", "scraping", "machine learning", "analytics", "research", 
+MAIN_DESCRIPTION_KEYWORDS = ["graph data", "graph theory", "graph", "operations research", "algorithm",
+                             "time series", "spatial", "geospatial", "geographical", "data mining",
+                             "web scrap", "scrap", "machine learning", "analytics", "research", 
                              "data", "science", "math", "conference", "phd", "master", "msc",
-                             "sensor", "radar", "lidar", "robotics", "robot", "embedded",
+                             "full stack", "full-stack",
+                             "sensor", "radar", "lidar", "robotics", "robot", "embedded", "c++",
                              "artificial intelligence", "reinforcement learning",]
