@@ -2,8 +2,6 @@
 import datetime
 from collections import OrderedDict
 import pandas as pd
-from openpyxl import load_workbook
-from openpyxl.styles import Font
 import time
 from copy import copy
 
@@ -25,6 +23,68 @@ COLUMN_WIDTHS = {"A": 38, "B": 24, "C": 6.56, "D": 14.33, "E": 50.44,
 def reduce_url(url):
     return url.split("www.")[1] if "www." in url else url.split("://")[1] if "://" in url else url
 
+def remove_bad_chars(df):
+    from openpyxl.cell.cell import ILLEGAL_CHARACTERS_RE
+    #illegal_chars = re.compile(r'[\x00-\x1F]')
+    return df.map(lambda x: ILLEGAL_CHARACTERS_RE.sub(r'', x) if isinstance(x, str) else x)
+
+def replace_chars(df):
+    return df.map(lambda x: x.encode('unicode_escape').decode('utf-8') if isinstance(x, str) else x)
+
+def create_excel_report(gf_df, added, keywords, path_excel, prefix, throw_error=True):
+    from openpyxl import load_workbook
+    from openpyxl.styles import Font
+    
+
+    excel_file_path = f"{path_excel}{prefix}_{datetime.datetime.now().strftime('%Y-%m-%d')}.xlsx"
+    try:
+        remove_bad_chars(gf_df).to_excel(excel_file_path, index=False) #can also use engine='xlsxwriter'
+        time.sleep(1)
+        workbook = load_workbook(excel_file_path)
+        sheet = workbook.active
+        for column, width in COLUMN_WIDTHS.items():
+            sheet.column_dimensions[column].width = width
+
+        #Row bold, and columns bold
+        for cell in sheet[1]:
+            cell.font = cell.font + Font(bold=True)
+
+        #Make those rows green text which are in the added postings, and highlight title companies with red names
+        added_titles = [instance["title"] for instance in added.values()]
+        for row in sheet.iter_rows(min_row=2, max_row=len(gf_df)+1):
+            if row[0].value in added_titles:
+                for cell in row:
+                    if cell.column_letter in ["A", "E"]:
+                        font = copy(cell.font) #TODO pack this into a function - or class method e.g. cell.update_font(color = ..., ...)
+                        font.color = "FF229F22"
+                        cell.font = font
+            if any(company_title in str(row[1].value).lower() for company_title in keywords.get("highlighted_company_titles", []) if isinstance(row[1].value, str)):
+                for cell in row:
+                    if cell.column_letter in ["B"]:
+                        font = copy(cell.font)
+                        font.color = "E30A0A"
+                        cell.font = font
+
+        #Bold columns, hyperlink
+        for row in sheet.iter_rows(min_row=1, max_row=len(gf_df)+1):
+            for cell in row:
+                if cell.column_letter in ["B", "D", "E"]:
+                    cell.font = cell.font + Font(bold=True)
+                if cell.column_letter == "F" and cell.row > 1:
+                    url = cell.value
+                    if url and not (str(url).startswith("https://") or str(url).startswith("http://")):
+                        url = "https://" + str(url)
+                    cell.hyperlink = url
+                    cell.style = 'Hyperlink'
+
+        workbook.save(excel_file_path)
+    except Exception as e:
+        if throw_error:
+            raise e
+        else:
+            print(f"Could not create excel report at {excel_file_path}, error: {e}")
+    return excel_file_path
+
 def get_postings(keywords =KEYWORDS, rankings=RANKINGS, salary_bearable=SALARY_BEARABLE, prefix ="postings", path=f"{RELATIVE_POSTINGS_PATH}/", 
                  path_excel=f"{RELATIVE_EXCELS_PATH}/", verbose=False, verbose_data_gathering=False, **kwargs):
     keywords['titlewords'] = list(set(keywords['titlewords']))
@@ -33,6 +93,8 @@ def get_postings(keywords =KEYWORDS, rankings=RANKINGS, salary_bearable=SALARY_B
                                           extra_titlewords=kwargs.get("karriereat_extra_titlewords", kwargs.get("extra_titlewords", [])),
                                           extra_locations=kwargs.get("karriereat_extra_locations", kwargs.get("extra_locations", [])))
     results = karriere_at.gather_data(verbose=verbose_data_gathering, descriptions=True)
+    if verbose:
+        print(f"Found {len(results)} postings on Karriere.at")
     desired_order = ["title", "company",  "salary_monthly_guessed",
                      "locations", "keywords",
                      "points", "url", 
@@ -46,8 +108,6 @@ def get_postings(keywords =KEYWORDS, rankings=RANKINGS, salary_bearable=SALARY_B
         ))
         for key, value in results.items()
     }
-    if verbose:
-        print(f"Found {len(results)} postings on Karriere.at")
 
     raiffeisen = sites.RaiffeisenScraper(rules={"request_wait_time": 0.3}, keywords=keywords,
                                          extra_keywords=kwargs.get("raiffeisen_extra_keywords", kwargs.get("extra_keywords", {})),
@@ -78,47 +138,9 @@ def get_postings(keywords =KEYWORDS, rankings=RANKINGS, salary_bearable=SALARY_B
         print(f"Added {len(added)} postings, removed {len(removed)} postings")
     excel_file_path = None
     if path_excel:
-        excel_file_path =f"{path_excel}{prefix}_{datetime.datetime.now().strftime('%Y-%m-%d')}.xlsx"
-        gf_df.to_excel(excel_file_path, index = False)
-        time.sleep(1)
-        workbook = load_workbook(excel_file_path)
-        sheet = workbook.active
-        for column, width in COLUMN_WIDTHS.items():
-            sheet.column_dimensions[column].width = width
-
-        #Make row bold, and columns bold
-        for cell in sheet[1]:
-            cell.font = cell.font + Font(bold=True)
-
-        #Make those rows green text which are in the added postings, and highlight title companies with red names
-        added_titles = [instance["title"] for instance in added.values()]
-        for row in sheet.iter_rows(min_row=2, max_row=len(gf_df)+1):
-            if row[0].value in added_titles:
-                for cell in row:
-                    if cell.column_letter in ["A", "E"]:
-                        font = copy(cell.font) #TODO pack this into a function - or class method e.g. cell.update_font(color = ..., ...)
-                        font.color = "FF229F22"
-                        cell.font = font
-            if any(company_title in row[1].value.lower() for company_title in keywords["highlighted_company_titles"] if type(row[1].value) == str):
-                for cell in row:
-                    if cell.column_letter in ["B"]:
-                        font = copy(cell.font)
-                        font.color = "E30A0A"
-                        cell.font = font
-
-        #Bold columns, hyperlink
-        for row in sheet.iter_rows(min_row=1, max_row=len(gf_df)+1):
-            for cell in row:
-                if cell.column_letter in ["B", "D", "E"]:
-                    cell.font = cell.font + Font(bold=True)
-                if cell.column_letter == "F" and cell.row > 1:
-                    url = cell.value
-                    if url and not (str(url).startswith("https://") or str(url).startswith("http://")):
-                        url = "https://" + str(url)
-                    cell.hyperlink = url
-                    cell.style = 'Hyperlink'
-
-        workbook.save(excel_file_path)
+        excel_file_path = create_excel_report(gf_df, added, keywords, path_excel, prefix, throw_error=True)
+        if verbose:
+            print(f"Excel report created at {excel_file_path}")
 
     output_dict = {
         "results": results,
