@@ -1,6 +1,7 @@
 import json
 import os
 import time
+from datetime import datetime
 from methods.macros import *
 
 def save_list(list_, filename):
@@ -76,6 +77,21 @@ def explore_nested_folder(folder_path = f"{RELATIVE_POSTINGS_PATH}/"):
             if filename.endswith(".json"):
                 files.append(root + filename)
     return files
+
+def filter_files_by_date(files, min_date=None):
+    """
+    Select files created after a specific date only.
+    """
+    if not min_date:
+        return files
+    if isinstance(min_date, str):
+        min_date = datetime.strptime(min_date, "%Y.%m.%d")
+    filtered = []
+    for f in files:
+        creation_date = datetime.fromtimestamp(os.path.getctime(f))
+        if creation_date >= min_date:
+            filtered.append(f)
+    return filtered
 
 def load_list_items(files=None, folder_path = f"{RELATIVE_POSTINGS_PATH}/",
                     type_ = "dict", nested = False):
