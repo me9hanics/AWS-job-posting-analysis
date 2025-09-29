@@ -65,10 +65,10 @@ BASE_RANKINGS ={
                 "engineer": 0.45, "developer": 0.4, "scientist": 1, "researcher": 0.9, "analyst": 0.1, "r&d":0.4,
                 #rank
                 "senior": 0.1,
-                #graphs/networks/geo (extra points as most terms are part of the description, never in title)
+                #graphs/networks/geo (extra high points as most terms are part of the description, never in title)
                 "graph":2, "network science":3, "graph theory":2.6, "graph data":2.5, "graph database":1.6,
-                "graph machine learning": 1.8, "graph deep learning": 1.8, "gnn":0.8, "social network":0.4,
-                "geospatial":1.4, "spatial":0.7, "maps":0.4, "geometry":0.4, "geodata": 0.8,
+                "graph machine learning": 1.8, "graph deep learning": 1.6, "gnn":1.2, "graph neural network":1.2,
+                "social network":0.4, "geospatial":1.4, "spatial":0.7, "maps":0.4, "geometry":0.4, "geodata": 0.8,
                 #data science
                 "data science":1.2, "data scientist":1.3, "data management":0.5, "full stack":0.4, "full-stack":0.4,
                 "data engineering": 0.7, "data engineer": 0.5, "big data":0.3, "data warehous":0.2,#e/ing
@@ -76,14 +76,15 @@ BASE_RANKINGS ={
                 #data visualization and reporting
                 "power bi": 0.1, "qlik":0.3, "visualization":0.15, "dashboard":0.05, "d3":0.1, "matplotlib":0.3,
                 #specialized data science
-                "data collection":0.8, "data mining":1.1, "data analysis":0.4, "forecasting":0.6, "predictive":0.5,
-                "analytics":0.8, "time series":1.1, "nlp": 0.4, "causal":0.7, "inference": 0.7, "estimation":0.4,
+                "data collection":0.8, "data mining":1.1, "data analysis":0.4, "predictive":0.5, "estimation":0.4,
+                "analytics":0.8, "time series":1.1, "nlp": 0.4, "forecasting":0.6, "weather forecast":0.7,
+                "causal":0.7, "inference": 0.7, 
                 #machine learning
                 "machine learning":0.9, "neural network":0.6, "deep learning":0.5, "reinforcement learning":0.4,
                 "image processing":0.2, "pattern recognition":0.3, "computer vision":0.1, "machine learning engineer":1,
                 #tech stack
-                "python":1, "sql":0.5, "c++":0.1, "web scraping":1.2, "postgres":0.3, "vector":0.1,
-                "knime":0.8, "neo4j":1.3, "mysql":0.2, "docker":0.25, "jinja":0.1,
+                "python":1, "sql":0.5, "c++":0.2, "web scraping":1.2, "postgres":0.3, "vector":0.1,
+                "knime":0.8, "neo4j":1.3, "mysql":0.2, "docker":0.35, "jinja":0.1,
                 #engineering
                 "lidar": 0.7, "radar": 0.7, "vision":0.2, "sensor": 0.6, "robot":0.6, "embedded":0.5, "electrical":0.25,
                 "electric":0.2, "electro":0.3, "microcontroller":0.3, "hardware":0.15,"digital":0.1, "compression":0.1, 
@@ -135,7 +136,7 @@ BASE_RANKINGS ={
         #IT
         "cloud", "git", "workflow", #"ci/cd", "ci cd",
         #IT software
-        "kubernetes", "jenkins", "terraform", "azure", "gcp", "github", "gitlab", "bitbucket",
+        "kubernetes", "jenkins", "terraform", "azure", "gcp", "github", "gitlab", "bitbucket", "sonarqube",
         "excel", "powerpoint", 
         #other
         "b2c", "b2b", "lean", "data-driven", "data driven", "kpi", "customer service", "communication",
@@ -143,10 +144,11 @@ BASE_RANKINGS ={
     ]
 }
 
-MAIN_DESCRIPTION_KEYWORDS = ["graph data", "graph theory", "graph", "operations research", "algorithm",
+MAIN_DESCRIPTION_KEYWORDS = ["graph data", "graph theory", "graph", "neo4j", "operations research", "sparql",
                              "time series", "spatial", "geospatial", "geographical", "data mining",
+                             "causal inference", "causal", "inference",
                              "web scrap", "scrap", "machine learning", "analytics", "research", 
-                             "data", "science", "math", "conference", "phd", "master", "msc",
+                             "algorithm", "data", "science", "math", "conference", "phd", "master", "msc",
                              "full stack", "full-stack",
                              "sensor", "radar", "lidar", "robotics", "robot", "embedded", "c++",
                              "artificial intelligence", "reinforcement learning",]
