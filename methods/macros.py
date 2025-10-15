@@ -30,9 +30,10 @@ BASE_KEYWORDS = {
                    "data science", "data scientist", "data mining", "web scraping",
                    "data engineer", "data engineering", "data engineering developer",
                    "data analysis", "data analytics", "data analyst",  "NLP engineer", "time series",
+                   "business intelligence", "business analyst", #"bi analyst", "business intelligence analyst",
                    "graph theory", "network science", "graph database", "operation research",
                    "complexity science", "statistician", "scientist", "mathematician", #"network science", "combinatorics",
-                   "business intelligence", "business analyst", #"bi analyst", "business intelligence analyst",
+                   "life science", "computational biology", "bioinformatics", "bioengineer", "biotech",
                    "Python engineer", "DataOps", "full stack data scientist",
                    "software engineer", "software developer", #"full stack developer",
                   ],
@@ -67,24 +68,29 @@ BASE_RANKINGS ={
                 "senior": 0.1,
                 #graphs/networks/geo (extra high points as most terms are part of the description, never in title)
                 "graph":2, "network science":3, "graph theory":2.6, "graph data":2.5, "graph database":1.6,
-                "graph machine learning": 1.8, "graph deep learning": 1.6, "gnn":1.2, "graph neural network":1.2,
-                "social network":0.4, "geospatial":1.4, "spatial":0.7, "maps":0.4, "geometry":0.4, "geodata": 0.8,
-                #data science
-                "data science":1.2, "data scientist":1.3, "data management":0.5, "full stack":0.4, "full-stack":0.4,
-                "data engineering": 0.7, "data engineer": 0.5, "big data":0.3, "data warehous":0.2,#e/ing
-                "pipeline":0.1, "data modeling": 0.4, "data modelling": 0.4, "design":0.15,
-                #data visualization and reporting
-                "power bi": 0.1, "qlik":0.3, "visualization":0.15, "dashboard":0.05, "d3":0.1, "matplotlib":0.3,
-                #specialized data science
-                "data collection":0.8, "data mining":1.1, "data analysis":0.4, "predictive":0.5, "estimation":0.4,
-                "analytics":0.8, "time series":1.1, "nlp": 0.4, "forecasting":0.6, "weather forecast":0.7,
-                "causal":0.7, "inference": 0.7, 
+                "graph machine learning": 1.8, "graph deep learning": 1.6, "gnn":1.2, "graph neural network":1.4,
+                "social network":0.5, "geospatial":1.4, "spatial":0.7, "maps":0.4, "geometry":0.4, "geodata": 0.8,
+                #life sciences tech
+                "aithyra":1.8, "bioinformatic": 1.1, "biotech":0.5, "bioengineer":0.8,
+                "health":0.2, "healthcare":0.2, "biology":0.3, "biological":0.4, "chemistry":0.1,
+                "network biology":1.8, "network medicine":2.1, "cell":0.2, "molecular":0.3, "protein":0.3, "brain":0.8,
+                "patient":0.1, "genetics":0.4, "pharma":0.2, "clinical":0.1,
                 #machine learning
                 "machine learning":0.9, "neural network":0.6, "deep learning":0.5, "reinforcement learning":0.4,
                 "image processing":0.2, "pattern recognition":0.3, "computer vision":0.1, "machine learning engineer":1,
+                #specialized data science
+                "data mining":1.1, "data collection":0.8, "data analysis":0.4, "predictive":0.5, "estimation":0.4,
+                "analytics":0.8, "time series":1.1, "nlp": 0.4, "forecasting":0.6, "weather forecast":0.7,
+                "causal":0.7, "inference": 0.7,                
+                #data visualization, dashboards, reporting
+                "power bi": 0.3, "qlik":0.3, "visualization":0.15, "dashboard":0.1, "d3":0.2, "matplotlib":0.3,
+                #other data science terms
+                "data science":1.2, "data scientist":1.3, "data management":0.5, "full stack":0.4, "full-stack":0.4,
+                "data engineering": 0.7, "data engineer": 0.5, "big data":0.3, "data warehous":0.2,#e/ing
+                "pipeline":0.1, "data modeling": 0.4, "data modelling": 0.4, "design":0.15,
                 #tech stack
-                "python":1, "sql":0.5, "c++":0.2, "web scraping":1.2, "postgres":0.3, "vector":0.1,
-                "knime":0.8, "neo4j":1.3, "mysql":0.2, "docker":0.35, "jinja":0.1,
+                "python":1, "sql":0.5, "c++":0.2, "web scraping":1.2, "postgres":0.3, "vector":0.2,
+                "knime":0.8, "neo4j":1.3, "mysql":0.2, "docker":0.35, "jinja":0.2, "git": 0.1, "github":0.2,
                 #engineering
                 "lidar": 0.7, "radar": 0.7, "vision":0.2, "sensor": 0.6, "robot":0.6, "embedded":0.5, "electrical":0.25,
                 "electric":0.2, "electro":0.3, "microcontroller":0.3, "hardware":0.15,"digital":0.1, "compression":0.1, 
@@ -95,9 +101,7 @@ BASE_RANKINGS ={
                 #languages
                 "hungarian":1.9, "hungary":0.7, "english":0.3,
                 #other
-                "aithyra":1.8, "deepmind":0.6, "bioinformatics":0.3, "biological":0.2, "health":0.2, "healthcare":0.2,
-                "chemistry":0.1, "master":0.4, "msc":0.5, "phd":1.1, "bachelor":0.12, "bsc":0.12,
-
+                "deepmind":0.6, "master":0.6, "msc":0.7, "phd":1.1, "advanced degree":1.0, #"bachelor":0.1, "bsc":0.1,
                 ####Negative rankings
                 #type of work
                 "consultant":-0.7, "consulting":-0.7, "audit":-1, "risk":-0.4, "control":-0.4, "holding":-1,
@@ -119,10 +123,10 @@ BASE_RANKINGS ={
                 #other
                 "microsoft": -0.4,
                 },
-    "ranking_case_sensitive":{"ETL":1, "ELT":1, "AI":0.5, "ML":0.7, "API":0.4, "REST":0.15,
+    "ranking_case_sensitive":{"ETL":0.9, "ELT":0.5, "AI":0.5, "ML":0.7, "API":0.4, "REST":0.15,
                            "CI/CD":0.2, "CI CD":0.2, "AWS":0.2, "GIS": 0.1,
                            #Negative rankings
-                           "SAP":-0.7, "HR":-0.7, "SAS":-0.5, "SEO": -0.5,
+                           "SAP":-0.7, "HR":-0.7, "SAS":-0.5, "SEO": -0.3,
                            },
     "neutral":[
         #rank
@@ -134,9 +138,9 @@ BASE_RANKINGS ={
         #web
         "html", "javascript", "react", "angular", "node", "flask",
         #IT
-        "cloud", "git", "workflow", #"ci/cd", "ci cd",
+        "cloud", "workflow", #"ci/cd", "ci cd",
         #IT software
-        "kubernetes", "jenkins", "terraform", "azure", "gcp", "github", "gitlab", "bitbucket", "sonarqube",
+        "kubernetes", "jenkins", "terraform", "azure", "gcp", "gitlab", "bitbucket", "sonarqube",
         "excel", "powerpoint", 
         #other
         "b2c", "b2b", "lean", "data-driven", "data driven", "kpi", "customer service", "communication",
@@ -144,11 +148,16 @@ BASE_RANKINGS ={
     ]
 }
 
-MAIN_DESCRIPTION_KEYWORDS = ["graph data", "graph theory", "graph", "neo4j", "operations research", "sparql",
-                             "time series", "spatial", "geospatial", "geographical", "data mining",
-                             "causal inference", "causal", "inference",
-                             "web scrap", "scrap", "machine learning", "analytics", "research", 
-                             "algorithm", "data", "science", "math", "conference", "phd", "master", "msc",
-                             "full stack", "full-stack",
+MAIN_DESCRIPTION_KEYWORDS = ["graph data", "graph theory", "graph", "neo4j", "operations research",
+                             "knowledge graph", "sparql", "semantic web", "social network",
+                             "network medicine", "network biology", "biotech", "bioinformatic", "bioinformatics",
+                             "spatial", "geospatial", "geographical", "geographic",
+                             "data mining", "time series", "causal inference", "causal", "inference",
+                             "machine learning", "deep learning", "neural network",
+                             "reinforcement learning", "computer vision", "opencv", "audio",
+                             "natural language processing", "nlp", "artificial intelligence",
+                             "analytics", "web scraping", "scraping", "scrape", "research", "theory",
+                             "theoretical", "conference", "phd", "master", "msc", "advanced degree",
+                             "algorithm", "data", "science", "math", "full stack", "full-stack",
                              "sensor", "radar", "lidar", "robotics", "robot", "embedded", "c++",
-                             "artificial intelligence", "reinforcement learning",]
+                             ]

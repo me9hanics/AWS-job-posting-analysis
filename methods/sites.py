@@ -344,7 +344,7 @@ class BaseScraper:
         return None
 
     def salary_points(self, salary, salary_bearable = SALARY_BEARABLE, salary_ratio = 0.15/100,
-                      high_dropoff = True, dropoff_bearable_ratio = 1.6):
+                      high_dropoff = True, dropoff_bearable_ratio = 1.25): #better at around 1.4
         points = (salary-salary_bearable)*salary_ratio
         if high_dropoff & (salary > salary_bearable*dropoff_bearable_ratio):
             max_points = (salary_bearable*dropoff_bearable_ratio-salary_bearable)*salary_ratio

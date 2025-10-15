@@ -53,7 +53,9 @@ def main():
     removed = [instance["title"] + " - at - " + instance["company"] for key, instance in data["removed"].items() if "title" in instance]
     keyword_counts = {keyword: sum(keyword in instance["keywords"]
                                    for instance in results.values()) for keyword in MAIN_DESCRIPTION_KEYWORDS}
-    print(f"\nKeywords in number of descriptions:\n{keyword_counts}")
+    print(f"\nKeywords in number of descriptions:\n")
+    for keyword, count in keyword_counts.items():
+        print(f"{keyword}: {count}")
     print(f"\nNew postings above threshold:\n")
     for title in added:
         print(title)
