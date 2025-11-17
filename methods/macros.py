@@ -35,6 +35,7 @@ BASE_KEYWORDS = {
                    "complexity science", "statistician", "scientist", "mathematician", #"network science", "combinatorics",
                    "life science", "computational biology", "bioinformatics", "bioengineer", "biotech",
                    "Python engineer", "DataOps", "full stack data scientist",
+                   "forward deployed engineer",
                    "software engineer", "software developer", #"full stack developer",
                   ],
     "banned_words": ["manager", "team leader", "teamleader", "teamleiter", "team leiter", "geschäft",
@@ -59,9 +60,9 @@ BASE_RANKINGS ={
                 #TODO refactor and put into separate file - have e.g. translations/synonyms/etc. for each keyword in its own dict. Basically groups of connected keywords
                 #general and science terms
                 "math":1, "data":0.35, "combinatori":0.8, "statistic":0.25, "neural":0.1, "information":0.1, "algorithm":1.2,
-                "complexity science":3, "complexity":0.3, "theory":0.3, "research": 0.7, "scale":0.2, "physics":0.4,
+                "complexity science":3, "complexity":0.3, "theory":0.3, "research": 0.7, "scientific":0.4, "physics":0.4,
                 "operations research":1.5, "optimization":1, "numerical":0.1, "modelling":0.5, "modeling":0.5, "probability":0.2,
-                "complex systems":1.2, "simulation":0.3,
+                "complex systems":1.2, "simulation":0.3, "quantitative":0.3, "scale":0.2, 
                 #titles
                 "engineer": 0.45, "developer": 0.4, "scientist": 1, "researcher": 0.9, "analyst": 0.1, "r&d":0.4,
                 #rank
@@ -84,13 +85,17 @@ BASE_RANKINGS ={
                 "causal":0.7, "inference": 0.7,                
                 #data visualization, dashboards, reporting
                 "power bi": 0.3, "qlik":0.3, "visualization":0.15, "dashboard":0.1, "d3":0.2, "matplotlib":0.3,
+                #databases and data storage
+                "neo4j":1.3, "postgres":0.3, "mysql":0.2, "duckdb":0.5, "fabric":0.4, "vector":0.1,
                 #other data science terms
                 "data science":1.2, "data scientist":1.3, "data management":0.5, "full stack":0.4, "full-stack":0.4,
                 "data engineering": 0.7, "data engineer": 0.5, "big data":0.3, "data warehous":0.2,#e/ing
-                "pipeline":0.1, "data modeling": 0.4, "data modelling": 0.4, "design":0.15,
+                "scraping":0.9, "pipeline":0.1, "data modeling": 0.4, "data modelling": 0.4, "design":0.15,
                 #tech stack
-                "python":1, "sql":0.5, "c++":0.2, "web scraping":1.2, "postgres":0.3, "vector":0.2,
-                "knime":0.8, "neo4j":1.3, "mysql":0.2, "docker":0.35, "jinja":0.2, "git": 0.1, "github":0.2,
+                "python":1, "sql":0.5, "c++":0.2, 
+                "knime":0.8,  "docker":0.35, "jinja":0.2, "git": 0.1, "github":0.2,
+                #IT
+                "forward deployed":1.0, "platform engineer":0.3,
                 #engineering
                 "lidar": 0.7, "radar": 0.7, "vision":0.2, "sensor": 0.6, "robot":0.6, "embedded":0.5, "electrical":0.25,
                 "electric":0.2, "electro":0.3, "microcontroller":0.3, "hardware":0.15,"digital":0.1, "compression":0.1, 
@@ -116,7 +121,7 @@ BASE_RANKINGS ={
                 "cyber":-0.1, "security":-0.4, "devops":-0.1, "java":-0.2, "test":-0.3,
                 "stack developer":-0.6, "linux":-0.3, "safety":-0.4, "quality":-0.2,
                 #work related keywords
-                "product": -0.5, "agile":-0.5, "requirement":-0.3,
+                "product": -0.2, "agile":-0.3, "requirement":-0.3,
                 "merger": -0.6, "acquisition": -0.6, "real estate": -1, "assurance": -0.3,
                 #languages
                 "deutsch": -0.2,
@@ -132,7 +137,7 @@ BASE_RANKINGS ={
         #rank
         "lead", "junior",
         #data
-        "daten", "llm", "quantitative", "quantitative",
+        "daten", "llm",
         #data software
         "cloudpak", "django", "scala", "spark", "hadoop", "kafka", "airflow", "apache",
         #web
@@ -148,16 +153,24 @@ BASE_RANKINGS ={
     ]
 }
 
-MAIN_DESCRIPTION_KEYWORDS = ["graph data", "graph theory", "graph", "neo4j", "operations research",
-                             "knowledge graph", "sparql", "semantic web", "social network",
-                             "network medicine", "network biology", "biotech", "bioinformatic", "bioinformatics",
-                             "spatial", "geospatial", "geographical", "geographic",
-                             "data mining", "time series", "causal inference", "causal", "inference",
-                             "machine learning", "deep learning", "neural network",
-                             "reinforcement learning", "computer vision", "opencv", "audio",
-                             "natural language processing", "nlp", "artificial intelligence",
-                             "analytics", "web scraping", "scraping", "scrape", "research", "theory",
-                             "theoretical", "conference", "phd", "master", "msc", "advanced degree",
-                             "algorithm", "data", "science", "math", "full stack", "full-stack",
-                             "sensor", "radar", "lidar", "robotics", "robot", "embedded", "c++",
-                             ]
+COMPLEXSCI_KEYWORDS = ["complexity science", "complex systems", "complex system", "complex network", "complex networks"]
+GRAPH_KEYWORDS = ["graph data", "graph theory", "graph", "neo4j", "operations research", "social network",
+                  "knowledge graph", "gnn", "graph neural network", "graph machine learning"]
+SEMANTIC_WEB_KEYWORDS = ["sparql", "semantic web", "rdf", "owl", "linked data", "ontology"]
+GEOSPATIAL_KEYWORDS = ["geospatial", "spatial", "geographic", "geographical", "gis"]
+BIOTECH_KEYWORDS = ["network medicine", "network biology", "biotech", "bioinformatic", "bioinformatics",
+                    "computational biology"]
+RELEVANT_TECH_KEYWORDS = ["fabric", "duckdb", "vector", "knime"]
+TITLE_KEYWORDS = ["full stack", "full-stack", "forward deployed", "platform engineer"]
+SCIENCE_KEYWORDS = ["research", "theory", "theoretical", "scientific", "algorithm", "data", "science", "math", "causal",
+                    "inference", "causal inference", "conference", "phd", "master", "msc", "advanced degree"]
+DATA_SCIENCE_KEYWORDS = ["data science", "data mining", "time series", "natural language processing", "nlp", 
+                          "analytics", "web scraping", "scraping", "scrape"]
+MACHINE_LEARNING_KEYWORDS = ["machine learning", "deep learning", "neural network", "reinforcement learning",
+                             "computer vision", "image processing", "pattern recognition", "opencv", "audio",
+                             "artificial intelligence", "ai"]
+ENGINEERING_KEYWORDS = ["sensor", "radar", "lidar", "robotics", "robot", "embedded", "c++"]
+MAIN_DESCRIPTION_KEYWORDS = (COMPLEXSCI_KEYWORDS + GRAPH_KEYWORDS + SEMANTIC_WEB_KEYWORDS +
+                             GEOSPATIAL_KEYWORDS + BIOTECH_KEYWORDS + RELEVANT_TECH_KEYWORDS +
+                             TITLE_KEYWORDS + SCIENCE_KEYWORDS + DATA_SCIENCE_KEYWORDS +
+                             MACHINE_LEARNING_KEYWORDS + ENGINEERING_KEYWORDS)
