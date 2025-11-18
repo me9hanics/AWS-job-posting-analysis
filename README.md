@@ -26,7 +26,7 @@ A reasonable goal in the future is to collect a set of companies hiring in relev
 
 ## Data collection
 
-**Note: the data collection since has been to only use HTTP requests, and not use Selenium. This speeds up data collection greatly, being much more scalable (and also the responses contain some of the data we seek for in a clean format). See the `KarriereATScraper().gather_data()` method. Some other websites might still be scraped with Selenium.**
+**Note: the data collection since has been to only use HTTP requests, and not use Selenium. This speeds up data collection greatly, being much more scalable (and also the responses contain some of the data we seek for in a clean format). See the `KarriereAT().gather_data()` method. Some other websites might still be scraped with Selenium.**
 
 Scraping job postings with descriptions from the karriere.at website is in some retrospect simple, but nontrivial.<br>
 There seem to be no restrictions to even HTTP requests with no authentication, and often basic web scraping tricks work to gather some information. However, the simple methods do not always return desired results (especially not all postings, just a subsection), making it preferable to use more advanced tools. I used `Selenium` to render webpages and scrape instead - even for job posting subpages a simple request will not return the full HTML, thus the need use a headless browser like Selenium.

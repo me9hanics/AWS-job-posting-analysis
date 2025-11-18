@@ -246,6 +246,7 @@ class BaseScraper:
 
     def next_page_logic(self, input, **kwargs):
         """input: typically a soup or HTML element, possibly dict or string"""
+        #TODO
         pass
 
     def salary_number_from_str(self, text, keywords=[],
@@ -395,13 +396,13 @@ class BaseScraper:
                                            "salary_versions": salary_versions, "text": _text}
         return postings
 
-    def save_data(self, data, path = f"{RELATIVE_POSTINGS_PATH}/", name="", with_date = True, verbose = False):
+    def save_data(self, data, path = f"{RELATIVE_POSTINGS_PATH}/", name="", with_timestamp = True, verbose = False):
         #check if path exists
         if not os.path.exists(path):
             os.makedirs(path)
         if not name:
             name = self.rules["website"]
-        if with_date:
+        if with_timestamp:
             date = time.strftime("%Y-%m-%d-%H-%M-%S")
             name = f"{name}_{date}"
         with open(f"{path}{name}.json", "w", encoding="utf-8") as file:
@@ -582,7 +583,7 @@ class BaseScraper:
         return postings
 
 
-class KarriereATScraper(BaseScraper):
+class KarriereAT(BaseScraper):
     def __init__(self, driver="", rules = BASE_RULES, keywords = BASE_KEYWORDS,
                  extra_keywords = {}, extra_titlewords = [], extra_locations = [],
                  rankings = BASE_RANKINGS, salary_bearable = SALARY_BEARABLE, locations = None,
@@ -592,8 +593,12 @@ class KarriereATScraper(BaseScraper):
         If it is not used, the driver argument should be something other than None
         """
         rules["website"] = "karriere.at"
-        rules["usecase"] = "https"
         rules["scraping_base_url"] = "https://www.karriere.at/jobs"
+        rules["usecase"] = "https"
+        rules["close_website_popup"] = False
+        rules["load_page_button_selector"] = ".onetrust-close-btn-handler"
+        rules["load_page_press_button_until_gone_selector"] = ".m-loadMoreJobsButton__button"
+        rules["gather_data_selector"] = 'div.m-jobsListItem__container div.m-jobsListItem__dataContainer h2.m-jobsListItem__title a.m-jobsListItem__titleLink'
         rules["request_wait_time"] = 0.16
         if driver or type(driver) == type(None):
             keywords["locations"] = ["wien-und-umgebung"]
@@ -813,23 +818,23 @@ class KarriereATScraper(BaseScraper):
         postings = self.rank_postings(postings)
         postings = {k: v for k, v in sorted(postings.items(), key=lambda item: item[1]["points"], reverse=True)}
         if save_data:
-            self.save_data(postings, name=f"karriere_at", with_date=True)
+            self.save_data(postings, name=f"karriere_at", with_timestamp=True)
         return postings
 
     
-class RaiffeisenScraper(BaseScraper):
+class Raiffeisen(BaseScraper):
     def __init__(self, driver="", rules = BASE_RULES, keywords = BASE_KEYWORDS,
                  extra_keywords = {}, extra_titlewords = [], extra_locations = [],
                  rankings = BASE_RANKINGS, salary_bearable = SALARY_BEARABLE, locations = None,
                  locations_desired=LOCATIONS_DESIRED, locations_secondary=LOCATIONS_SECONDARY):
         rules["website"] = "raiffeisen_international"
-        rules["usecase"] = "http"
         rules["scraping_base_url"] = "https://jobs.rbinternational.com/search/?q="
         rules["jobs_base_url"] = "https://jobs.rbinternational.com"
+        rules["usecase"] = "http"
         rules['gather_data_selector'] = 'a.jobTitle-link'
         rules['more_pages_url_extension'] = "&sortColumn=referencedate&sortDirection=desc&startrow="
         rules['description_selector'] = 'ul'
-        rules["request_wait_time"] = 0.16 if "request_wait_time" not in rules.keys() else rules["request_wait_time"]
+        rules["request_wait_time"] = 0.3 if "request_wait_time" not in rules.keys() else rules["request_wait_time"]
         
         for key, value in BASE_RULES.items():
             if key not in rules.keys():

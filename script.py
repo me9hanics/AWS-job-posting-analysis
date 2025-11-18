@@ -1,12 +1,12 @@
 import numpy as np
-from bs4 import BeautifulSoup
 import time
 import json
 import requests
 from methods import sites
+from methods.macros import RELATIVE_POSTINGS_PATH
 
 websites = {
-    "karriereat": sites.KarriereATScraper(),
+    "karriereat": sites.KarriereAT(),
 }
 
 def __main__():

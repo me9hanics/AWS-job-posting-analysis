@@ -10,13 +10,13 @@ RELATIVE_COMPANIES_PATH = f"{RELATIVE_SAVING_PATH}/companies"
 
 SALARY_BEARABLE = 3400
 
-BASE_RULES = {"website":"karriere.at",
-              "scraping_base_url": "https://www.karriere.at/jobs",
+BASE_RULES = {"website":"",
+              "scraping_base_url": "",
               "close_website_popup":False,
               "usecase":'http',
-              "load_page_button_selector":".onetrust-close-btn-handler",
-              "load_page_press_button_until_gone_selector":".m-loadMoreJobsButton__button",
-              "gather_data_selector":'div.m-jobsListItem__container div.m-jobsListItem__dataContainer h2.m-jobsListItem__title a.m-jobsListItem__titleLink',
+              "gather_data_selector":"",
+              "load_page_button_selector":"",
+              #"load_page_press_button_until_gone_selector":"",
               "request_wait_time":0.15,
               "title_path":None,
               "company_path":None,
@@ -174,3 +174,11 @@ MAIN_DESCRIPTION_KEYWORDS = (COMPLEXSCI_KEYWORDS + GRAPH_KEYWORDS + SEMANTIC_WEB
                              GEOSPATIAL_KEYWORDS + BIOTECH_KEYWORDS + RELEVANT_TECH_KEYWORDS +
                              TITLE_KEYWORDS + SCIENCE_KEYWORDS + DATA_SCIENCE_KEYWORDS +
                              MACHINE_LEARNING_KEYWORDS + ENGINEERING_KEYWORDS)
+
+COLUMN_ORDER = ["title", "company",  "salary_monthly_guessed",
+                "locations", "keywords",
+                "points", "url", 
+                "snippet", "description", "salary",
+                "employmentTypes", "salary_guessed",
+                "collected_on", "date", "id", "isHomeOffice", "isActive", "source"]
+EXCEL_COLUMNS = ['title', 'company', 'salary_monthly_guessed', 'locations', 'keywords', 'url', 'isHomeOffice', 'points', 'description']
