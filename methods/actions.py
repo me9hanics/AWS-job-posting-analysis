@@ -2,6 +2,7 @@ import json
 import os
 import time
 from datetime import datetime
+from typing import List, Dict
 from methods.macros import *
 
 def save_list(list_, filename):
@@ -18,7 +19,7 @@ def save_list(list_, filename):
     with open(filename, 'w', encoding="utf-8") as f:
         json.dump(list_, f, indent=4, ensure_ascii=False)
 
-def save_data(data, path = f"{RELATIVE_POSTINGS_PATH}/", name="", with_date = True, verbose = False):
+def save_data(data, path = f"{RELATIVE_POSTINGS_PATH}/", name="", with_timestamp = True, verbose = False):
     """
     Save data to a JSON file, optionally with a date in the name.
     
@@ -26,7 +27,7 @@ def save_data(data, path = f"{RELATIVE_POSTINGS_PATH}/", name="", with_date = Tr
     data (dict | list | str): The data to save.
     path (str): The directory path to save the file to.
     name (str): The name of the file, without the date extension.
-    with_date (bool): Whether to include the date in the name.
+    with_timestamp (bool): Whether to include the date in the name.
     verbose (bool): Whether to print a message if the data type is not supported.
 
     Returns:
@@ -36,7 +37,7 @@ def save_data(data, path = f"{RELATIVE_POSTINGS_PATH}/", name="", with_date = Tr
         os.makedirs(path)
     if not name:
         name = "postings"
-    if with_date:
+    if with_timestamp:
         date = time.strftime("%Y-%m-%d-%H-%M-%S")
         name = f"{name}_{date}"
     with open(f"{path}{name}.json", "w", encoding="utf-8") as file:
@@ -67,6 +68,8 @@ def load_file_if_str(file, type_ = "dict"):
     return file
 
 def explore_nested_folder(folder_path = f"{RELATIVE_POSTINGS_PATH}/"):
+    if not isinstance(folder_path, str):
+        return []
     if folder_path[-1] != "/":
         folder_path += "/"
     files = []
@@ -81,6 +84,7 @@ def explore_nested_folder(folder_path = f"{RELATIVE_POSTINGS_PATH}/"):
 def filter_files_by_date(files, min_date=None):
     """
     Select files created after a specific date only.
+    Warning: On Linux, the creation date may not be correct.
     """
     if not min_date:
         return files
@@ -88,10 +92,28 @@ def filter_files_by_date(files, min_date=None):
         min_date = datetime.strptime(min_date, "%Y.%m.%d")
     filtered = []
     for f in files:
+        #getctime: creation time (Windows), but metadata change time (Unix)
+        #https://stackoverflow.com/a/39501288/19626271
         creation_date = datetime.fromtimestamp(os.path.getctime(f))
         if creation_date >= min_date:
             filtered.append(f)
     return filtered
+
+def get_files(files=None, folder_path = f"{RELATIVE_POSTINGS_PATH}/", nested = False):
+    if isinstance(files, str):
+        files = [files]
+    if folder_path:
+        if folder_path[-1] != "/":
+            folder_path += "/"
+
+        if not isinstance(files, list):
+            if nested:
+                files = explore_nested_folder(folder_path)
+            else:
+                files = [folder_path + f for f in os.listdir(folder_path) if f.endswith(".json")]
+        else:
+            files = [folder_path + f if not f.startswith(folder_path) else f for f in files]
+    return files
 
 def load_list_items(files=None, folder_path = f"{RELATIVE_POSTINGS_PATH}/",
                     type_ = "dict", nested = False):
@@ -103,18 +125,15 @@ def load_list_items(files=None, folder_path = f"{RELATIVE_POSTINGS_PATH}/",
     path (str): The directory path to load the files from.
     type (str): The type of the data to load, either "dict" or "list".
 
+    If there is no folder path given, the current directory is used.
+    If there is a folder path given, but no files, all JSON files in the folder are loaded.
+        Optionally, nested folders are explored.
+    If there is a folder path and a list of files, the files are loaded from the folder path.
+
     Returns:
     files (list): The list of loaded files.
     """
-    if folder_path[-1] != "/":
-        folder_path += "/"
-    if isinstance(files, str):
-        files = [files]
-    if not isinstance(files, list):
-        if nested:
-            files = explore_nested_folder(folder_path)
-        else:
-            files = [folder_path + f for f in os.listdir(folder_path) if f.endswith(".json")]
+    files = get_files(files, folder_path, nested)
     contents = []
     for i, file in enumerate(files):
         if isinstance(file, str):
@@ -172,8 +191,7 @@ def get_nested_dict_keys(dictionary, appear = "any", return_type=list):
         
     return return_type(keys)
 
-def compare_lists(new, previous, print_out="complete_lists", printed_text_max_length = None,
-                  points_threshold = 0.1):
+def get_added_and_removed(new, previous):
     """
     Compare two lists and return the differences.
     (If any of the lists are given as a string, it is interpreted as a file path,
@@ -193,20 +211,59 @@ def compare_lists(new, previous, print_out="complete_lists", printed_text_max_le
     previous = load_file_if_str(previous, "dict")
     added_keys = list(set(new) - set(previous))
     removed_keys = list(set(previous) - set(new))
-    added = {key: new[key] for key in added_keys if (points_threshold is None) or (new[key].get("points", 0) >= points_threshold)}
-    removed = {key: previous[key] for key in removed_keys if (points_threshold is None) or (previous[key].get("points", 0) >= points_threshold)}
+    added = {key: new[key] for key in added_keys}
+    removed = {key: previous[key] for key in removed_keys}
     added = sort_dict_by_key(added, key="points", descending = True) if added else {}
     removed = sort_dict_by_key(removed, key="points", descending = True) if removed else {}
+    return added, removed
 
+def threshold_postings_by_points(postings, points_threshold = 0.01):
+    """
+    Filter a list of postings by a points threshold. If None, no filtering is applied.
+
+    Parameters:
+    postings (dict): The list of postings to filter.
+    points_threshold (float): The points threshold to filter by.
+
+    Returns:
+    filtered_postings (dict): The filtered list of postings.
+    """
+    filtered_postings = {key: value for key, value in postings.items() if (points_threshold == None) or value.get("points", 0) >= points_threshold}
+    return filtered_postings
+
+def compare_postings(new = None, previous = None, print_attrs=["title", "company", "points"], printed_text_max_length = 100,
+                     points_threshold = 0.01, added=None, removed=None):
+    """
+    Compare two lists of postings and print out the differences.
+    If new or previous is a string, the list is read from a file.
+    If added or removed are given, they are used directly.
+
+    Parameters:
+    new (list | str): The new list of postings, optionally read from a file.
+    previous (list | str): The previous list of postings, optionally read from a file.
+    print_out_titles (bool): Whether to print out the titles of the postings.
+
+    Returns:
+    added (dict): The new postings that were added.
+    removed (dict): The old postings that were removed.
+    """
+    if not added or not removed:
+        if not (new or previous):
+            raise ValueError("If added or removed are not given, new and previous must be given.")
+        _added, _removed = get_added_and_removed(new, previous)
+        added = added or threshold_postings_by_points(_added, points_threshold)
+        removed = removed or threshold_postings_by_points(_removed, points_threshold)
+    
+    print_out = print_attrs if print_attrs else "none"
     if print_out=="complete_lists":
         #make print out a list of all of the keys in the dictionaries, every single key that appears at least once
         print_out = list(
-                    get_nested_dict_keys(new, appear="any", return_type=set).union(
-                    get_nested_dict_keys(previous, appear="any", return_type=set))
+                    get_nested_dict_keys(new or added, appear="any", return_type=set).union(
+                    get_nested_dict_keys(previous or removed, appear="any", return_type=set))
                     )
     elif print_out=="only_lengths":
-        print("Amount of new items: ", len(added_keys))
-        print("Amount of removed items: ", len(removed_keys))
+        print("Amount of new items: ", len(added))
+        print("Amount of removed items: ", len(removed))
     elif (type(print_out)==str) & (print_out!="none"):
         """Interpreted as a key in the dictionaries in the two lists"""
         print_out = [print_out]
@@ -229,31 +286,11 @@ def compare_lists(new, previous, print_out="complete_lists", printed_text_max_le
         for posting_key in print_removed:
             text = ",\n\t".join([str(u)+": "+str(v) for u,v in (print_removed[posting_key].items()) if u in print_out])
             print(f"\n{posting_key}: \n\t{text}")
-
     return added, removed
 
-def compare_postings(new, previous, print_attrs=["title", "company", "points"], printed_text_max_length = 100,
-                     points_threshold = 0.01):
+def unify_postings(postings=None, folder_path=f"{RELATIVE_POSTINGS_PATH}/tech/", extend = False):
     """
-    Compare two lists of postings and return the differences.
-    If new or previous is a string, the list is read from a file.
-
-    Parameters:
-    new (list | str): The new list of postings, optionally read from a file.
-    previous (list | str): The previous list of postings, optionally read from a file.
-    print_out_titles (bool): Whether to print out the titles of the postings.
-
-    Returns:
-    added (dict): The new postings that were added.
-    removed (dict): The old postings that were removed.
-    """
-
-    print_out = print_attrs if print_attrs else "none"
-    return compare_lists(new, previous, print_out, printed_text_max_length, points_threshold)
-
-def combine_postings(postings=None, folder_path=f"{RELATIVE_POSTINGS_PATH}/tech/", extend = False):
-    """
-    Combine multiple lists of postings into one list.
+    Compress multiple lists of postings into one list.
     If postings is a string, the list is read from a file.
 
     Parameters:
@@ -269,12 +306,40 @@ def combine_postings(postings=None, folder_path=f"{RELATIVE_POSTINGS_PATH}/tech/
     all_postings = {}
     for postings in files:
         for key, value in postings.items():
+            collected_on = value.get('collected_on', None)
             if key not in all_postings:
                 all_postings[key] = value
-            elif extend == True:
-                if not isinstance(all_postings[key], list):
-                    all_postings[key] = [all_postings[key]]
-                all_postings[key].extend(value)
+                all_postings[key]['first_collected_on'] = collected_on
+                all_postings[key]['last_collected_on'] = collected_on
+            else:
+                if not extend:
+                    for col, row in value.items():
+                        if (col not in all_postings[key].keys()) or (not all_postings[key][col]):
+                            all_postings[key][col] = row       
+                    if collected_on:
+                        stored_first_collected_on = all_postings[key]['first_collected_on']
+                        stored_last_collected_on = all_postings[key]['last_collected_on']
+                        if not stored_last_collected_on or collected_on > stored_last_collected_on:
+                                all_postings[key]['last_collected_on'] = collected_on
+                                all_postings[key]["description"] = value.get("description", all_postings[key]["description"]) #update text to latest version
+                        if not stored_first_collected_on or collected_on < stored_first_collected_on:
+                            all_postings[key]['first_collected_on'] = collected_on
+                else:#extend==True
+                    if not isinstance(all_postings[key], list):
+                        all_postings[key] = [all_postings[key]]
+                    value['first_collected_on'] = collected_on or all_postings[key][0]['first_collected_on']
+                    value['last_collected_on'] = collected_on or all_postings[key][0]['last_collected_on']
+                    all_postings[key].append(value)
+                    if collected_on:
+                        stored_first_collected_on = all_postings[key][0]['first_collected_on']
+                        stored_last_collected_on = all_postings[key][0]['last_collected_on']
+                        if (not stored_first_collected_on or collected_on > stored_first_collected_on):
+                            for posting_store in all_postings[key]:
+                                posting_store['last_collected_on'] = collected_on
+                                posting_store["description"] = value.get("description", posting_store["description"]) #update text to latest version
+                        if (not stored_last_collected_on or collected_on < stored_last_collected_on):
+                            for posting_store in all_postings[key]:
+                                posting_store['first_collected_on'] = collected_on
     return all_postings
 
 def reorder_dict(d, keys_order, nested=False):
