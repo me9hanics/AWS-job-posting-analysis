@@ -439,8 +439,8 @@ class BaseScraper:
 
     def rank_postings(self, postings:dict, keyword_points=None, desc_ratio = 0.3,
                       salary_bearable = None, salary_ratio = 0.15/100,
-                      dropoff_bearable_ratio = 1.4,
-                      locations_desired=None, locations_secodary=None):
+                      dropoff_bearable_ratio = 1.4, overwrite = True,
+                      locations_desired=None, locations_secodary=None, **kwargs):
         if not salary_bearable:
             salary_bearable = getattr(self, "salary_bearable", SALARY_BEARABLE)
         if not keyword_points:
@@ -451,6 +451,8 @@ class BaseScraper:
             locations_secodary = getattr(self, "LOCATIONS_SECONDARY", LOCATIONS_SECONDARY)
 
         for id, posting in postings.items():
+            if not overwrite and ("points" in posting.keys()) and posting["points"] is not None:
+                continue
             title = posting["title"] if "title" in posting.keys() else ""
             description = posting["description"] if "description" in posting.keys() else ""
             salary = posting["salary_monthly_guessed"]
@@ -503,20 +505,21 @@ class BaseScraper:
             )
         return found
     
-    def find_keywords_in_postings(self, postings:dict, description_key = "description",
-                                  non_capital = None, capital=None, sort=True, rankings = None):
+    def find_keywords_in_postings(self, postings:dict, description_key = "description", overwrite = True,
+                                  non_capital = None, capital=None, sort=True, rankings = None, **kwargs):
         if not non_capital:
             non_capital = getattr(self, "all_keywords_noncapital", ALL_KEYWORDS_NONCAPITAL)
         if not capital:
             capital = getattr(self, "all_keywords_capital", ALL_KEYWORDS_CAPITAL)
 
         for id, posting in postings.items():
-            postings[id]["keywords"] = []
-            if description_key in posting.keys():
-                text = posting[description_key]
-                keywords = self.find_keywords(text, non_capital=non_capital, capital=capital,
-                                              sort=sort, rankings=rankings)
-                postings[id]["keywords"] = keywords
+            if overwrite or ("keywords" not in posting.keys()) or (not posting["keywords"]):
+                postings[id]["keywords"] = []
+                if description_key in posting.keys():
+                    text = posting[description_key]
+                    keywords = self.find_keywords(text, non_capital=non_capital, capital=capital,
+                                                  sort=sort, rankings=rankings)
+                    postings[id]["keywords"] = keywords
         return postings
 
     def gather_data(self, close_driver=True,
