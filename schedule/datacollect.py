@@ -1,6 +1,5 @@
 #Scrape website
 import datetime
-from collections import OrderedDict
 import pandas as pd
 import time
 from copy import copy
@@ -10,11 +9,12 @@ import os
 schedule_path = os.path.dirname(os.path.abspath(__file__))
 parent_path = os.path.join(schedule_path, "..")
 sys.path.append(parent_path)
-from methods import actions, sites, macros
+from methods import files_io, postings_utils, sites, macros
 from methods.macros import *
 
 KEYWORDS = macros.BASE_KEYWORDS.copy()
 RANKINGS = macros.BASE_RANKINGS.copy()
+SCRAPERS = [sites.KarriereAT, sites.Raiffeisen]
 SALARY_BEARABLE = macros.SALARY_BEARABLE
 COLUMN_WIDTHS = {"A": 38, "B": 24, "C": 6.56, "D": 14.33, "E": 50.44,
                  "F": 20.44, "G": 6, "H": 11, "I": 114,
@@ -31,14 +31,13 @@ def remove_bad_chars(df):
 def replace_chars(df):
     return df.map(lambda x: x.encode('unicode_escape').decode('utf-8') if isinstance(x, str) else x)
 
-def create_excel_report(gf_df, added, keywords, path_excel, prefix, throw_error=True):
+def create_excel_report(df, added, keywords, path_excel, prefix, throw_error=True):
     from openpyxl import load_workbook
     from openpyxl.styles import Font
     
-
     excel_file_path = f"{path_excel}{prefix}_{datetime.datetime.now().strftime('%Y-%m-%d')}.xlsx"
     try:
-        remove_bad_chars(gf_df).to_excel(excel_file_path, index=False) #can also use engine='xlsxwriter'
+        remove_bad_chars(df).to_excel(excel_file_path, index=False) #can also use engine='xlsxwriter'
         time.sleep(1)
         workbook = load_workbook(excel_file_path)
         sheet = workbook.active
@@ -51,7 +50,7 @@ def create_excel_report(gf_df, added, keywords, path_excel, prefix, throw_error=
 
         #Make those rows green text which are in the added postings, and highlight title companies with red names
         added_titles = [instance["title"] for instance in added.values()]
-        for row in sheet.iter_rows(min_row=2, max_row=len(gf_df)+1):
+        for row in sheet.iter_rows(min_row=2, max_row=len(df)+1):
             if row[0].value in added_titles:
                 for cell in row:
                     if cell.column_letter in ["A", "E"]:
@@ -66,7 +65,7 @@ def create_excel_report(gf_df, added, keywords, path_excel, prefix, throw_error=
                         cell.font = font
 
         #Bold columns, hyperlink
-        for row in sheet.iter_rows(min_row=1, max_row=len(gf_df)+1):
+        for row in sheet.iter_rows(min_row=1, max_row=len(df)+1):
             for cell in row:
                 if cell.column_letter in ["B", "D", "E"]:
                     cell.font = cell.font + Font(bold=True)
@@ -85,67 +84,84 @@ def create_excel_report(gf_df, added, keywords, path_excel, prefix, throw_error=
             print(f"Could not create excel report at {excel_file_path}, error: {e}")
     return excel_file_path
 
-def get_postings(keywords =KEYWORDS, rankings=RANKINGS, salary_bearable=SALARY_BEARABLE, prefix ="postings", path=f"{RELATIVE_POSTINGS_PATH}/", 
-                 path_excel=f"{RELATIVE_EXCELS_PATH}/", verbose=False, verbose_data_gathering=False, **kwargs):
+def scrape_sites(scrapers = SCRAPERS, keywords=KEYWORDS, rankings=RANKINGS, salary_bearable=SALARY_BEARABLE,
+                 verbose=False, verbose_data_gathering=False, **kwargs):
+    results = {}
+    for scraper_class in scrapers:
+        scraper = scraper_class(keywords=keywords, rankings=rankings, salary_bearable=salary_bearable,
+                                extra_keywords=kwargs.get(f"{scraper_class.__name__.lower()}_extra_keywords", kwargs.get("extra_keywords", {})),
+                                extra_titlewords=kwargs.get(f"{scraper_class.__name__.lower()}_extra_titlewords", kwargs.get("extra_titlewords", [])),
+                                extra_locations=kwargs.get(f"{scraper_class.__name__.lower()}_extra_locations", kwargs.get("extra_locations", [])),
+                                rules=kwargs.get(f"{scraper_class.__name__.lower()}_rules", {}))
+        run_results = scraper.gather_data(descriptions=True, verbose=verbose_data_gathering)
+        if verbose:
+            print(f"Found {len(run_results)} postings on {scraper_class.__name__}")
+        results = {**results, **run_results}
+    return results
+
+def get_postings(scrapers = SCRAPERS, keywords =KEYWORDS, rankings=RANKINGS, salary_bearable=SALARY_BEARABLE, path=f"{RELATIVE_POSTINGS_PATH}/",
+                 path_excel=f"{RELATIVE_EXCELS_PATH}/", excel_prefix ="postings", verbose=False, verbose_data_gathering=False, threshold = 0.01,
+                 col_order = COLUMN_ORDER, excel_cols = EXCEL_COLUMNS, efficient_storing = True, only_thresholded_stored = False,
+                current_postings_filename = CURRENT_POSTINGS_FILENAME, newly_added_postings_filename = NEWLY_ADDED_POSTINGS_FILENAME,
+                 postings_history_filename = POSTINGS_HISTORY_FILENAME, **kwargs):
     keywords['titlewords'] = list(set(keywords['titlewords']))
-    karriere_at = sites.KarriereATScraper(keywords=keywords, rankings=rankings, salary_bearable=salary_bearable,
-                                          extra_keywords=kwargs.get("karriereat_extra_keywords", kwargs.get("extra_keywords", {})),
-                                          extra_titlewords=kwargs.get("karriereat_extra_titlewords", kwargs.get("extra_titlewords", [])),
-                                          extra_locations=kwargs.get("karriereat_extra_locations", kwargs.get("extra_locations", [])))
-    results = karriere_at.gather_data(verbose=verbose_data_gathering, descriptions=True)
-    if verbose:
-        print(f"Found {len(results)} postings on Karriere.at")
-    desired_order = ["title", "company",  "salary_monthly_guessed",
-                     "locations", "keywords",
-                     "points", "url", 
-                     "snippet", "description", "salary",
-                     "employmentTypes", "salary_guessed",
-                     "collected_on", "date", "id", "isHomeOffice", "isActive", "source"]
-
-    results = {
-        key: dict(OrderedDict( #TODO Write function to sort dict keys, use actions.reorder_dict
-            sorted(value.items(), key=lambda item: desired_order.index(item[0]) if item[0] in desired_order else len(desired_order))
-        ))
-        for key, value in results.items()
-    }
-
-    raiffeisen = sites.RaiffeisenScraper(rules={"request_wait_time": 0.3}, keywords=keywords,
-                                         extra_keywords=kwargs.get("raiffeisen_extra_keywords", kwargs.get("extra_keywords", {})),
-                                         extra_titlewords=kwargs.get("raiffeisen_extra_titlewords", kwargs.get("extra_titlewords", [])),
-                                         extra_locations=kwargs.get("raiffeisen_extra_locations", kwargs.get("extra_locations", [])),
-                                         rankings=rankings, salary_bearable=salary_bearable)
-    results2 = raiffeisen.gather_data(descriptions=True, verbose=verbose_data_gathering)
-
-    if verbose:
-        print(f"Found {len(results2)} postings on Raiffeisen.at")
-    results = {**results, **results2}
+    
+    results = scrape_sites(scrapers = scrapers, keywords=keywords, rankings=rankings, salary_bearable=salary_bearable,
+                            verbose=verbose, verbose_data_gathering=verbose_data_gathering, **kwargs)
+    results = postings_utils.reorder_dict(results, col_order, nested=True)
     results = {k: v for k, v in sorted(results.items(), key=lambda item: item[1]["points"], reverse=True)}
     if verbose:
-        print(f"Found {len(results)} postings in total")
-    actions.save_data(results, with_date=True, path=path)
+        print(f"Found {len(results)} results in total")
 
-    gf_df = pd.DataFrame.from_dict(results,
-                        orient = 'index')[['title', 'company', 'salary_monthly_guessed', 'locations', 'keywords', 'url', 'isHomeOffice', 'points', 'description',]]
-    gf_df = gf_df.rename(columns ={"points": "hanics_points"})
-    gf_df["url"] = gf_df["url"].apply(lambda x: reduce_url(x))
+    df = pd.DataFrame.from_dict(results, orient='index')
+    df["locations"] = df["locations"].apply(lambda x: x if isinstance(x, list) else [])
+    companies = list(df[df['locations'].apply(lambda locs: any("wien" in loc.lower() or "vienna" in loc.lower() for loc in locs))]['company'].unique())
+    previous_file_name = files_io.get_filename_from_dir(path, index = -1) #if there is no file, returns None
+    added, removed = postings_utils.get_added_and_removed(results, f'{path}{previous_file_name}' if previous_file_name else [])
 
-    x = pd.DataFrame.from_dict(results, orient='index')
-    x["locations"] = x["locations"].apply(lambda x: x if type(x) == list else [])
-    companies = list(x[x['locations'].apply(lambda locs: any("wien" in loc.lower() or "vienna" in loc.lower() for loc in locs))]['company'].unique())
-    file_name = actions.get_filename_from_dir(path, index = -2) #if there is no file, returns None
-    added, removed = actions.compare_postings(results, f'{path}{file_name}' if file_name else [], print_attrs =[])
+    if only_thresholded_stored:
+        added = postings_utils.threshold_postings_by_points(added, points_threshold=threshold)
+        removed = postings_utils.threshold_postings_by_points(removed, points_threshold=threshold)
+        results = postings_utils.threshold_postings_by_points(results, points_threshold=threshold)
+
+    files_io.save_data(results, path=path, name=current_postings_filename, with_timestamp=False, )
+
+    if not efficient_storing or not previous_file_name:
+        files_io.save_data(results, name=postings_history_filename if efficient_storing else "",
+                           path=path, with_timestamp=False if efficient_storing else True)
+    else: #efficient storing
+        history = postings_utils.unify_postings(folder_path=path) #includes newly_added_postings
+        for key in results.keys() & history.keys():
+            results[key]['first_collected_on'] = history[key]['first_collected_on']
+            results[key]['last_collected_on'] = history[key]['last_collected_on']
+        for key in added.keys() & history.keys():
+            added[key]['first_collected_on'] = history[key]['first_collected_on']
+            added[key]['last_collected_on'] = history[key]['last_collected_on']
+        files_io.save_data(history, path=path, name=postings_history_filename, with_timestamp=False)
+        #Re-run: adding first and last collected on to results
+        files_io.save_data(results, path=path, name=current_postings_filename, with_timestamp=False)
+
+    files_io.save_data(added, path=path, name=newly_added_postings_filename, with_timestamp=False, )
+
+    if threshold is not None:
+        added = postings_utils.threshold_postings_by_points(added, points_threshold=threshold)
+        removed = postings_utils.threshold_postings_by_points(removed, points_threshold=threshold)
+        results = postings_utils.threshold_postings_by_points(results, points_threshold=threshold)
     if verbose:
-        print(f"Added {len(added)} postings, removed {len(removed)} postings")
+        print(f"Found {len(results)} postings {" above threshold" if threshold is not None else ''}. Added {len(added)} postings, removed {len(removed)} postings{" above threshold" if threshold is not None else ''}")
+
     excel_file_path = None
     if path_excel:
-        excel_file_path = create_excel_report(gf_df, added, keywords, path_excel, prefix, throw_error=True)
+        excel_df = df[excel_cols].copy()
+        excel_df.loc[:, "url"] = excel_df["url"].apply(lambda x: reduce_url(x))
+        excel_file_path = create_excel_report(excel_df, added, keywords, path_excel, excel_prefix, throw_error=True)
         if verbose:
             print(f"Excel report created at {excel_file_path}")
 
     output_dict = {
         "results": results,
-        "added": added,
-        "removed": removed,
+        "added": added, #above threshold
+        "removed": removed, #above threshold
         "companies": companies,
         "excel_file_path": excel_file_path,
     }
