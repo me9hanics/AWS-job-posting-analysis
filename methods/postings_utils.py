@@ -39,6 +39,17 @@ def get_nested_dict_keys(dictionary, appear = "any", return_type=list):
         
     return return_type(keys)
 
+def get_date_of_collection(value=None, filename=None, overwrite=False):
+    if not overwrite and isinstance(value, dict) and ('collected_on' in value) and value['collected_on']:
+        return value['collected_on']
+    if filename and isinstance(filename, str):
+        match = re.search(r'202\d{1}-\d{2}-\d{2}', filename)
+        if match:
+            return match.group()
+    if filename and isinstance(filename,str) and os.path.exists(filename):
+        return str(datetime.fromtimestamp(os.path.getctime(filename)).date())
+    return None
+
 def get_added_and_removed(new, previous):
     """
     Compare two lists and return the differences.
@@ -170,7 +181,7 @@ def unify_postings(postings=None, folder_path=f"{RELATIVE_POSTINGS_PATH}/tech/",
                         if not stored_last_collected_on or collected_on > stored_last_collected_on:
                             all_postings[key]['last_collected_on'] = collected_on
                             #update text to latest version
-                            all_postings[key]["description"] = value.get("description", [key].get("description",None)) 
+                            all_postings[key]["description"] = value.get("description", all_postings[key].get("description",None)) 
                         if not stored_first_collected_on or collected_on < stored_first_collected_on:
                             all_postings[key]['first_collected_on'] = collected_on
                 else:#extend==True
@@ -191,3 +202,26 @@ def unify_postings(postings=None, folder_path=f"{RELATIVE_POSTINGS_PATH}/tech/",
                                 posting_store['first_collected_on'] = collected_on
     return all_postings
 
+def enrich_postings(postings:str|dict, filename=None, overwrite=True, keywords = BASE_KEYWORDS, extra_keywords = {}, **kwargs):
+    from methods.sites import BaseScraper
+    if isinstance(postings, str):
+        filename = filename or postings
+
+    postings = load_file_if_str(postings, type_="dict")
+    scraper = BaseScraper(driver="skip", keywords=keywords, extra_keywords=extra_keywords)
+    for posting_id, posting in postings.copy().items():
+        if 'salary' in posting.keys():
+            salary_read = scraper.salary_from_text(posting['salary'])
+        else:
+            salary_read = scraper.salary_from_description(posting.get("description",[]), **kwargs)
+        if overwrite or ('salary_guessed' not in posting.keys()) or (not posting['salary_guessed']):
+            posting['salary_guessed'] = salary_read
+        if overwrite or ('salary_monthly_guessed' not in posting.keys()) or (not posting['salary_monthly_guessed']):
+            posting['salary_monthly_guessed'] = salary_read["monthly"] if salary_read else None
+
+        if 'collected_on' not in posting.keys() or (not posting['collected_on']): #don't overwrite
+            posting['collected_on'] = get_date_of_collection(value=posting, filename=filename, overwrite=False)
+        
+    postings = scraper.find_keywords_in_postings(postings, sort=False, overwrite=overwrite, **kwargs)
+    postings = scraper.rank_postings(postings, overwrite=overwrite, **kwargs)
+    return postings
