@@ -39,7 +39,9 @@ def save_data(data, path = f"{RELATIVE_POSTINGS_PATH}/", name="", with_timestamp
     if with_timestamp:
         date = time.strftime("%Y-%m-%d-%H-%M-%S")
         name = f"{name}_{date}"
-    with open(f"{path}{name}.json", "w", encoding="utf-8") as file:
+    if not name.endswith(".json"):
+        name += ".json"
+    with open(f"{path}{name}", "w", encoding="utf-8") as file:
         if type(data) in [dict, list, str]:
             json.dump(data, file, indent=4, ensure_ascii=False)
         else:
