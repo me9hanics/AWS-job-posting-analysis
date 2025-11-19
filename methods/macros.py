@@ -82,7 +82,7 @@ BASE_RANKINGS ={
                 #specialized data science
                 "data mining":1.1, "data collection":0.8, "data analysis":0.4, "predictive":0.5, "estimation":0.4,
                 "analytics":0.8, "time series":1.1, "nlp": 0.4, "forecasting":0.6, "weather forecast":0.7,
-                "causal":0.7, "inference": 0.7,                
+                "causal":0.7, "inference": 0.7, "ai agents":0.6,
                 #data visualization, dashboards, reporting
                 "power bi": 0.3, "qlik":0.3, "visualization":0.15, "dashboard":0.1, "d3":0.2, "matplotlib":0.3,
                 #databases and data storage
@@ -128,8 +128,9 @@ BASE_RANKINGS ={
                 #other
                 "microsoft": -0.4,
                 },
-    "ranking_case_sensitive":{"ETL":0.9, "ELT":0.5, "AI":0.5, "ML":0.7, "API":0.4, "REST":0.15,
-                           "CI/CD":0.2, "CI CD":0.2, "AWS":0.2, "GIS": 0.1,
+    "ranking_case_sensitive":{"ETL":0.9, "ELT":0.5, "AI":0.8, "ML":0.9, "API":0.4, "REST":0.15,
+                           "CI/CD":0.2, "CI CD":0.2, "AWS":0.2, "GIS": 0.1, "R&D":0.5,
+                           "LLM":0.25, "MCP":0.2,
                            #Negative rankings
                            "SAP":-0.7, "HR":-0.7, "SAS":-0.5, "SEO": -0.3,
                            },
@@ -182,3 +183,6 @@ COLUMN_ORDER = ["title", "company",  "salary_monthly_guessed",
                 "employmentTypes", "salary_guessed",
                 "collected_on", "date", "id", "isHomeOffice", "isActive", "source"]
 EXCEL_COLUMNS = ['title', 'company', 'salary_monthly_guessed', 'locations', 'keywords', 'url', 'isHomeOffice', 'points', 'description']
+CURRENT_POSTINGS_FILENAME = "current_postings.json"
+NEWLY_ADDED_POSTINGS_FILENAME = "newly_added_postings.json"
+POSTINGS_HISTORY_FILENAME = "postings_history.json"
