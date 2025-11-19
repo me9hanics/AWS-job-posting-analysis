@@ -282,7 +282,7 @@ class BaseScraper:
 
     def salary_from_text(self, text, keywords={"annual":["jährlich", "yearly", "per year", "annual", "jährige", "pro jahr", "p.a."],
                                                "monthly":["monatlich", "monthly", "per month", "pro monat"]},
-                                               clarity_comma_char=".", decimal_separator=",", conversion_rate=14):
+                                               clarity_comma_char=".", decimal_separator=",", conversion_rate=12):
         if type(text) != str:
             return None
         text = text.lower()
@@ -335,6 +335,7 @@ class BaseScraper:
                                            r'(\d{5})(?:(?!\d{5}).)*?\b(net|taxes|tax)\b',
                                            ],
                                 **kwargs):
+        #TODO come up with a better way to call this externally - atm have to make an instance, without that cannot self.salary_from_text
         if type(text) != str:
             return None
         for regex in regexes:
@@ -728,7 +729,14 @@ class KarriereAT(BaseScraper):
         if close_driver:
             driver.quit()
         return postings
-    
+
+    def salary_from_text(self, text, keywords={"annual":["jährlich", "yearly", "per year", "annual", "jährige", "pro jahr", "p.a."],
+                                               "monthly":["monatlich", "monthly", "per month", "pro monat"]},
+                                               clarity_comma_char=".", decimal_separator=",", conversion_rate=14):
+        #Conversion rate is 14 here as in Austria 14 salaries are paid per year
+        return super().salary_from_text(text, keywords=keywords, clarity_comma_char=clarity_comma_char,
+                                        decimal_separator=decimal_separator, conversion_rate=conversion_rate)
+        
     def gather_data(self, descriptions=False, save_data=False, verbose=False):
         website = self.rules["website"]
         locations = self.keywords["locations"]
@@ -820,7 +828,6 @@ class KarriereAT(BaseScraper):
         if save_data:
             self.save_data(postings, name=f"karriere_at", with_timestamp=True)
         return postings
-
     
 class Raiffeisen(BaseScraper):
     def __init__(self, driver="", rules = BASE_RULES, keywords = BASE_KEYWORDS,
@@ -944,7 +951,14 @@ class Raiffeisen(BaseScraper):
                                 "nice_to_have": nice_to_have, "benefits": benefits,
                                 "description": description}
         return descriptions
-                
+
+    def salary_from_text(self, text, keywords={"annual":["jährlich", "yearly", "per year", "annual", "jährige", "pro jahr", "p.a."],
+                                               "monthly":["monatlich", "monthly", "per month", "pro monat"]},
+                                               clarity_comma_char=".", decimal_separator=",", conversion_rate=14):
+        #Conversion rate is 14 here as in Austria 14 salaries are paid per year
+        return super().salary_from_text(text, keywords=keywords, clarity_comma_char=clarity_comma_char,
+                                        decimal_separator=decimal_separator, conversion_rate=conversion_rate)
+
     def gather_data(self, url_links=[], descriptions=False, verbose=False):
         titles_pattern = self.rules["gather_data_selector"]
         website = self.rules["website"]
