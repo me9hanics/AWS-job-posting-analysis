@@ -90,7 +90,7 @@ def threshold_postings_by_points(postings, points_threshold = 0.01):
     filtered_postings = {key: value for key, value in postings.items() if (points_threshold == None) or value.get("points", 0) >= points_threshold}
     return filtered_postings
 
-def compare_postings(new = None, previous = None, print_attrs=["title", "company", "points"], printed_text_max_length = 100,
+def compare_postings(new = [], previous = [], print_attrs=["title", "company", "points"], printed_text_max_length = 100,
                      points_threshold = 0.01, added=None, removed=None):
     """
     Compare two lists of postings and print out the differences.
