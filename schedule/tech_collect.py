@@ -10,9 +10,8 @@ except:
 from methods.macros import *
 
 def get_tech_postings(keywords=BASE_KEYWORDS, rankings=BASE_RANKINGS, salary_bearable=SALARY_BEARABLE,
-                      prefix ="postings", path=f"{POSTINGS_PATH}/tech/",
-                      path_excel=f"{EXCELS_PATH}/excel_tech/",
-                      **kwargs):
+                      path=f"{POSTINGS_PATH}/tech/", path_excel=f"{EXCELS_PATH}/excel_tech/",
+                      excel_prefix ="postings", **kwargs):
     """
     Collect legal job postings from various websites.
     
@@ -29,7 +28,7 @@ def get_tech_postings(keywords=BASE_KEYWORDS, rankings=BASE_RANKINGS, salary_bea
         keywords=keywords, 
         rankings=rankings, 
         salary_bearable=salary_bearable,
-        prefix=prefix,
+        prefix=excel_prefix,
         path=path,
         path_excel=path_excel,
         **kwargs
@@ -46,9 +45,10 @@ def main():
         keywords=BASE_KEYWORDS, 
         rankings=BASE_RANKINGS,
         salary_bearable=SALARY_BEARABLE,
+        verbose=True,
     )
     results = data["results"]
-    print(f"Found {len(results)} postings in total")
+    print(f"\nFound {len(results)} postings above threshold.")
     added = [instance["title"] + " - at - " + instance["company"] for key, instance in data["added"].items() if "title" in instance]
     removed = [instance["title"] + " - at - " + instance["company"] for key, instance in data["removed"].items() if "title" in instance]
     keyword_counts = {keyword: sum(keyword in instance["keywords"]
