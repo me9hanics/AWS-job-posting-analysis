@@ -13,12 +13,12 @@ title_keywords = [
 ]
 title_capital_keywords = ["AI", "ML", "LLM", "GIS"]
 description_keywords = [
-    "graph", "network", "machine learning", "deep learning", "artificial intelligence",
-    "analytics", "time series", "data mining", "causal", #"visualization",
+    "graph", "network", "machine learning", "deep learning", "operations research",
+    "artificial intelligence", "analytics", "time series", "data mining", "causal", #"visualization",
     "fabric", "duckdb", "knime", "neo4j", "scala", "nosql", "big data", "sparql", "rdf", #"python", "power bi",
     "ontology", "social network", "biotech", "bioinformatics", "healthcare", "biology", 
     "theory", "theoretic", "science", "scientist", "scientific", "algorithm", "algorithms",
-    "research", "conference", "publication", "phd", "advanced degree", "msc",
+    "research", "conference", "publication", "phd", "advanced degree", "msc", "master's", "masters",
     "geospatial", "spatial", "geograph", "sensor", "remote sensing", "radar",
     "lidar", "embedded", "computer vision", "image processing", #"robot",
 ]
