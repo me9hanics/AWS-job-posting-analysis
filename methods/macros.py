@@ -25,7 +25,7 @@ BASE_RULES = {"website":"",
 BASE_KEYWORDS = {
     "locations" : ["vienna"],
     "titlewords": ["machine learning", "machine learning engineer", "machine learning scientist",
-                   "ML engineer", "ML researcher", "ML developer", "AI ML",
+                   "ML engineer", "ML researcher", "ML developer", "AI ML", "research engineer",
                    "AI engineer", "AI scientist", "AI researcher", "AI developer",
                    "data science", "data scientist", "data mining", "web scraping",
                    "data engineer", "data engineering", "data engineering developer",
@@ -61,16 +61,19 @@ BASE_RANKINGS ={
                 #general and science terms
                 "math":1, "data":0.35, "combinatori":0.8, "statistic":0.25, "neural":0.1, "information":0.1, "algorithm":1.2,
                 "complexity science":3, "complexity":0.3, "theory":0.3, "research": 0.7, "scientific":0.4, "physics":0.4,
-                "operations research":1.5, "optimization":1, "numerical":0.1, "modelling":0.5, "modeling":0.5, "probability":0.2,
-                "complex systems":1.2, "simulation":0.3, "quantitative":0.3, "scale":0.2, 
+                "operations research":1.5, "optimization":0.8, "numerical":0.1, "modelling":0.5, "modeling":0.5, "probability":0.2,
+                "complex systems":1.1, "simulation":0.3, "quantitative":0.3, "scale":0.2, 
                 #titles
                 "engineer": 0.45, "developer": 0.4, "scientist": 1, "researcher": 0.9, "analyst": 0.1, "r&d":0.4,
                 #rank
                 "senior": 0.1,
                 #graphs/networks/geo (extra high points as most terms are part of the description, never in title)
                 "graph":2, "network science":3, "graph theory":2.6, "graph data":2.5, "graph database":1.6,
-                "graph machine learning": 1.8, "graph deep learning": 1.6, "gnn":1.2, "graph neural network":1.4,
+                "graph machine learning": 1.8, "graph deep learning": 1.6, "gnn":1.3, "graph neural network":1.4,
                 "social network":0.5, "geospatial":1.4, "spatial":0.7, "maps":0.4, "geometry":0.4, "geodata": 0.8,
+                #knowledge graphs
+                "knowledge graph":1.3, "knowledge management":0.4, "data management":0.5, "semantic web":0.6,
+                "ontology":0.3, "sparql":0.9, "rdf":0.1, "owl":0.1,
                 #life sciences tech
                 "aithyra":1.8, "bioinformatic": 1.1, "biotech":0.5, "bioengineer":0.8,
                 "health":0.2, "healthcare":0.2, "biology":0.3, "biological":0.4, "chemistry":0.1,
@@ -182,7 +185,18 @@ COLUMN_ORDER = ["title", "company",  "salary_monthly_guessed",
                 "snippet", "description", "salary",
                 "employmentTypes", "salary_guessed",
                 "collected_on", "date", "id", "isHomeOffice", "isActive", "source"]
-EXCEL_COLUMNS = ['title', 'company', 'salary_monthly_guessed', 'locations', 'keywords', 'url', 'isHomeOffice', 'points', 'description']
+EXCEL_COLUMNS = {
+    'title': {'as': 'Title', 'column': 'A', 'width': 38},
+    'company': {'as': 'Company', 'column': 'B', 'width': 24},
+    'salary_monthly_guessed': {'as': 'Salary?', 'column': 'C', 'width': 6.56},
+    'locations': {'as': 'Locations', 'column': 'D', 'width': 14.33},
+    'keywords': {'as': 'Keywords', 'column': 'E', 'width': 50.44},
+    'url': {'as': 'URL', 'column': 'F', 'width': 20.44},
+    'isHomeOffice': {'as': 'HomeOffice', 'column': 'G', 'width': 6},
+    'points': {'as': 'Points', 'column': 'H', 'width': 6},
+    'first_collected_on': {'as': 'First date', 'column': 'I', 'width': 20},
+    'description': {'as': 'Description', 'column': 'J', 'width': 114}
+}
 CURRENT_POSTINGS_FILENAME = "current_postings.json"
 NEWLY_ADDED_POSTINGS_FILENAME = "newly_added_postings.json"
 POSTINGS_HISTORY_FILENAME = "postings_history.json"
