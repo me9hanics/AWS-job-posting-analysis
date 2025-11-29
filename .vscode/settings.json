@@ -1,0 +1,14 @@
+{
+    "python-envs.defaultEnvManager": "ms-python.python:conda",
+    "python-envs.defaultPackageManager": "ms-python.python:conda",
+    "python-envs.pythonProjects": [],
+    "launch": {
+
+
+        "configurations": [],
+        "compounds": []
+    },
+    //"python.defaultInterpreterPath": "C:\\Users\\hanic\\miniforge3\\envs\\jobposts\\python.exe",
+    "python.terminal.activateEnvironment": true,
+    "python.terminal.activateEnvInCurrentTerminal": true
+}
