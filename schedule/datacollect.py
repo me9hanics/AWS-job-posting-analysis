@@ -16,9 +16,6 @@ KEYWORDS = macros.BASE_KEYWORDS.copy()
 RANKINGS = macros.BASE_RANKINGS.copy()
 SCRAPERS = [sites.KarriereAT, sites.Raiffeisen]
 SALARY_BEARABLE = macros.SALARY_BEARABLE
-COLUMN_WIDTHS = {"A": 38, "B": 24, "C": 6.56, "D": 14.33, "E": 50.44,
-                 "F": 20.44, "G": 6, "H": 11, "I": 114,
-                } #TODO put macros in a separate file
 
 def reduce_url(url):
     return url.split("www.")[1] if "www." in url else url.split("://")[1] if "://" in url else url
@@ -31,7 +28,8 @@ def remove_bad_chars(df):
 def replace_chars(df):
     return df.map(lambda x: x.encode('unicode_escape').decode('utf-8') if isinstance(x, str) else x)
 
-def create_excel_report(df, added, keywords, path_excel, prefix, throw_error=True):
+def create_excel_report(df, path_excel = f"{RELATIVE_EXCELS_PATH}/", prefix ='postings',
+                        added=None, keywords=None, throw_error=True, widths = None):
     from openpyxl import load_workbook
     from openpyxl.styles import Font
     
@@ -41,8 +39,9 @@ def create_excel_report(df, added, keywords, path_excel, prefix, throw_error=Tru
         time.sleep(1)
         workbook = load_workbook(excel_file_path)
         sheet = workbook.active
-        for column, width in COLUMN_WIDTHS.items():
-            sheet.column_dimensions[column].width = width
+        if widths:
+            for column, width in widths.items():
+                sheet.column_dimensions[column].width = width
 
         #Row bold, and columns bold
         for cell in sheet[1]:
@@ -102,7 +101,7 @@ def scrape_sites(scrapers = SCRAPERS, keywords=KEYWORDS, rankings=RANKINGS, sala
 def get_postings(scrapers = SCRAPERS, keywords =KEYWORDS, rankings=RANKINGS, salary_bearable=SALARY_BEARABLE, path=f"{RELATIVE_POSTINGS_PATH}/",
                  path_excel=f"{RELATIVE_EXCELS_PATH}/", excel_prefix ="postings", verbose=False, verbose_data_gathering=False, threshold = 0.01,
                  col_order = COLUMN_ORDER, excel_cols = EXCEL_COLUMNS, efficient_storing = True, only_thresholded_stored = False,
-                current_postings_filename = CURRENT_POSTINGS_FILENAME, newly_added_postings_filename = NEWLY_ADDED_POSTINGS_FILENAME,
+                 current_postings_filename = CURRENT_POSTINGS_FILENAME, newly_added_postings_filename = NEWLY_ADDED_POSTINGS_FILENAME,
                  postings_history_filename = POSTINGS_HISTORY_FILENAME, **kwargs):
     keywords['titlewords'] = list(set(keywords['titlewords']))
     
@@ -112,11 +111,10 @@ def get_postings(scrapers = SCRAPERS, keywords =KEYWORDS, rankings=RANKINGS, sal
     results = {k: v for k, v in sorted(results.items(), key=lambda item: item[1]["points"], reverse=True)}
     if verbose:
         print(f"Found {len(results)} results in total")
-
-    df = pd.DataFrame.from_dict(results, orient='index')
-    df["locations"] = df["locations"].apply(lambda x: x if isinstance(x, list) else [])
-    companies = list(df[df['locations'].apply(lambda locs: any("wien" in loc.lower() or "vienna" in loc.lower() for loc in locs))]['company'].unique())
-    previous_file_name = files_io.get_filename_from_dir(path, index = -1) #if there is no file, returns None
+    
+    previous_file_name = "postings_history.json"
+    if not os.path.exists(f"{path}{previous_file_name}"):
+        previous_file_name = files_io.get_filename_from_dir(path, index = -1) #if there is no file, returns None
     added, removed = postings_utils.get_added_and_removed(results, f'{path}{previous_file_name}' if previous_file_name else [])
 
     if only_thresholded_stored:
@@ -148,13 +146,29 @@ def get_postings(scrapers = SCRAPERS, keywords =KEYWORDS, rankings=RANKINGS, sal
         removed = postings_utils.threshold_postings_by_points(removed, points_threshold=threshold)
         results = postings_utils.threshold_postings_by_points(results, points_threshold=threshold)
     if verbose:
-        print(f"Found {len(results)} postings {" above threshold" if threshold is not None else ''}. Added {len(added)} postings, removed {len(removed)} postings{" above threshold" if threshold is not None else ''}")
+        print(f"Found {len(results)} postings. Added {len(added)} postings, removed {len(removed)} postings." + " above threshold" if threshold is not None else "")
+
+    df = pd.DataFrame.from_dict(results, orient='index')
+    df["locations"] = df["locations"].apply(lambda x: x if isinstance(x, list) else [])
+    companies = list(df[df['locations'].apply(lambda locs: any("wien" in loc.lower() or "vienna" in loc.lower() for loc in locs))]['company'].unique())
 
     excel_file_path = None
     if path_excel:
-        excel_df = df[excel_cols].copy()
-        excel_df.loc[:, "url"] = excel_df["url"].apply(lambda x: reduce_url(x))
-        excel_file_path = create_excel_report(excel_df, added, keywords, path_excel, excel_prefix, throw_error=True)
+        #TODO put also into a function
+        for col, vals in excel_cols.items():
+            if not col in df.columns :
+                df[col] = ""
+        cols_ids = [vals['column'] for key, vals in excel_cols.items()]
+        cols_ids_sorted = sorted(cols_ids, key=lambda x: (len(x), x))
+        cols_sorted = [key for col_id in cols_ids_sorted for key, vals in excel_cols.items() if vals['column'] == col_id]
+        excel_df = df[cols_sorted].copy()
+        excel_df = excel_df.rename(columns={col: vals['as'] for col, vals in excel_cols.items()})
+        if 'url' in excel_df.columns:
+            excel_df.loc[:, "url"] = excel_df["url"].apply(lambda x: reduce_url(x))
+        excel_file_path = create_excel_report(excel_df, path_excel = path_excel, prefix = excel_prefix,
+                                              added = added, keywords = keywords, throw_error=True,
+                                              widths = {vals['column']: vals.get('width', 20)
+                                                        for col, vals in excel_cols.items()})
         if verbose:
             print(f"Excel report created at {excel_file_path}")
 
@@ -174,9 +188,12 @@ def send_email(results, to_email, file_path = None, subject="Daily report", from
     from email.mime.text import MIMEText
     from email.mime.multipart import MIMEMultipart
 
-    body = f"Dear User, here is your report of the current relevant job postings.\n\nNew posting not seen before:\
-            {'\n'.join(result['title'] + '\n\t at ' + result['company'] for id, result in results['added'].values())}\
-            \n\nCurrently relevant companies: {'\n'.join(results['companies'])}\nBest regards,\n\tHanicsBot"
+    new_postings = '\n'.join(result['title'] + '\n\t at ' + result['company'] for id, result in results['added'].items())
+    companies_list = '\n'.join(results['companies'])
+    
+    body = "Dear User, here is your report of the current relevant job postings.\n\n" + \
+            f"New posting not seen before:\n{new_postings}\n\nCurrently relevant companies:\n{companies_list}\n\n" + \
+            "Best regards,\n\tHanicsBot"
     msg = MIMEMultipart()
     msg.attach(MIMEText(body, 'plain'))
 

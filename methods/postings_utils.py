@@ -193,11 +193,11 @@ def unify_postings(postings=None, folder_path=f"{RELATIVE_POSTINGS_PATH}/tech/",
                     if collected_on:
                         stored_first_collected_on = all_postings[key][0]['first_collected_on']
                         stored_last_collected_on = all_postings[key][0]['last_collected_on']
-                        if (not stored_first_collected_on or collected_on > stored_first_collected_on):
+                        if (not stored_first_collected_on or collected_on < stored_first_collected_on):
                             for posting_store in all_postings[key]:
                                 posting_store['last_collected_on'] = collected_on
                                 posting_store["description"] = value.get("description", posting_store.get("description",None))
-                        if (not stored_last_collected_on or collected_on < stored_last_collected_on):
+                        if (not stored_last_collected_on or collected_on > stored_last_collected_on):
                             for posting_store in all_postings[key]:
                                 posting_store['first_collected_on'] = collected_on
     return all_postings
