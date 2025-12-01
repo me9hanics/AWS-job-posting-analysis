@@ -6,6 +6,7 @@ sys.path.append(parent_path)
 
 from methods.macros import POSTINGS_PATH
 import json
+from datetime import datetime
 
 title_keywords = [
     "data", "research", "python", "software", "developer", "graph", "network", "time",
@@ -34,8 +35,8 @@ filter_out_title_keywords = [
 ]
 filter_out_title_capital_keywords = ["UX", "C#", ".NET", "PHP"]
 
-FILE_PATH = f"{POSTINGS_PATH}/tech/current_postings.json"
-OUTPUT_PATH = f"C:/GitHubRepo/cv-automation/src/cvscripts/generation/filtered_postings.json"
+FILE_PATH = f"{POSTINGS_PATH}/tech/newly_added_postings.json"
+OUTPUT = f"C:/GitHubRepo/cv-automation/src/cvscripts/generation/"
 
 def select_keywords(postings, title_keywords=[], title_capital_keywords=[],
                     description_keywords=[], description_capital_keywords=[]):
@@ -73,7 +74,7 @@ def apply_filters(postings, functions = [], kwargs_list = []):
         filtered = func(filtered, **kwargs)
     return filtered
 
-def main(current_postings=None, output_path=None):
+def main(current_postings:dict=None, output_path:str=None):
     if current_postings is None:
         with open(FILE_PATH, 'r', encoding='utf-8') as f:
             current_postings = json.load(f)
@@ -100,9 +101,12 @@ def main(current_postings=None, output_path=None):
             filtered_results[key] = current_postings[key]
     
     if output_path:
+        if not output_path.endswith('.json'):
+            output_path = output_path + '/' if not output_path.endswith('/') else output_path
+            output_path = os.path.join(output_path, f'filtered_postings_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json')
         with open(output_path, 'w', encoding='utf-8') as f:
             json.dump(filtered_results, f, indent=4, ensure_ascii=False)
     return filtered_results
 
 if __name__ == "__main__":
-    main(output_path=OUTPUT_PATH)
+    main(output_path=OUTPUT)
