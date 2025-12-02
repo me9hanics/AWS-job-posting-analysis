@@ -5,6 +5,7 @@ import time
 import json
 import os
 from copy import deepcopy
+from typing import List, Tuple
 try:
     from methods import scrape
     from methods import urls
@@ -522,6 +523,25 @@ class BaseScraper:
                     postings[id]["keywords"] = keywords
         return postings
 
+    def apply_filters_transformations(postings, filters: List[Tuple] = []):
+        """
+        Apply a series of filter functions to postings.
+
+        Parameters:
+        postings: dict
+            The postings to filter.
+        filters: list of tuples
+            Each tuple contains (function, kwargs_dict).
+
+        Returns:
+        filtered: dict
+            The filtered postings.
+        """
+        filtered = postings
+        for func, kwargs in filters:
+            filtered = func(filtered, **kwargs)
+        return filtered
+
     def gather_data(self, close_driver=True,
                     url_links = [],
                     posting_id = False,
@@ -529,7 +549,8 @@ class BaseScraper:
                     posting_id_regex = r'\d+',
                     titles = False,
                     companies = False,
-                    salary = False):
+                    salary = False,
+                    filters = []):
         """
         url_links: list | function
         """
@@ -570,6 +591,7 @@ class BaseScraper:
         postings = self.filter_postings(postings)
         postings = self.rank_postings(postings)
         postings = self.find_keywords_in_postings(postings)
+        postings = self.apply_filters_transformations(postings, filters=filters)
         if titles:
             title_list = [posting["text"] for posting in postings.values()]
         if companies:
