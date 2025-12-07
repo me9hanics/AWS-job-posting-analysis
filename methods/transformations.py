@@ -1,0 +1,49 @@
+from typing import List, Tuple
+
+def apply_filters_transformations(postings, transformations: List[Tuple[callable, dict]] = []):
+    """
+    Apply a series of filter functions to postings.
+    Parameters:
+    postings: dict
+        The postings to filter.
+    filters: list of tuples
+        Each tuple contains (function, kwargs_dict).
+    Returns:
+    filtered: dict
+        The filtered postings.
+    """
+    transformed = postings
+    for func, kwargs in transformations:
+        transformed = func(transformed, **kwargs)
+    return transformed
+
+def select_keywords(postings, title_keywords=[], title_capital_keywords=[],
+                    description_keywords=[], description_capital_keywords=[]):
+    filtered = {}
+    for key, value in postings.items():
+        title = value.get('title', '').lower()
+        description = value.get('description', '').lower()
+        if any(term.lower() in title for term in title_keywords) or \
+           any(term.lower() in description for term in description_keywords) or \
+           any(term in title for term in title_capital_keywords) or \
+           any(term in description for term in description_capital_keywords):
+            filtered[key] = value
+    return filtered
+
+def filter_out_keywords(postings, title_keywords=[], title_capital_keywords=[],
+                         description_keywords=[], description_capital_keywords=[]):
+    filtered = postings.copy()
+    for key, value in postings.items():
+        title = value.get('title', '')
+        description = value.get('description', '')
+        if any(term.lower() in title.lower() for term in title_keywords) or \
+           any(term.lower() in description.lower() for term in description_keywords) or \
+           any(term in title for term in title_capital_keywords) or \
+           any(term in description for term in description_capital_keywords):
+            filtered.pop(key, None)
+    return filtered
+
+def filter_on_points(postings, min_points=0.01, default_points=0):
+    filtered = {key: value for key, value in postings.items() if value.get('points', default_points) >= min_points}
+    return filtered
+

@@ -11,11 +11,21 @@ try:
     from methods import urls
     from methods.macros import (SALARY_BEARABLE, BASE_RULES, BASE_KEYWORDS, BASE_RANKINGS,
                                 RELATIVE_POSTINGS_PATH)
+    from methods.attributes import *
+    from methods.postings_utils import (filter_postings, process_posting_soups)
+    from methods.transformations import apply_filters_transformations
+    from methods.files_io import save_data
+    from methods.scrape import next_page_logic_by_length
 except ModuleNotFoundError:
     import scrape
     import urls
     from macros import (SALARY_BEARABLE, BASE_RULES, BASE_KEYWORDS, BASE_RANKINGS,
                         RELATIVE_POSTINGS_PATH)
+    from attributes import *
+    from postings_utils import (filter_postings, process_posting_soups)
+    from transformations import apply_filters_transformations
+    from files_io import save_data
+    from scrape import next_page_logic_by_length
 
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
@@ -93,7 +103,17 @@ class BaseScraper:
         self.LOCATIONS_DESIRED = locations_desired
         self.LOCATIONS_SECONDARY = locations_secondary
 
-    def close_website_popup(self, button_selector, url=None, 
+    def _construct_page_urls(self, base_url = None, locations = None, titlewords = None):
+        if base_url is None:
+            base_url = self.rules["scraping_base_url"]
+        if locations is None:
+            locations = self.keywords["locations"]
+        if titlewords is None:
+            titlewords = self.keywords["titlewords"]
+        return urls.urls_builder(base_url = base_url, slash_elements_list = [titlewords, locations],
+                                  zipped = True, all_combinations = True, no_duplicates = True)
+
+    def _close_website_popup(self, button_selector, url=None, 
                             click_wait=12.0, pre_click_scroll=False, 
                             post_click_wait = 0.0, post_click_scroll_down=False, 
                             close_driver=True, open_page=True):
@@ -103,37 +123,12 @@ class BaseScraper:
         #if driver is None:
         #    driver = webdriver.Firefox()
         driver = self.driver
-        if url and open_page:
-            driver.get(url)
-
-        try:
-            driver.execute_script(SCROLL_1000_SCRIPT)
-            WebDriverWait(driver, click_wait).until(
-                    expected_conditions.element_to_be_clickable((CSS_SELECTOR, button_selector))
-            )
-            try:
-                if pre_click_scroll:
-                    driver.execute_script(SCROLL_DOWN_SCRIPT)
-                button = driver.find_element(CSS_SELECTOR, button_selector)
-                button.click()
-                if post_click_scroll_down:
-                    driver.execute_script(SCROLL_DOWN_SCRIPT)
-
-            except (NoSuchElementException, ElementClickInterceptedException, ElementNotInteractableException):
-                pass
-
-            if post_click_wait:
-                time.sleep(post_click_wait)
-            soup = BeautifulSoup(driver.page_source, 'html.parser')
-        except TimeoutException:
-            soup = BeautifulSoup(driver.page_source, 'html.parser')
-
-        finally:
-            if close_driver:
-                driver.quit()
-        return soup
+        return scrape.close_website_popup(driver, button_selector, url=url, click_wait=click_wait,
+                                          pre_click_scroll=pre_click_scroll, post_click_wait=post_click_wait,
+                                          post_click_scroll_down=post_click_scroll_down,
+                                          close_driver=close_driver, open_page=open_page)
     
-    def load_page(self, url, close_popup=True, 
+    def _load_page(self, url, close_popup=True, close_popup_method: Callable = None,
                   load_more_button = True, load_by_scrolling = False,
                   popup_wait=12.0, pre_popup_scroll=True, popup_selector=None,
                   post_popup_close_wait=0.3, post_popup_close_scroll_down=True,
@@ -149,6 +144,9 @@ class BaseScraper:
             The url of the website to load.
         close_popup: bool
             If True, close the popup window.
+        close_popup_method: Callable
+            The method to use for closing the popup. By default, uses close_website_popup,
+                but can be replaced e.g. in site scraper classes.
         load_more_button: bool
             If True, keep pressing a "Load more" button until it disappears.
         load_by_scrolling: bool
@@ -175,270 +173,75 @@ class BaseScraper:
             The final page soup after all actions have been performed.
         """
         driver = self.driver
-        driver.get(url)
-        if driver is None:
-            driver = webdriver.Firefox()
-        if popup_selector is None:
-            popup_selector = self.rules["load_page_button_selector"]
-        if load_more_selector is None:
-            load_more_selector = self.rules["load_page_press_button_until_gone_selector"]
-        
-        if close_popup:
-            self.close_website_popup(popup_selector, url=None, click_wait=popup_wait,
-                                     pre_click_scroll=pre_popup_scroll,
-                                     post_click_wait=post_popup_close_wait,
-                                     post_click_scroll_down=post_popup_close_scroll_down,
-                                     close_driver=False, open_page=False)
+        if not close_popup_method:
+            close_popup_method = getattr(self, "close_popup_method", None) or self._close_website_popup
+        return scrape.load_page(driver, url, close_popup=close_popup, load_more_button = load_more_button,
+                                close_popup_method = close_popup_method,
+                                load_by_scrolling = load_by_scrolling, popup_wait=popup_wait,
+                                pre_popup_scroll=pre_popup_scroll, popup_selector=popup_selector,
+                                post_popup_close_wait=post_popup_close_wait,
+                                post_popup_close_scroll_down=post_popup_close_scroll_down,
+                                action_wait=action_wait, first_action_wait = first_action_wait,
+                                post_load_more_wait=post_load_more_wait,
+                                load_more_selector=load_more_selector,
+                                close_driver=close_driver)
 
-        if load_more_button:
-            final_page_soup = scrape.press_button_until_gone(load_more_selector, url = None,
-                                                             first_wait=first_action_wait,
-                                                             pre_click_wait=action_wait,
-                                                             post_click_wait=post_load_more_wait,
-                                                             scroll=True, open_page=False,
-                                                             driver=driver, close_driver=False)
-        elif load_by_scrolling:
-            final_page_soup = scrape.scroll_scrape_website(url=None, driver=driver, close_driver=False,
-                                                           wait_time=action_wait, pre_first_scroll_wait=first_action_wait,
-                                                           open_page=False)
-        else:
-            final_page_soup = BeautifulSoup(driver.page_source, 'html.parser')
-
-        if close_driver:
-            driver.quit()
-        return final_page_soup
-
-    def load_pages(self, urls, close_popup="first", popup_closing_wait=12.0,
+    def _load_pages(self, urls, close_popup="first", popup_closing_wait=12.0,
+                   page_load_method: Callable = None,
                    load_more_button = True, load_by_scrolling = False,
                    post_click_wait = 0.0, close_driver=True, **kwargs):
         driver = self.driver
-        if driver is None:
-            driver = webdriver.Firefox()
-        all_soups = []
-
-        if close_popup in ["none", False]:
-            _close_popup_bool = False
-        else:
-            _close_popup_bool = True
-
-        for i,url in enumerate(urls):
-            soup = self.load_page(url, close_popup =_close_popup_bool, popup_wait=popup_closing_wait,
-                                  load_more_button = load_more_button, load_by_scrolling=load_by_scrolling,
-                                  post_click_wait = post_click_wait, close_driver=False, **kwargs)
-            if i==0 and close_popup == "first":
-                _close_popup_bool = False
-            all_soups.append(soup)
-
-        if close_driver:
-            driver.quit()
-        return all_soups
-
-    def construct_page_urls(self, base_url = None, locations = None, titlewords = None):
-        if base_url is None:
-            base_url = self.rules["scraping_base_url"]
-        if locations is None:
-            locations = self.keywords["locations"]
-        if titlewords is None:
-            titlewords = self.keywords["titlewords"]
-        links = urls.urls_builder(base_url = base_url, slash_elements_list = [titlewords, locations],
-                                  zipped = True, all_combinations = True)
-        links = list(set(links)) #Don't include duplicates
-        return links
+        if not page_load_method:
+            page_load_method = getattr(self, "page_load_method", None) or self._load_page
+        return scrape.load_pages(driver, urls, close_popup=close_popup, popup_closing_wait=popup_closing_wait,
+                                page_load_method=page_load_method,
+                                load_more_button = load_more_button, load_by_scrolling = load_by_scrolling,
+                                post_click_wait = post_click_wait, close_driver=close_driver, **kwargs)
 
     def next_page_logic(self, input, **kwargs):
         """input: typically a soup or HTML element, possibly dict or string"""
         #TODO
         pass
 
-    def salary_number_from_str(self, text, keywords=[],
-                               remove_chars = ['.'], lengths=[6,5]):
-        if type(text) != str:
-            return None
-        for char in remove_chars:
-            text_cleaned = text.replace(char, "")
-        if not keywords:
-            for length in lengths:
-                #Search for length-digit numbers
-                value = re.search(rf'\d{{{length}}}', text_cleaned)
-                if value:
-                    return int(value.group())
-        else:
-            if any([keyword in text for keyword in keywords]):
-                for length in lengths:
-                    value = re.search(rf'\d{{{length}}}', text_cleaned)
-                    if value:
-                        return int(value.group())
-        return None
-    
-    def salary_regex(self, text, regexes=[r'\d{6},\d{2}', r'\d{5},\d{2}',  r'\d{6}', r'\d{5}'],
-                     decimal_separator=","):
-        for regex in regexes:
-            value = re.search(regex, text)
-            if value:
-                try:
-                    return int(value.group())
-                except ValueError:
-                    return int(float(value.group().replace(decimal_separator,".")))
-        return None
-
-    def salary_from_text(self, text, keywords={"annual":["jährlich", "yearly", "per year", "annual", "jährige", "pro jahr", "p.a."],
+    def _salary_from_text(self, text, keywords={"annual":["jährlich", "yearly", "per year", "annual", "jährige", "pro jahr", "p.a."],
                                                "monthly":["monatlich", "monthly", "per month", "pro monat"]},
                                                clarity_comma_char=".", decimal_separator=",", conversion_rate=12):
-        if type(text) != str:
-            return None
-        text = text.lower()
-        salary = {}
-        if "annual" in keywords.keys():
-            value = self.salary_number_from_str(text, keywords["annual"], remove_chars=[clarity_comma_char], lengths=[6,5])
-            if value:
-                salary["annual"] = value
-        if (not salary) and ("monthly" in keywords.keys()):
-            value = self.salary_regex(text.replace(clarity_comma_char, ""), decimal_separator=decimal_separator,
-                                      regexes=[r'\d{{4}}{0}\d{{2}}'.format(decimal_separator)])
-            if not value:
-                value = self.salary_number_from_str(text, keywords["monthly"], remove_chars=[clarity_comma_char], lengths=[4])
-            if value:
-                salary["monthly"] = value
-        if not salary:
-            value = self.salary_regex(text.replace(clarity_comma_char, ""), decimal_separator=decimal_separator,
-                                      regexes=[r'\d{{6}}{0}\d{{2}}'.format(decimal_separator), r'\d{{5}}{0}\d{{2}}'.format(decimal_separator), r'\d{6}', r'\d{5}'])
-            if value:
-                salary["annual"] = value
-            else:
-                value = self.salary_regex(text.replace(clarity_comma_char, ""), decimal_separator=decimal_separator,
-                                          regexes=[r'\d{{4}}{0}\d{{2}}'.format(decimal_separator), r'\d{4}'])
-                if value:
-                    salary["monthly"] = value
-            
-        #Conversion
-        if list(salary.keys()) == ["annual"]:
-            salary["monthly"] = int(salary["annual"]/conversion_rate)
-        elif list(salary.keys()) == ["monthly"]:
-            salary["annual"] = int(salary["monthly"]*conversion_rate)
+        return salary_from_text(text, keywords=keywords, clarity_comma_char=clarity_comma_char,
+                                decimal_separator=decimal_separator, conversion_rate=conversion_rate)
 
-        if salary.keys() == []:
-            return None
-        return salary
-
-    def salary_from_description(self, text,
-                                regexes = [r'(Salary|Gehalt|Compensation|Vergütung):.*',
-                                           r'\b(Gross|Brutto|Net|Netto)\b:.*',
-                                           r'(\d{5}[.,]\d+)(?:(?!\d{5}[.,]?\d*).)*?\b(netto|brutto|gross)\b',#select last such number
-                                           r'(\d{2}[.,]\d{3}[.,]\d+)(?:(?!\d{2}[.,]\d{3}[.,]\d*).)*?\b(netto|brutto|gross)\b',
-                                           r'(\d{4}[.,]\d+)(?:(?!\d{4}[.,]?\d*).)*?\b(netto|brutto|gross)\b',
-                                           r'(\d{1}[.,]\d{3}[.,]\d+)(?:(?!\d{1}[.,]\d{3}[.,]\d*).)*?\b(netto|brutto|gross)\b',
-                                           r'(\d{5})(?:(?!\d{5}).)*?\b(netto|brutto|gross)\b',
-                                           r'(\d{2}[.,]\d{3})(?:(?!\d{2}[.,]\d{3}).)*?\b(netto|brutto|gross)\b',
-                                           r'(\d{5}[.,]\d+)(?:(?!\d{5}[.,]?\d*).)*?\b(net|taxes|tax)\b',
-                                           r'(\d{4}[.,]\d+)(?:(?!\d{4}[.,]?\d*).)*?\b(net|taxes|tax)\b',
-                                           r'(\d{1}[.,]\d{3})(?:(?!\d{1}[.,]\d{3}).)*?\b(netto|brutto|gross)\b',
-                                           r'\d{4,5}[.,]\d{2}',
-                                           r'(\d{5})(?:(?!\d{5}).)*?\b(net|taxes|tax)\b',
-                                           ],
-                                **kwargs):
-        #TODO come up with a better way to call this externally - atm have to make an instance, without that cannot self.salary_from_text
-        if type(text) != str:
-            return None
-        for regex in regexes:
-            salary_section = re.search(regex, text, flags=re.IGNORECASE)
-            if salary_section:
-                salary = self.salary_from_text(salary_section.group(), **kwargs)
-                return salary
-        return None
-
-    def salary_points(self, salary, salary_bearable = SALARY_BEARABLE, salary_ratio = 0.15/100,
+    def _salary_points(self, salary, salary_bearable = SALARY_BEARABLE, salary_ratio = 0.15/100,
                       high_dropoff = True, dropoff_bearable_ratio = 1.25): #better at around 1.4
-        points = (salary-salary_bearable)*salary_ratio
-        if high_dropoff & (salary > salary_bearable*dropoff_bearable_ratio):
-            max_points = (salary_bearable*dropoff_bearable_ratio-salary_bearable)*salary_ratio
-            points = 2 * max_points - points
-        return points
+        return salary_points(salary, salary_bearable = salary_bearable, salary_ratio = salary_ratio,
+                             high_dropoff = high_dropoff, dropoff_bearable_ratio = dropoff_bearable_ratio)   
 
-    def process_posting_soups(self, soups, pattern, website = "",
+    def _process_posting_soups(self, soups, pattern, website = "",
                       posting_id=False, posting_id_path=None,
                       posting_id_regex=r'\d+', title_path=None, 
                        company_path=None, salary_path=None):
-        postings = {}
-        for soup in soups:
-            selects = soup.select(pattern)
-            for select in selects:
-                id = None
-                title = None
-                company = None
-                salary = None
-                salary_versions = {}
-                if title_path:
-                    title = select[title_path].text
-                if company_path:
-                    company = select[company_path].text
-                if salary_path:
-                    salary = select[salary_path].text
-                    salary_versions = self.salary_from_text(salary)
+        return process_posting_soups(soups, pattern, website = website,
+                      posting_id=posting_id, posting_id_path=posting_id_path,
+                      posting_id_regex=posting_id_regex, title_path=title_path, 
+                       company_path=company_path, salary_path=salary_path)
 
-                if posting_id:
-                    if posting_id_path is None:
-                        id = re.search(posting_id_regex, select.text).group()
-                    else:
-                        id = re.search(posting_id_regex, select[posting_id_path]).group()
-
-                    if (id is not None) and (id in postings.keys()):
-                        _text = select.text
-                        if _text:
-                            _text = _text.strip()
-                        postings[id] = {"title": title, "company": company, "id":id,
-                                        "source": website, "salary": salary,
-                                        "salary_versions": salary_versions, "text": _text}
-                else:
-                    _text = select.text
-                    if _text:
-                        _text = _text.strip()
-                    if _text and (_text not in postings.keys()):
-                        postings[_text] = {"title": title, "company": company, "id":None,
-                                           "source": website, "salary": salary,
-                                           "salary_versions": salary_versions, "text": _text}
-        return postings
-
-    def save_data(self, data, path = f"{RELATIVE_POSTINGS_PATH}/", name="", with_timestamp = True, verbose = False):
-        #check if path exists
-        if not os.path.exists(path):
-            os.makedirs(path)
+    def _save_data(self, data, path = f"{RELATIVE_POSTINGS_PATH}/", name="", with_timestamp = True, verbose = False):
         if not name:
             name = self.rules["website"]
-        if with_timestamp:
-            date = time.strftime("%Y-%m-%d-%H-%M-%S")
-            name = f"{name}_{date}"
-        with open(f"{path}{name}.json", "w", encoding="utf-8") as file:
-            if type(data) in [dict, list, str]:
-                json.dump(data, file, indent=4, ensure_ascii=False)
-            else:
-                if verbose:
-                    print(f"Could not save data of type {type(data)}")
+        save_data(data, path=path, name=name, with_timestamp=with_timestamp, verbose=verbose)
     
-    def filter_postings(self, postings:dict, banned_words=None, banned_capital_words=None):
+    def _filter_postings(self, postings:dict, banned_words=None, banned_capital_words=None):
         if not banned_words:
             banned_words = self.keywords.get("banned_words", [])
         if not banned_capital_words:
             banned_capital_words = self.keywords.get("banned_capital_words", [])
-        filtered_postings = {}
-        for id, posting in postings.items():
-            title = posting["title"]
-            if any([word in title.lower() for word in banned_words]):
-                continue
-            if any([word in title for word in banned_capital_words]):
-                continue
-            filtered_postings[id] = posting
-        return filtered_postings
+        return filter_postings(postings, banned_words=banned_words,
+                               banned_capital_words=banned_capital_words)
     
-    def check_locations(self, locations_list, locations_desired=["vienna", "wien", "österreich"]):
+    def _check_locations(self, locations, locations_desired=["vienna", "wien", "österreich"]):
         if not locations_desired:
             locations_desired = self.__dict__.get("LOCATIONS_DESIRED", LOCATIONS_DESIRED)
-        for location in locations_list:
-            for desired in locations_desired:
-                if desired.lower() in location.lower(): #in the string, e.g. "wien" in "wien 04"
-                    return True
-        return False
-
-    def rank_postings(self, postings:dict, keyword_points=None, desc_ratio = 0.3,
+        return check_locations(locations = locations, locations_desired=locations_desired)
+    
+    def _rank_postings(self, postings:dict, keyword_points=None, desc_ratio = 0.3,
                       salary_bearable = None, salary_ratio = 0.15/100,
                       dropoff_bearable_ratio = 1.4, overwrite = True,
                       locations_desired=None, locations_secodary=None, **kwargs):
@@ -451,40 +254,13 @@ class BaseScraper:
         if not locations_secodary:
             locations_secodary = getattr(self, "LOCATIONS_SECONDARY", LOCATIONS_SECONDARY)
 
-        for id, posting in postings.items():
-            if not overwrite and ("points" in posting.keys()) and posting["points"] is not None:
-                continue
-            title = posting["title"] if "title" in posting.keys() else ""
-            description = posting["description"] if "description" in posting.keys() else ""
-            salary = posting["salary_monthly_guessed"]
-            points = 0
-            title_max_point = 0
-            for keyword, value in keyword_points["ranking_lowercase"].items():
-                if keyword in title.lower():
-                    title_max_point = value if abs(value) > abs(title_max_point) else title_max_point
-                if keyword in description.lower():
-                    points += value*desc_ratio
-            for keyword, value in keyword_points["ranking_case_sensitive"].items():
-                if keyword in title:
-                    title_max_point = value if abs(value) > abs(title_max_point) else title_max_point
-                if keyword in description:
-                    points += value*desc_ratio
-            points += title_max_point
+        return rank_postings(postings, keyword_points=keyword_points, desc_ratio = desc_ratio,
+                             salary_bearable = salary_bearable, salary_ratio = salary_ratio,
+                             dropoff_bearable_ratio = dropoff_bearable_ratio, overwrite = overwrite,
+                             locations_desired=locations_desired, locations_secodary=locations_secodary,
+                             **kwargs)
 
-            if salary:
-                points += self.salary_points(salary, salary_bearable=salary_bearable, salary_ratio=salary_ratio,
-                                             high_dropoff=True, dropoff_bearable_ratio=dropoff_bearable_ratio)
-            
-            if posting.get("locations"):
-                if not self.check_locations(posting["locations"], locations_desired=locations_desired):
-                    points -= 1
-                    if not self.check_locations(posting["locations"], locations_desired=locations_secodary):
-                        points -= 1
-
-            postings[id]["points"] = round(points, 3)
-        return postings
-
-    def find_keywords(self, text, non_capital = None, capital = None, sort=True, rankings = None):
+    def _find_keywords(self, text, non_capital = None, capital = None, sort=True, rankings = None):
         if not non_capital:
             non_capital = getattr(self, "all_keywords_noncapital", ALL_KEYWORDS_NONCAPITAL)
         if not capital:
@@ -492,55 +268,25 @@ class BaseScraper:
         if sort and (not rankings):
             rankings = getattr(self, "rankings", BASE_RANKINGS)
 
-        found = []
-        for keyword in non_capital:
-            if keyword in text.lower():
-                found.append(keyword)
-        for keyword in capital:
-            if keyword in text:
-                found.append(keyword)
-
-        if sort:
-            found = sorted(found,
-                key=lambda k: -abs(rankings.get("ranking_lowercase", {}).get(k, 0))
-            )
-        return found
+        return find_keywords(text, non_capital=non_capital, capital=capital, sort=sort, rankings=rankings)
     
-    def find_keywords_in_postings(self, postings:dict, description_key = "description", overwrite = True,
+    def _find_keywords_in_postings(self, postings:dict, description_key = "description", overwrite = True,
                                   non_capital = None, capital=None, sort=True, rankings = None, **kwargs):
         if not non_capital:
             non_capital = getattr(self, "all_keywords_noncapital", ALL_KEYWORDS_NONCAPITAL)
         if not capital:
             capital = getattr(self, "all_keywords_capital", ALL_KEYWORDS_CAPITAL)
 
-        for id, posting in postings.items():
-            if overwrite or ("keywords" not in posting.keys()) or (not posting["keywords"]):
-                postings[id]["keywords"] = []
-                if description_key in posting.keys():
-                    text = posting[description_key]
-                    keywords = self.find_keywords(text, non_capital=non_capital, capital=capital,
-                                                  sort=sort, rankings=rankings)
-                    postings[id]["keywords"] = keywords
-        return postings
+        return find_keywords_in_postings(postings, method = self._find_keywords, description_key = description_key, overwrite = overwrite,
+                                         non_capital=non_capital, capital=capital, sort=sort, rankings=rankings, **kwargs)
 
-    def apply_filters_transformations(postings, filters: List[Tuple] = []):
+    def _apply_filters_transformations(self, postings, filters: List[Tuple] = []):
         """
-        Apply a series of filter functions to postings.
-
-        Parameters:
-        postings: dict
-            The postings to filter.
-        filters: list of tuples
-            Each tuple contains (function, kwargs_dict).
-
-        Returns:
-        filtered: dict
-            The filtered postings.
+        Apply a series of transformations (e.g. on points) or filters to postings.
         """
-        filtered = postings
-        for func, kwargs in filters:
-            filtered = func(filtered, **kwargs)
-        return filtered
+        if not filters:
+            filters = getattr(self, "filters", [])
+        return apply_filters_transformations(postings, transformations=filters) 
 
     def gather_data(self, close_driver=True,
                     url_links = [],
@@ -550,7 +296,7 @@ class BaseScraper:
                     titles = False,
                     companies = False,
                     salary = False,
-                    filters = []):
+                    transformations = []):
         """
         url_links: list | function
         """
@@ -570,7 +316,7 @@ class BaseScraper:
         if type(url_links) == function:
             url_links = url_links()
         if url_links == []:
-            url_links = self.construct_page_urls(self.rules["scraping_base_url"])
+            url_links = self._construct_page_urls(self.rules["scraping_base_url"])
 
         if usecase in ["http", "https"]:
             request_wait_time = self.rules["request_wait_time"] if "request_wait_time" in self.rules.keys() else 0.3
@@ -580,18 +326,18 @@ class BaseScraper:
             driver = self.driver
             if driver is None:
                 driver = webdriver.Firefox()
-            soups = self.load_pages(url_links, close_popup="first", close_driver=False)
+            soups = self._load_pages(url_links, close_popup="first", close_driver=False)
         else:
             raise ValueError("Usecase not implemented")
 
-        postings = self.process_posting_soups(soups, pattern, posting_id=posting_id, website=website,
+        postings = self._process_posting_soups(soups, pattern, posting_id=posting_id, website=website,
                                       posting_id_path=posting_id_path, posting_id_regex=posting_id_regex,
                                       title_path=title_path, company_path=company_path, salary_path=salary_path)
         
-        postings = self.filter_postings(postings)
-        postings = self.rank_postings(postings)
-        postings = self.find_keywords_in_postings(postings)
-        postings = self.apply_filters_transformations(postings, filters=filters)
+        postings = self._filter_postings(postings)
+        postings = self._rank_postings(postings)
+        postings = self._find_keywords_in_postings(postings)
+        postings = self._apply_filters_transformations(postings, transformations=transformations)
         if titles:
             title_list = [posting["text"] for posting in postings.values()]
         if companies:
@@ -641,7 +387,7 @@ class KarriereAT(BaseScraper):
                          locations_desired=locations_desired, locations_secondary=locations_secondary
                          )
         
-    def load_job(self, url, close_popup=False,
+    def _load_job(self, url, close_popup=False,
                  popup_wait=5.0, post_click_wait=1.0,
                  close_driver=True, return_url=False):
         """ Warning: outdated method """
@@ -652,7 +398,7 @@ class KarriereAT(BaseScraper):
         driver.get(url)
         
         if close_popup:
-            soup = self.close_website_popup(popup_selector, url = url, click_wait=popup_wait,
+            soup = self._close_website_popup(popup_selector, url = url, click_wait=popup_wait,
                                             post_click_wait=post_click_wait, post_click_scroll_down=True,
                                             close_driver=False, open_page=False)
         if close_driver:
@@ -662,7 +408,7 @@ class KarriereAT(BaseScraper):
             return soup, url
         return soup
 
-    def load_jobs(self, urls, close_popup=False,
+    def _load_jobs(self, urls, close_popup=False,
                   popup_wait=5.0, post_click_wait=1.0,
                   close_driver=True, return_urls=False):
         """ Warning: outdated method """
@@ -674,12 +420,12 @@ class KarriereAT(BaseScraper):
 
         for url in urls:
             if return_urls:
-                soup, url = self.load_job(url, close_popup=close_popup, 
+                soup, url = self._load_job(url, close_popup=close_popup, 
                                           popup_wait=popup_wait, post_click_wait=post_click_wait, 
                                           close_driver=False, return_url=True)
                 links.append(url)
             else:
-                soup = self.load_job(url, driver=driver, close_popup=close_popup, 
+                soup = self._load_job(url, driver=driver, close_popup=close_popup, 
                                      popup_wait=popup_wait, post_click_wait=post_click_wait, 
                                      close_driver=False, return_url=False)
             soups.append(soup)
@@ -691,16 +437,16 @@ class KarriereAT(BaseScraper):
             return soups, links
         return soups
 
-    def load_page(self, url, close_popup=True,
+    def _load_page(self, url, close_popup=True,
                   popup_wait=12.0, pre_click_scroll=True,
                   post_popup_close_wait=0.3,
                   first_load_more_wait = 0.1, post_load_more_wait=0.1,
                   close_driver=True, **kwargs):
-        """ Warning: outdated method """
+        """ Warning: Outdated method """
 
         popup_selector = self.rules["load_page_button_selector"]
         load_more_selector = self.rules["load_page_press_button_until_gone_selector"]
-        final_page_soup = super().load_page(url, close_popup=close_popup,
+        final_page_soup = super()._load_page(url, close_popup=close_popup,
                                             load_more_button=True, load_by_scrolling=False,
                                             popup_wait=popup_wait, pre_popup_scroll=pre_click_scroll,
                                             popup_selector=popup_selector,
@@ -714,7 +460,7 @@ class KarriereAT(BaseScraper):
 
         return final_page_soup
 
-    def data_gather_outdated_selenium(self, close_driver=True,
+    def _data_gather_outdated_selenium(self, close_driver=True,
                     descriptions = False):
         """ Warning: outdated method """
 
@@ -725,8 +471,8 @@ class KarriereAT(BaseScraper):
         #company_path = self.rules["company_path"]
         if driver is None:
             driver = webdriver.Firefox()
-        links = self.construct_page_urls()
-        soups = self.load_pages(links, close_popup="first", close_driver=False)
+        links = self._construct_page_urls()
+        soups = self._load_pages(links, close_popup="first", close_driver=False)
 
         postings = {}
         for soup in soups:
@@ -742,7 +488,7 @@ class KarriereAT(BaseScraper):
 
         if descriptions:
             jobs_url = [posting["url"] for posting in postings.values()]
-            soups,returned_urls = self.load_jobs(jobs_url, popup_wait=2.2, close_driver=False, return_urls=True)
+            soups,returned_urls = self._load_jobs(jobs_url, popup_wait=2.2, close_driver=False, return_urls=True)
             ids = [re.search(r'\d+', url).group() for url in returned_urls]
 
             for i,soup in enumerate(soups):
@@ -755,14 +501,14 @@ class KarriereAT(BaseScraper):
             driver.quit()
         return postings
 
-    def salary_from_text(self, text, keywords={"annual":["jährlich", "yearly", "per year", "annual", "jährige", "pro jahr", "p.a."],
+    def _salary_from_text(self, text, keywords={"annual":["jährlich", "yearly", "per year", "annual", "jährige", "pro jahr", "p.a."],
                                                "monthly":["monatlich", "monthly", "per month", "pro monat"]},
                                                clarity_comma_char=".", decimal_separator=",", conversion_rate=14):
         #Conversion rate is 14 here as in Austria 14 salaries are paid per year
-        return super().salary_from_text(text, keywords=keywords, clarity_comma_char=clarity_comma_char,
+        return super()._salary_from_text(text, keywords=keywords, clarity_comma_char=clarity_comma_char,
                                         decimal_separator=decimal_separator, conversion_rate=conversion_rate)
         
-    def gather_data(self, descriptions=False, save_data=False, verbose=False):
+    def gather_data(self, descriptions=False, save_data=False, verbose=False, transformations = []):
         website = self.rules["website"]
         locations = self.keywords["locations"]
         titlewords = self.keywords["titlewords"] #expected not to have dashes, but spaces
@@ -793,7 +539,7 @@ class KarriereAT(BaseScraper):
                         if 'jobsItem' in items[i]:
                             posting = items[i]['jobsItem']
                             locs = posting['locations']
-                            salary_read = self.salary_from_text(posting['salary'])
+                            salary_read = self._salary_from_text(posting['salary'])
                             postings.update({(website+str(posting['id'])):{
                                             "title": posting['title'],
                                             "company": posting['company']['name'],
@@ -817,7 +563,7 @@ class KarriereAT(BaseScraper):
                                     print(items[i])
                             continue
 
-        postings = self.filter_postings(postings)
+        postings = self._filter_postings(postings)
 
         if descriptions:
             jobs_url = [posting["url"] for posting in postings.values()]
@@ -848,10 +594,11 @@ class KarriereAT(BaseScraper):
                             print(f"Could not find id {id} in saved postings - likely programming error")
                 postings = self.find_keywords_in_postings(postings)
 
-        postings = self.rank_postings(postings)
+        postings = self._rank_postings(postings)
         postings = {k: v for k, v in sorted(postings.items(), key=lambda item: item[1]["points"], reverse=True)}
+        postings = self._apply_filters_transformations(postings, transformations=transformations)
         if save_data:
-            self.save_data(postings, name=f"karriere_at", with_timestamp=True)
+            self._save_data(postings, name=f"karriere_at", with_timestamp=True)
         return postings
     
 class Raiffeisen(BaseScraper):
@@ -881,7 +628,7 @@ class Raiffeisen(BaseScraper):
                          locations_desired=locations_desired, locations_secondary=locations_secondary, 
                          )
 
-    def construct_page_urls(self, base_url = None, titlewords = None):
+    def _construct_page_urls(self, base_url = None, titlewords = None):
         if base_url is None:
             base_url = self.rules["scraping_base_url"]
         if titlewords is None:
@@ -892,16 +639,11 @@ class Raiffeisen(BaseScraper):
         links = list(set(links)) #Don't include duplicates
         return links
     
-    def next_page_logic(self, input:BeautifulSoup, pattern):
-        """input: typically a soup or HTML element, possibly dict or string"""
-        if not isinstance(input, BeautifulSoup):
-            input = BeautifulSoup(input, 'html.parser')
-        selects = input.select(pattern)
-        if len(selects) == 50 or len(selects) == 25:
-            return True
-        return False
+    def _next_page_logic(self, input:BeautifulSoup, pattern:str):
+        return next_page_logic_by_length(input, pattern, lengths=[25,50])
 
-    def process_posting_soups(self, soups, pattern, website="", jobs_base_url=None):
+    def _process_posting_soups(self, soups:List[BeautifulSoup], pattern:str,
+                              website="", jobs_base_url=None):
         #could also use .select('.pagination') or .select('ul.pagination') counting
         if not website:
             website = self.rules["website"]
@@ -924,15 +666,21 @@ class Raiffeisen(BaseScraper):
                                     "source": website, "id": id}
         return postings
         
-    def clean_variables(self, variables):
+    def _clean_variables(self, variables):
+        problematic_chars = ["\n", "\t", "\r", "\xa0"]
         if type(variables) == str:
-            variables = variables.strip().replace("\n", " ").replace("\t", " ").replace("\r", " ").replace("\xa0", " ")
+            variables = variables.strip()
+            for char in problematic_chars:
+                variables = variables.replace(char, " ")
         elif type(variables) == list:
             for (i, variable) in enumerate(variables):
-                variables[i] = variable.strip().replace("\n", " ").replace("\t", " ").replace("\r", " ").replace("\xa0", " ") if variable else None
+                variable = variable.strip() if variable else None
+                for char in problematic_chars:
+                    variable = variable.replace(char, " ") if variable else None
+                variables[i] = variable
         return variables
     
-    def soup_descriptions(self, id_soup_dicts, verbose=False):
+    def _get_descriptions_from_soups(self, id_soup_dicts, verbose=False):
         descriptions = {}
         for id, soup in id_soup_dicts.items():
             posting = soup.select("div.joblayouttoken.rtltextaligneligible.displayDTM") #TODO
@@ -965,26 +713,26 @@ class Raiffeisen(BaseScraper):
             salary = None
             salary_monthly = None
             if benefits:
-                salary = self.salary_from_description(benefits, decimal_separator=".", clarity_comma_char=",")
+                salary = salary_from_description(benefits, decimal_separator=".", clarity_comma_char=",")
                 if not salary:
-                    salary = self.salary_from_description(benefits, decimal_separator=",", clarity_comma_char=".")
+                    salary = salary_from_description(benefits, decimal_separator=",", clarity_comma_char=".")
                 salary_monthly = salary["monthly"] if salary else None
 
-            role, requirements, nice_to_have, benefits, description = self.clean_variables([role, requirements, nice_to_have, benefits, description])
+            role, requirements, nice_to_have, benefits, description = self._clean_variables([role, requirements, nice_to_have, benefits, description])
             descriptions[id] = {"role": role, "requirements": requirements,
                                 "salary_guessed": salary, "salary_monthly_guessed": salary_monthly,
                                 "nice_to_have": nice_to_have, "benefits": benefits,
                                 "description": description}
         return descriptions
 
-    def salary_from_text(self, text, keywords={"annual":["jährlich", "yearly", "per year", "annual", "jährige", "pro jahr", "p.a."],
+    def _salary_from_text(self, text, keywords={"annual":["jährlich", "yearly", "per year", "annual", "jährige", "pro jahr", "p.a."],
                                                "monthly":["monatlich", "monthly", "per month", "pro monat"]},
                                                clarity_comma_char=".", decimal_separator=",", conversion_rate=14):
         #Conversion rate is 14 here as in Austria 14 salaries are paid per year
-        return super().salary_from_text(text, keywords=keywords, clarity_comma_char=clarity_comma_char,
+        return super()._salary_from_text(text, keywords=keywords, clarity_comma_char=clarity_comma_char,
                                         decimal_separator=decimal_separator, conversion_rate=conversion_rate)
 
-    def gather_data(self, url_links=[], descriptions=False, verbose=False):
+    def gather_data(self, url_links=[], descriptions=False, verbose=False, transformations = []):
         titles_pattern = self.rules["gather_data_selector"]
         website = self.rules["website"]
         usecase = self.rules["usecase"]
@@ -994,7 +742,7 @@ class Raiffeisen(BaseScraper):
 
 
         if url_links == []:
-            url_links = self.construct_page_urls(self.rules["scraping_base_url"])
+            url_links = self._construct_page_urls(self.rules["scraping_base_url"])
 
         soups = []
         for url in url_links:
@@ -1002,7 +750,7 @@ class Raiffeisen(BaseScraper):
                                               return_kind="soups", wait_time=request_wait_time)[0]
             soups.append(soup)
             row = 25
-            get_next_page = self.next_page_logic(soup, titles_pattern)
+            get_next_page = self._next_page_logic(soup, titles_pattern)
             while get_next_page:
                 if verbose:
                     print(f"Getting next page for {url}")
@@ -1010,12 +758,12 @@ class Raiffeisen(BaseScraper):
                 soup = scrape.requests_responses([next_page], https=True if usecase=="https" else False,
                                                   return_kind="soups", wait_time=request_wait_time)[0]
                 soups.append(soup)
-                get_next_page = self.next_page_logic(soup, titles_pattern)
+                get_next_page = self._next_page_logic(soup, titles_pattern)
                 row += 25
                 
-        postings = self.process_posting_soups(soups, titles_pattern, website=website,
+        postings = self._process_posting_soups(soups, titles_pattern, website=website,
                                       jobs_base_url=jobs_base_url)
-        postings = self.filter_postings(postings)
+        postings = self._filter_postings(postings)
 
         if descriptions:
             urls = [posting["url"] for posting in postings.values()]
@@ -1023,7 +771,7 @@ class Raiffeisen(BaseScraper):
             soups = scrape.requests_responses(urls, https=True if usecase=="https" else False,
                                               return_kind="soups", wait_time=request_wait_time)
             ids_soups = {id:soup for id,soup in zip(ids, soups)}
-            descriptions = self.soup_descriptions(ids_soups, verbose=verbose)
+            descriptions = self._get_descriptions_from_soups(ids_soups, verbose=verbose)
             for id, posting in descriptions.items():
                 postings[id] = {'id':id, 'title':postings[id]["title"],
                                 'company':postings[id]["company"],
@@ -1032,6 +780,7 @@ class Raiffeisen(BaseScraper):
                                 "collected_on": self.day,
                                 }
         
-        postings = self.rank_postings(postings)
-        postings = self.find_keywords_in_postings(postings)
+        postings = self._rank_postings(postings)
+        postings = self._find_keywords_in_postings(postings)
+        postings = self._apply_filters_transformations(postings, transformations=transformations)
         return postings

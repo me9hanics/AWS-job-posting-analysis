@@ -4,40 +4,19 @@ import re
 import os
 from datetime import datetime
 from typing import List, Dict
+from methods.postings_utils import sort_dict_by_key, get_nested_dict_keys
+from methods.attributes import salary_from_text
 
-def sort_dict_by_key(x, key="points", descending = True):
-    return {k: v for k, v in sorted(x.items(), key=lambda item: item[1][key], reverse = descending)} if x else {}
-
-def reorder_dict(d, keys_order, nested=False):
-    return {k: d[k] for k in keys_order if k in d} if not nested else {
-        k: reorder_dict(d[k], keys_order, nested=False) for k in d.keys()
-    }
-
-def get_nested_dict_keys(dictionary, appear = "any", return_type=list):
-    """
-    Get the keys of a nested dictionary: for each key, take the value dictionary and return
-            the union or intersection of these nested dictionaries.
-
-    Parameters:
-    dictionary (dict): The input dictionary, with dictionaries as values.
-    appear (str): Whether to return the keys that appear in all or any of the nested dictionaries.
-        -"all": Return the keys that appear in all nested dictionaries.
-        -"any": Return the keys that appear at least once in the nested dictionaries.
-    return_type (type): The type of the output. Typically list or set.
-    """
-    #plan: make it handle different levels, e.g. 2 levels deep vs. 3 levels deep (with while)
-    if len(dictionary) == 0:
-        return []
-    keys = set(dictionary[list(dictionary.keys())[0]].keys())
-    for _, value in dictionary.items():
-        if appear == "all":
-            keys = keys.intersection(set(value.keys()))
-        elif appear == "any":
-            keys = keys.union(set(value.keys()))
-        else:
-            raise ValueError("appear must be 'all' or 'any'")
-        
-    return return_type(keys)
+def filter_postings(postings:dict, banned_words=None, banned_capital_words=None):
+    filtered_postings = {}
+    for id, posting in postings.items():
+        title = posting["title"]
+        if any([word in title.lower() for word in banned_words]):
+            continue
+        if any([word in title for word in banned_capital_words]):
+            continue
+        filtered_postings[id] = posting
+    return filtered_postings
 
 def get_date_of_collection(value=None, filename=None, overwrite=False):
     if not overwrite and isinstance(value, dict) and ('collected_on' in value) and value['collected_on']:
@@ -224,4 +203,46 @@ def enrich_postings(postings:str|dict, filename=None, overwrite=True, keywords =
         
     postings = scraper.find_keywords_in_postings(postings, sort=False, overwrite=overwrite, **kwargs)
     postings = scraper.rank_postings(postings, overwrite=overwrite, **kwargs)
+    return postings
+
+def process_posting_soups(soups, pattern, website = "",
+                  posting_id=False, posting_id_path=None,
+                  posting_id_regex=r'\d+', title_path=None, 
+                   company_path=None, salary_path=None):
+    postings = {}
+    for soup in soups:
+        selects = soup.select(pattern)
+        for select in selects:
+            id = None
+            title = None
+            company = None
+            salary = None
+            salary_versions = {}
+            if title_path:
+                title = select[title_path].text
+            if company_path:
+                company = select[company_path].text
+            if salary_path:
+                salary = select[salary_path].text
+                salary_versions = salary_from_text(salary)
+            if posting_id:
+                if posting_id_path is None:
+                    id = re.search(posting_id_regex, select.text).group()
+                else:
+                    id = re.search(posting_id_regex, select[posting_id_path]).group()
+                if (id is not None) and (id in postings.keys()):
+                    _text = select.text
+                    if _text:
+                        _text = _text.strip()
+                    postings[id] = {"title": title, "company": company, "id":id,
+                                    "source": website, "salary": salary,
+                                    "salary_versions": salary_versions, "text": _text}
+            else:
+                _text = select.text
+                if _text:
+                    _text = _text.strip()
+                if _text and (_text not in postings.keys()):
+                    postings[_text] = {"title": title, "company": company, "id":None,
+                                       "source": website, "salary": salary,
+                                       "salary_versions": salary_versions, "text": _text}
     return postings

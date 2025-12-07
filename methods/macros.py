@@ -31,9 +31,10 @@ BASE_KEYWORDS = {
                    "data engineer", "data engineering", "data engineering developer",
                    "data analysis", "data analytics", "data analyst",  "NLP engineer", "time series",
                    "business intelligence", "business analyst", #"bi analyst", "business intelligence analyst",
-                   "graph theory", "network science", "graph database", "operation research",
+                   "graph theory", "graph database", "operation research", "knowledge graph",
                    "complexity science", "statistician", "scientist", "mathematician", #"network science", "combinatorics",
                    "life science", "computational biology", "bioinformatics", "bioengineer", "biotech",
+                   "molecular biology", "chemistry informatics", 
                    "Python engineer", "DataOps", "full stack data scientist",
                    "forward deployed engineer",
                    "software engineer", "software developer", #"full stack developer",
@@ -76,7 +77,7 @@ BASE_RANKINGS ={
                 "ontology":0.3, "sparql":0.9, "rdf":0.1, "owl":0.1,
                 #life sciences tech
                 "aithyra":1.8, "bioinformatic": 1.1, "biotech":0.5, "bioengineer":0.8,
-                "health":0.2, "healthcare":0.2, "biology":0.3, "biological":0.4, "chemistry":0.1,
+                "health":0.2, "healthcare":0.2, "biology":0.3, "biological":0.4, "chemistry":0.2, "molecules":0.3,
                 "network biology":1.8, "network medicine":2.1, "cell":0.2, "molecular":0.3, "protein":0.3, "brain":0.8,
                 "patient":0.1, "genetics":0.4, "pharma":0.2, "clinical":0.1,
                 #machine learning
