@@ -1,6 +1,5 @@
 import re
-from typing import List
-from typing import Callable
+from typing import List, Callable, Any
 
 def salary_number_from_str(text, keywords=[],
                            remove_chars = ['.'], lengths=[6,5]):
@@ -168,15 +167,15 @@ def find_keywords(text, non_capital = [], capital = [], sort=True, rankings:dict
     return found
 
 def find_keywords_in_postings(postings:dict, non_capital = [], capital=[], overwrite = True, sort=True,
-                              method: Callable = find_keywords, description_key = "description",
-                              rankings = None, **kwargs):
+                              method: Callable[[str, list, list, bool, dict], List[Any]] = find_keywords,
+                              description_key = "description", rankings = None, **kwargs):
     for id, posting in postings.items():
         if overwrite or ("keywords" not in posting.keys()) or (not posting["keywords"]):
             postings[id]["keywords"] = []
             if description_key in posting.keys():
                 text = posting[description_key]
                 keywords = method(text, non_capital=non_capital, capital=capital,
-                                              sort=sort, rankings=rankings)
+                                  sort=sort, rankings=rankings)
                 postings[id]["keywords"] = keywords
     return postings
 

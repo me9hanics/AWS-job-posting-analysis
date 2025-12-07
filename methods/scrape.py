@@ -15,7 +15,8 @@ CSS_SELECTOR = "css selector" #can use instead: from selenium.webdriver.common.b
 
 def press_button_until_gone(button_selector, url=None, first_wait=1.0, 
                             pre_click_wait=0.0, post_click_wait=0.0,
-                            scroll=True, driver = None, close_driver=True, open_page = True):
+                            scroll=True, driver: webdriver.Firefox = None,
+                            close_driver=True, open_page = True):
     """
     Continuously presses a button on a webpage until it no longer exists.
     """
@@ -49,10 +50,10 @@ def press_button_until_gone(button_selector, url=None, first_wait=1.0,
     return soup
 
 
-def close_popup(button_selector, url=None, 
-                        click_wait=12.0, pre_click_scroll=False, 
-                        post_click_wait = 0.0, post_click_scroll=False, 
-                        close_driver=True, open_page=True):
+def close_popup(button_selector, url=None, driver: webdriver.Firefox = None,
+                click_wait=12.0, pre_click_scroll=False, 
+                post_click_wait = 0.0, post_click_scroll=False, 
+                close_driver=True, open_page=True):
     """
     Close cookie popups
     """
@@ -85,7 +86,7 @@ def close_popup(button_selector, url=None,
     return soup
 
 
-def scroll_scrape_websites(urls, driver = None, close_driver = True,
+def scroll_scrape_websites(urls, driver: webdriver.Firefox = None, close_driver = True,
                            wait_time = 2.0, pre_scrolling_wait = 2.0):
     if driver is None:
         driver = webdriver.Firefox() #only closed after all websites are scraped
@@ -116,7 +117,7 @@ def scroll_scrape_websites(urls, driver = None, close_driver = True,
     return all_soups
 
 
-def scroll_scrape_website(url=None, driver = None, close_driver = True,
+def scroll_scrape_website(url=None, driver: webdriver.Firefox = None, close_driver = True,
                           wait_time = 2.0, pre_first_scroll_wait = 2.0, open_page=True):
     if driver is None:
         driver = webdriver.Firefox()
@@ -246,7 +247,7 @@ def process_site_urls(urls, usecase='http', **kwargs):
     
     raise ValueError(f'Unknown method: {usecase}')
 
-def close_website_popup(driver, button_selector, url=None, 
+def close_website_popup(driver: webdriver.Firefox, button_selector, url=None, 
                         click_wait=12.0, pre_click_scroll=False, 
                         post_click_wait = 0.0, post_click_scroll_down=False, 
                         close_driver=True, open_page=True):
@@ -281,7 +282,7 @@ def close_website_popup(driver, button_selector, url=None,
             driver.quit()
     return soup
 
-def load_page(url, driver=None, close_popup=True,
+def load_page(url, driver: webdriver.Firefox =None, close_popup=True,
               close_popup_method: Callable = close_website_popup,
               load_more_button = True, load_by_scrolling = False,
               popup_wait=12.0, pre_popup_scroll=True, popup_selector=None,
@@ -357,6 +358,7 @@ def load_page(url, driver=None, close_popup=True,
     return final_page_soup
 
 def load_pages(urls, close_popup="first", popup_closing_wait=12.0,
+               driver: webdriver.Firefox = None,
                page_load_method: Callable = load_page,
                load_more_button = True, load_by_scrolling = False,
                post_click_wait = 0.0, close_driver=True, **kwargs):

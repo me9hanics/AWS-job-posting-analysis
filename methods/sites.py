@@ -66,7 +66,8 @@ class BaseScraper:
     def __init__(self, driver=None, rules = BASE_RULES, keywords = BASE_KEYWORDS,
                  extra_keywords = {}, extra_titlewords = [], extra_locations = [],
                  rankings = BASE_RANKINGS, salary_bearable = SALARY_BEARABLE, locations = None,
-                 locations_desired = LOCATIONS_DESIRED, locations_secondary = LOCATIONS_SECONDARY):
+                 locations_desired = LOCATIONS_DESIRED, locations_secondary = LOCATIONS_SECONDARY,
+                 transformations = []):
         if driver is None:
             self.driver = webdriver.Firefox()
         else:
@@ -102,6 +103,8 @@ class BaseScraper:
         self.locations = locations
         self.LOCATIONS_DESIRED = locations_desired
         self.LOCATIONS_SECONDARY = locations_secondary
+
+        self.transformations = transformations
 
     def _construct_page_urls(self, base_url = None, locations = None, titlewords = None):
         if base_url is None:
@@ -285,7 +288,7 @@ class BaseScraper:
         Apply a series of transformations (e.g. on points) or filters to postings.
         """
         if not filters:
-            filters = getattr(self, "filters", [])
+            filters = getattr(self, "transformations", [])
         return apply_filters_transformations(postings, transformations=filters) 
 
     def gather_data(self, close_driver=True,
@@ -359,7 +362,8 @@ class KarriereAT(BaseScraper):
     def __init__(self, driver="", rules = BASE_RULES, keywords = BASE_KEYWORDS,
                  extra_keywords = {}, extra_titlewords = [], extra_locations = [],
                  rankings = BASE_RANKINGS, salary_bearable = SALARY_BEARABLE, locations = None,
-                 locations_desired = LOCATIONS_DESIRED, locations_secondary = LOCATIONS_SECONDARY):
+                 locations_desired = LOCATIONS_DESIRED, locations_secondary = LOCATIONS_SECONDARY,
+                 transformations = []):
         """
         If Selenium is used, the driver argument should be None or a previously opened driver
         If it is not used, the driver argument should be something other than None
@@ -384,8 +388,8 @@ class KarriereAT(BaseScraper):
         super().__init__(driver=driver, rules=rules, keywords=keywords, rankings=rankings,
                          extra_keywords = extra_keywords, extra_titlewords=extra_titlewords,
                          extra_locations=extra_locations, salary_bearable=salary_bearable, locations=locations,
-                         locations_desired=locations_desired, locations_secondary=locations_secondary
-                         )
+                         locations_desired=locations_desired, locations_secondary=locations_secondary,
+                         transformations = transformations)
         
     def _load_job(self, url, close_popup=False,
                  popup_wait=5.0, post_click_wait=1.0,
@@ -605,7 +609,8 @@ class Raiffeisen(BaseScraper):
     def __init__(self, driver="", rules = BASE_RULES, keywords = BASE_KEYWORDS,
                  extra_keywords = {}, extra_titlewords = [], extra_locations = [],
                  rankings = BASE_RANKINGS, salary_bearable = SALARY_BEARABLE, locations = None,
-                 locations_desired=LOCATIONS_DESIRED, locations_secondary=LOCATIONS_SECONDARY):
+                 locations_desired=LOCATIONS_DESIRED, locations_secondary=LOCATIONS_SECONDARY,
+                 transformations = []):
         rules["website"] = "raiffeisen_international"
         rules["scraping_base_url"] = "https://jobs.rbinternational.com/search/?q="
         rules["jobs_base_url"] = "https://jobs.rbinternational.com"
@@ -626,7 +631,7 @@ class Raiffeisen(BaseScraper):
                          extra_keywords = extra_keywords, extra_titlewords=extra_titlewords,
                          extra_locations=extra_locations, salary_bearable=salary_bearable, locations=locations,
                          locations_desired=locations_desired, locations_secondary=locations_secondary, 
-                         )
+                         transformations = transformations)
 
     def _construct_page_urls(self, base_url = None, titlewords = None):
         if base_url is None:
