@@ -1,5 +1,6 @@
 import re
-from typing import List, Callable, Any
+from typing import List, Callable, Any, Dict, Tuple
+from copy import deepcopy
 
 def salary_number_from_str(text, keywords=[],
                            remove_chars = ['.'], lengths=[6,5]):
@@ -86,13 +87,14 @@ def salary_from_description(text,
                                        r'\d{4,5}[.,]\d{2}',
                                        r'(\d{5})(?:(?!\d{5}).)*?\b(net|taxes|tax)\b',
                                        ],
+                            method : Callable = salary_from_text,
                             **kwargs):
     if type(text) != str:
         return None
     for regex in regexes:
         salary_section = re.search(regex, text, flags=re.IGNORECASE)
         if salary_section:
-            salary = salary_from_text(salary_section.group(), **kwargs)
+            salary = method(salary_section.group(), **kwargs)
             return salary
     return None
 
@@ -114,30 +116,80 @@ def check_locations(locations:List, locations_desired:List):
                     return True
     return False
 
-def rank_postings(postings:dict, keyword_points:dict, desc_ratio = 0.3,
-                  root_value = None, salary_ratio = 0.15/100,
-                  dropoff_bearable_ratio = 1.4, overwrite = True,
+def score_text_nested(text: str, rules: dict) -> float:
+    """
+    Recursively score text based on nested regex pattern rules.
+    
+    Parameters:
+    text: str
+        The text to score.
+    rules: dict
+        Nested dictionary containing regex patterns and their scores.
+        
+    Returns:
+    float: The total score for the text.
+    """
+    score = 0.0
+    for key, value in rules.items():
+        if isinstance(value, dict):
+            if "patterns" in value:
+                flags = value.get("flags", 0)
+                for pattern, pts in value["patterns"].items():
+                    if re.search(pattern, text, flags=flags):
+                        score += pts
+            else:
+                #Check nested dict
+                score += score_text_nested(text, value)
+    return score
+
+def rank_postings(postings: dict, keyword_points=None, desc_ratio=0.3,
+                  root_value=5000, salary_ratio=0.15/100,
+                  dropoff_bearable_ratio=1.4, overwrite=True,
                   locations_desired=[], locations_secodary=[], **kwargs):
+    """
+    Rank postings using regex-based scoring system.
+    
+    Parameters:
+    postings: dict
+        Dictionary of job postings to rank.
+    keyword_points: dict
+        Nested dictionary with regex patterns and scores.
+    desc_ratio: float
+        Ratio to apply to description scores (title gets full weight).
+    root_value: int
+        Root salary value for scoring.
+    salary_ratio: float
+        Ratio for salary scoring.
+    dropoff_bearable_ratio: float
+        Ratio at which salary scoring starts to drop off.
+    overwrite: bool
+        If True, overwrite existing points.
+    locations_desired: list
+        List of desired locations.
+    locations_secodary: list
+        List of secondary locations.
+        
+    Returns:
+    dict: Updated postings with points added.
+    """
+    if not keyword_points:
+        keyword_points = {}
+    
     for id, posting in postings.items():
         if not overwrite and ("points" in posting.keys()) and posting["points"] is not None:
             continue
-        title = posting["title"] if "title" in posting.keys() else ""
-        description = posting["description"] if "description" in posting.keys() else ""
-        salary = posting["salary_monthly_guessed"]
-        points = 0
-        title_max_point = 0
-        for keyword, value in keyword_points["ranking_lowercase"].items():
-            if keyword in title.lower():
-                title_max_point = value if abs(value) > abs(title_max_point) else title_max_point
-            if keyword in description.lower():
-                points += value*desc_ratio
-        for keyword, value in keyword_points["ranking_case_sensitive"].items():
-            if keyword in title:
-                title_max_point = value if abs(value) > abs(title_max_point) else title_max_point
-            if keyword in description:
-                points += value*desc_ratio
-        points += title_max_point
-
+        
+        title = posting.get("title", "")
+        description = posting.get("description", "")
+        salary = posting.get("salary_monthly_guessed")
+        
+        # Score title and description using regex-based system
+        title_points = score_text_nested(title, keyword_points)
+        description_points = score_text_nested(description, keyword_points) * desc_ratio
+        
+        points = title_points + description_points
+        
+        # Add salary points
         if salary:
             points += salary_points(salary, root_value=root_value, salary_ratio=salary_ratio,
                                          high_dropoff=True, dropoff_bearable_ratio=dropoff_bearable_ratio)
@@ -147,35 +199,49 @@ def rank_postings(postings:dict, keyword_points:dict, desc_ratio = 0.3,
                 points -= 1
                 if not check_locations(posting["locations"], locations_desired=locations_secodary):
                     points -= 1
-
+        
         postings[id]["points"] = round(points, 3)
+    
     return postings
 
-def find_keywords(text, non_capital = [], capital = [], sort=True, rankings:dict = None):
+def find_keywords(text: str, keywords_list: List[str], **kwargs) -> List[str]:
+    """
+    Find keywords in text from a predefined list.
+    
+    Parameters:
+    text: str
+        The text to search in.
+    keywords_list: list
+        List of keywords to search for.
+    sort: bool
+        If True, return in the order they appear in keywords_list (already sorted by importance).
+        
+    Returns:
+    list: List of matched keywords.
+    """
+    if not keywords_list:
+        return []
+    
+    text_lower = text.lower()
     found = []
-    for keyword in non_capital:
-        if keyword in text.lower():
+    
+    for keyword in keywords_list:
+        if keyword.lower() in text_lower:
             found.append(keyword)
-    for keyword in capital:
-        if keyword in text:
-            found.append(keyword)
-
-    if sort:
-        found = sorted(found,
-            key=lambda k: -abs(rankings.get("ranking_lowercase", {}).get(k, 0))
-        )
+    
     return found
 
-def find_keywords_in_postings(postings:dict, non_capital = [], capital=[], overwrite = True, sort=True,
+def find_keywords_in_postings(postings:dict, ordered_keywords:List | Dict, overwrite = True, sort=True,
                               method: Callable[[str, list, list, bool, dict], List[Any]] = find_keywords,
-                              description_key = "description", rankings = None, **kwargs):
+                              description_key = "description", **kwargs):
+    if isinstance(ordered_keywords, dict):
+        ordered_keywords = list(ordered_keywords.keys()) #TODO fix
     for id, posting in postings.items():
         if overwrite or ("keywords" not in posting.keys()) or (not posting["keywords"]):
             postings[id]["keywords"] = []
             if description_key in posting.keys():
                 text = posting[description_key]
-                keywords = method(text, non_capital=non_capital, capital=capital,
-                                  sort=sort, rankings=rankings)
+                keywords = method(text, keywords_list=ordered_keywords, sort=sort)
                 postings[id]["keywords"] = keywords
     return postings
 
