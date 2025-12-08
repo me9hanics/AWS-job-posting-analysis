@@ -1,3 +1,4 @@
+import re
 REPO_ROOT_PATH = "C:/GitHubRepo/AWS-job-posting-analysis"
 SAVING_PATH = f"{REPO_ROOT_PATH}/data/save"
 RELATIVE_SAVING_PATH = "data/save"
@@ -9,6 +10,10 @@ COMPANIES_PATH = f"{SAVING_PATH}/companies"
 RELATIVE_COMPANIES_PATH = f"{RELATIVE_SAVING_PATH}/companies"
 
 SALARY_BEARABLE = 3400
+
+LOCATIONS_DESIRED = ["vienna", "wien", "österreich", "austria", "remote"]
+LOCATIONS_SECONDARY = ["st. pölten", "sankt pölten", "wiener neudorf", "linz", "krems", "nussdorf", 
+                       "klosterneuburg", "schwechat", "graz"] #salzburg, innsbruck, #klagenfurt
 
 BASE_RULES = {"website":"",
               "scraping_base_url": "",
@@ -52,113 +57,249 @@ BASE_KEYWORDS = {
                                    "lab", "center", "institute", "university",
                                    "aithyra", "amazon", "google", "meta", "microsoft", "nvidia", "ibm",
                                    ],
+    "description_keywords_order": [
+        "complexity science", "network science", "graph theory", "network medicine", "graph data",
+        "aithyra", "hungarian", "network biology", "graph machine learning", "graph deep learning",
+        "graph neural network", "operations research", "graph", "gnn", "geospatial", "neo4j", "graph database",
+        "knowledge graph", "data scientist", "data science", "bioinformatic", "time series", "complex systems", 
+        "data mining", "phd", "advanced degree", "real estate", "holding", "purchasing", "accounting", "accountant", "algorithm",
+        "marketing", "sales", "audit", "manager", "owner", "consultant", "consulting", "officer",
+        "head", "management", "machine learning engineer", "forward deployed", "python", "scientist",
+        "ETL", "ML", "AI", "sparql", "conference", "researcher", "scraping", "geodata",
+        "combinatori", "optimization", "knime", "data collection", "analytics", "bioengineer",
+        "causal", "inference", "lidar", "radar", "steuer", "SAP", "HR", "research", "weather forecast",
+        "data engineering", "forecasting", "acquisition", "merger", "stack developer",
+        "robot", "sensor", "ai agents", "neural network", "semantic web", "spatial", "duckdb",
+        "master", "msc", "deepmind", "R&D", "embedding", "modeling", "modelling",
+        "predictive", "biotech", "ELT", "data engineer", "thesis", "dissertation", "technik", "student",
+        "lead", "leader", "deep learning", "insurance", "open source", "engineer", "developer",
+        "full stack", "full-stack", "fabric", "r&d", "security", "data management",
+        "data modeling", "data modelling", "knowledge management", "API", "reinforcement learning",
+        "biology", "nlp", "scientific", "physics", "maps", "geometry", "social network", "risk", "control",
+        "safety", "machine learning", "genetics", "data analysis", "estimation", "full stack data scientist",
+        "docker", "electro", "signal", "data", "platform engineer", "complexity", "theory", "power bi",
+        "qlik", "pattern recognition", "ontology", "molecules", "simulation", "quantitative", "cell",
+        "molecular", "protein", "postgres", "microcontroller", "big data", "postgres", "mysql",
+        "LLM", "electrical", "statistic", "circuit", "ci cd", "ci/cd", "energy", "relocation",
+        "vision", "electric", "home office", "chemistry", "health", "healthcare",
+        "jinja", "github", "c++", "d3", "AWS", "probability", "clinical", "patient", "pharma",
+        "scale", "image processing", "data warehous", "wireless", "spectral", "semiconductor",
+        "design", "visualization", "hardware", "video", "audio", "smart", "senior", "telecom",
+        "digital", "compression", "fpga", "verilog", "power", "media", "computer vision", "rdf",
+        "owl", "vector", "neural", "information", "pipeline", "dashboard", "GIS", "analyst",
+        "banking", "deutsch", "java", "product", "quality", "agile", "requirement", "assurance",
+        "SEO", "devops", "cyber", "test", "mcp", "english",
+        "lead", "junior", "daten", "llm", "cloudpak", "django", "scala",
+        "spark", "hadoop", "kafka", "airflow", "apache", "html", "javascript", "react", "angular",
+        "node", "flask", "cloud", "workflow", "kubernetes", "jenkins", "terraform", "azure", "gcp",
+        "gitlab", "bitbucket", "sonarqube", "excel", "powerpoint", "b2c", "b2b", "lean",
+        "data-driven", "data driven", "kpi", "customer service", "communication", "stakeholder", "scrum"
+    ]
 }
 BASE_KEYWORDS["titlewords_dashed"] = [word.replace(" ", "-") for word in BASE_KEYWORDS["titlewords"]]
 
-BASE_RANKINGS ={
-    "ranking_lowercase":{
-                #TODO organize them into categories (nested dict) - category to be used in figuring out the type of job e.g. research
-                #TODO refactor and put into separate file - have e.g. translations/synonyms/etc. for each keyword in its own dict. Basically groups of connected keywords
-                #general and science terms
-                "math":1, "data":0.35, "combinatori":0.8, "statistic":0.25, "neural":0.1, "information":0.1, "algorithm":1.2,
-                "complexity science":3, "complexity":0.3, "theory":0.3, "research": 0.7, "scientific":0.4, "physics":0.4,
-                "operations research":1.5, "optimization":0.8, "numerical":0.1, "modelling":0.5, "modeling":0.5, "probability":0.2,
-                "complex systems":1.1, "simulation":0.3, "quantitative":0.3, "scale":0.2, 
-                #titles
-                "engineer": 0.45, "developer": 0.4, "scientist": 1, "researcher": 0.9, "analyst": 0.1, "r&d":0.4,
-                #rank
-                "senior": 0.1,
-                #graphs/networks/geo (extra high points as most terms are part of the description, never in title)
-                "graph":2, "network science":3, "graph theory":2.6, "graph data":2.5, "graph database":1.6,
-                "graph machine learning": 1.8, "graph deep learning": 1.6, "gnn":1.3, "graph neural network":1.4,
-                "social network":0.5, "geospatial":1.4, "spatial":0.7, "maps":0.4, "geometry":0.4, "geodata": 0.8,
-                #knowledge graphs
-                "knowledge graph":1.3, "knowledge management":0.4, "data management":0.5, "semantic web":0.6,
-                "ontology":0.3, "sparql":0.9, "rdf":0.1, "owl":0.1,
-                #life sciences tech
-                "aithyra":1.8, "bioinformatic": 1.1, "biotech":0.5, "bioengineer":0.8,
-                "health":0.2, "healthcare":0.2, "biology":0.3, "biological":0.4, "chemistry":0.2, "molecules":0.3,
-                "network biology":1.8, "network medicine":2.1, "cell":0.2, "molecular":0.3, "protein":0.3, "brain":0.8,
-                "patient":0.1, "genetics":0.4, "pharma":0.2, "clinical":0.1,
-                #machine learning
-                "machine learning":0.9, "neural network":0.6, "deep learning":0.5, "reinforcement learning":0.4,
-                "image processing":0.2, "pattern recognition":0.3, "computer vision":0.1, "machine learning engineer":1,
-                #specialized data science
-                "data mining":1.1, "data collection":0.8, "data analysis":0.4, "predictive":0.5, "estimation":0.4,
-                "analytics":0.8, "time series":1.1, "nlp": 0.4, "forecasting":0.6, "weather forecast":0.7,
-                "causal":0.7, "inference": 0.7, "ai agents":0.6,
-                #data visualization, dashboards, reporting
-                "power bi": 0.3, "qlik":0.3, "visualization":0.15, "dashboard":0.1, "d3":0.2, "matplotlib":0.3,
-                #databases and data storage
-                "neo4j":1.3, "postgres":0.3, "mysql":0.2, "duckdb":0.5, "fabric":0.4, "vector":0.1,
-                #other data science terms
-                "data science":1.2, "data scientist":1.3, "data management":0.5, "full stack":0.4, "full-stack":0.4,
-                "data engineering": 0.7, "data engineer": 0.5, "big data":0.3, "data warehous":0.2,#e/ing
-                "scraping":0.9, "pipeline":0.1, "data modeling": 0.4, "data modelling": 0.4, "design":0.15,
-                #tech stack
-                "python":1, "sql":0.5, "c++":0.2, 
-                "knime":0.8,  "docker":0.35, "jinja":0.2, "git": 0.1, "github":0.2,
-                #IT
-                "forward deployed":1.0, "platform engineer":0.3,
-                #engineering
-                "lidar": 0.7, "radar": 0.7, "vision":0.2, "sensor": 0.6, "robot":0.6, "embedded":0.5, "electrical":0.25,
-                "electric":0.2, "electro":0.3, "microcontroller":0.3, "hardware":0.15,"digital":0.1, "compression":0.1, 
-                "spectral":0.15, "media":0.1, "signal":0.35, "audio":0.2, "video":0.2, "wireless":0.15, "telecom":0.1,
-                "circuit":0.25, "energy":0.2, "power":0.1, "semiconductor":0.15, "fpga":0.1, "verilog":0.1, "smart":0.2,
-                #details
-                "conference":0.9, "home office":0.15, "open source":0.45, "relocation":0.2,
-                #languages
-                "hungarian":1.9, "hungary":0.7, "english":0.3,
-                #other
-                "deepmind":0.6, "master":0.6, "msc":0.7, "phd":1.1, "advanced degree":1.0, #"bachelor":0.1, "bsc":0.1,
-                ####Negative rankings
-                #type of work
-                "consultant":-0.7, "consulting":-0.7, "audit":-1, "risk":-0.4, "control":-0.4, "holding":-1,
-                "purchasing":-1, "accounting": -1, "accountant": -1, "marketing": -1, "sales": -1, "thesis":-0.5,
-                "technik":-0.5, "dissertation": -0.5,
-                #field
-                "financ":-0.3, "finanz":-0.3, "bank":-0.3, "banking":-0.1, "insurance":-0.5, "steuer":-0.7, 
-                #rank
-                "leiter":-1.5, "leader":-0.5, "lead": -0.5, "manager":-1, "management":-0.7, "owner":-1, "officer":-0.8,
-                "head":-0.7, "architect":-0.3, "student":-0.5, "support":-0.3,
-                #tech
-                "cyber":-0.1, "security":-0.4, "devops":-0.1, "java":-0.2, "test":-0.3,
-                "stack developer":-0.6, "linux":-0.3, "safety":-0.4, "quality":-0.2,
-                #work related keywords
-                "product": -0.2, "agile":-0.3, "requirement":-0.3,
-                "merger": -0.6, "acquisition": -0.6, "real estate": -1, "assurance": -0.3,
-                #languages
-                "deutsch": -0.2,
-                #other
-                "microsoft": -0.4,
-                },
-    "ranking_case_sensitive":{"ETL":0.9, "ELT":0.5, "AI":0.8, "ML":0.9, "API":0.4, "REST":0.15,
-                           "CI/CD":0.2, "CI CD":0.2, "AWS":0.2, "GIS": 0.1, "R&D":0.5,
-                           "LLM":0.25, "MCP":0.2,
-                           #Negative rankings
-                           "SAP":-0.7, "HR":-0.7, "SAS":-0.5, "SEO": -0.3,
-                           },
-    "neutral":[
-        #rank
-        "lead", "junior",
-        #data
-        "daten", "llm",
-        #data software
-        "cloudpak", "django", "scala", "spark", "hadoop", "kafka", "airflow", "apache",
-        #web
-        "html", "javascript", "react", "angular", "node", "flask",
-        #IT
-        "cloud", "workflow", #"ci/cd", "ci cd",
-        #IT software
-        "kubernetes", "jenkins", "terraform", "azure", "gcp", "gitlab", "bitbucket", "sonarqube",
-        "excel", "powerpoint", 
-        #other
-        "b2c", "b2b", "lean", "data-driven", "data driven", "kpi", "customer service", "communication",
-        "stakeholder", "scrum",
-    ]
+BASE_KEYWORD_SCORING = {
+    "complexity_networks": {
+        "ignore_case": {
+            "flags": re.IGNORECASE,
+            "patterns": {
+                r"complexity science": 3.0, r"network science": 3.0, r"graph theory": 2.6,
+                r"graph data": 2.5, r"network medicine": 2.1, r"network biology": 1.8,
+                r"graph machine learning": 1.8, r"graph deep learning": 1.6, r"graph neural network": 1.4,
+                r"\bgnn\b": 1.3, r"complex systems": 1.1, r"graph": 1.0,
+                r"operations research": 1.2, r"social network": 0.5, r"complexity": 0.2,
+            }
+        }
+    },
+    "knowledge_graphs": {
+        "ignore_case": {
+            "flags": re.IGNORECASE,
+            "patterns": {
+                r"graph database": 1.6, r"knowledge graph": 1.5, r"neo4j": 1.4,
+                r"sparql": 0.9, r"semantic web": 0.5, r"knowledge management": 0.4,
+                r"ontology": 0.3, r"\bowl\b": 0.1, r"\brdf\b": 0.1,
+                r"extract\s+(meaning|knowledge)": 0.7,
+            }
+        }
+    },
+    "geospatial": {
+        "ignore_case": {
+            "flags": re.IGNORECASE,
+            "patterns": {
+                r"geospatial": 1.4, r"geodata": 0.8, r"spatial": 0.7,
+                r"maps": 0.4, r"geometry": 0.4,
+            }
+        },
+        "case_sensitive": {
+            "flags": 0,
+            "patterns": {r"\bGIS\b": 0.1}
+        }
+    },
+    "biotech_lifesciences": {
+        "ignore_case": {
+            "flags": re.IGNORECASE,
+            "patterns": {
+                r"aithyra": 1.8, r"bioinformatic": 1.1, r"bioengineer": 0.8,
+                r"neuro(?:science|scientist|degener.*?)": 0.8, r"brain": 0.8, r"biotech": 0.5,
+                r"biological": 0.4, r"genetics": 0.4, r"molecules": 0.3, r"molecular": 0.3, r"protein": 0.3,
+                r"biology": 0.3, r"chemistry": 0.2, r"health(?:care)?": 0.2, r"pharma": 0.2, r"cell": 0.2,
+                r"clinical": 0.1, r"patient": 0.1,
+            }
+        }
+    },
+    "science_research": {
+        "ignore_case": {
+            "flags": re.IGNORECASE,
+            "patterns": {
+                r"algorithm": 1.2, r"phd": 1.1, r"\bmath": 1.0, r"advanced degree": 1.0,
+                r"conference": 0.9, r"researcher": 0.9, r"combinatori": 0.8, r"optimization": 0.8,
+                r"\bmsc\b": 0.7, r"research": 0.7, r"causal": 0.7, r"inference": 0.7,
+                r"forecasting": 0.6, r"master": 0.6, r"model(?:l)?ing": 0.5,
+                r"scientific": 0.4, r"physics": 0.4, r"theory": 0.3, r"simulation": 0.3, r"quantitative": 0.3,
+                r"statistic": 0.25, r"probability": 0.2, r"scale": 0.2,
+                r"numerical": 0.1, r"information": 0.1,
+                r"dissertation": -0.5, r"thesis": -0.5, r"student": -0.5, r"technik": -0.5,
+            }
+        },
+        "case_sensitive": {
+            "flags": 0,
+            "patterns": {r"\bR&D\b": 0.2}
+        }
+    },
+    "data_science": {
+        "ignore_case": {
+            "flags": re.IGNORECASE,
+            "patterns": {
+                r"data scientist": 1.4, r"data science": 1.2, r"data mining": 1.1, r"time series": 1.1,
+                r"scraping": 0.9, r"data collection": 0.8, r"analytics": 0.8, r"data engineering": 0.7,
+                r"ai agents": 0.6, r"data engineer": 0.5, r"predictive": 0.5, r"data management": 0.5,
+                r"data model(?:l)?ing": 0.4, r"estimation": 0.4, r"data analysis": 0.4, r"\bdata\b": 0.35,
+                r"big data": 0.3, r"data warehous": 0.2, r"design": 0.15,
+                r"pipeline": 0.1, r"dashboard": 0.1,
+            }
+        },
+        "case_sensitive": {
+            "flags": 0,
+            "patterns": {r"\bETL\b": 0.9, r"\bELT\b": 0.5}
+        }
+    },
+    "machine_learning_ai": {
+        "ignore_case": {
+            "flags": re.IGNORECASE,
+            "patterns": {
+                r"machine learning engineer": 1.0, r"machine learning": 0.9, r"neural network": 0.6,
+                r"deep learning": 0.5, r"reinforcement learning": 0.4, r"\bnlp\b": 0.4,
+                r"pattern recognition": 0.3, r"image processing": 0.2,
+                r"computer vision": 0.1, r"neural": 0.1,
+            }
+        },
+        "case_sensitive": {
+            "flags": 0,
+            "patterns": {r"\bAI\b": 0.8, r"\bML\b": 0.9, r"\bLLM\b": 0.25}
+        }
+    },
+    "job_titles_roles": {
+        "ignore_case": {
+            "flags": re.IGNORECASE,
+            "patterns": {
+                r"scientist": 1.2, r"forward deployed": 1.0, r"engineer": 0.45, r"developer": 0.4,
+                r"full[\s-]stack": 0.4, r"platform engineer": 0.3, r"analyst": 0.1, r"senior": 0.1,
+                r"leiter": -1.5, r"manager": -0.9, r"owner": -0.9, r"officer": -0.8,
+                r"security": -0.4, r"safety": -0.4, r"support": -0.3, r"quality": -0.2, 
+            }
+        },
+        "case_sensitive": {
+            "flags": 0,
+            "patterns": {r"\bHR\b": -0.7}
+        }
+    },
+    "tech_tools": {
+        "ignore_case": {
+            "flags": re.IGNORECASE,
+            "patterns": {
+                r"\bpython\b": 1.0, r"knime": 0.8, r"\bsql\b": 0.5, r"duckdb": 0.5, r"open source": 0.45,
+                r"fabric": 0.4, r"docker": 0.35, r"postgres": 0.3, r"power bi": 0.3, r"qlik": 0.3, r"matplotlib": 0.3,
+                r"mysql": 0.2, r"jinja": 0.2, r"github": 0.2, r"\bc\+\+": 0.2, r"\bd3\b": 0.2,
+                r"visualization": 0.15, r"\bgit\b": 0.1, r"vector": 0.1,
+                # Negative tech
+                r"microsoft": -0.2, r"linux": -0.4, r"test": -0.3, r"java": -0.2, r"devops": -0.1, r"cyber": -0.1,
+            }
+        },
+        "case_sensitive": {
+            "flags": 0,
+            "patterns": {
+                r"\bAPI\b": 0.4, r"\bREST\b": 0.15, r"\bCI[/-]CD\b": 0.2,
+                r"\bAWS\b": 0.2, r"\bMCP\b": 0.2,
+                r"\bSAP\b": -0.6, r"\bSAS\b": -0.6, r"\bSEO\b": -0.2,
+            }
+        }
+    },
+    "engineering_hardware": {
+        "ignore_case": {
+            "flags": re.IGNORECASE,
+            "patterns": {
+                r"lidar": 0.7, r"radar": 0.7, r"robot": 0.6, r"sensor": 0.6, r"embedded": 0.5,
+                r"signal": 0.35, r"electro": 0.3, r"microcontroller": 0.3, r"electrical": 0.25, r"circuit": 0.25,
+                r"energy": 0.2, r"electric": 0.2, r"smart": 0.2, r"audio": 0.2, r"video": 0.2, r"vision": 0.2,
+                r"wireless": 0.15, r"spectral": 0.15, r"semiconductor": 0.15, r"hardware": 0.15,
+                r"telecom": 0.1, r"compression": 0.1, r"fpga": 0.1, r"verilog": 0.1, r"digital": 0.1, r"power": 0.1, r"media": 0.1,
+            }
+        }
+    },
+    "business_finance": {
+        "ignore_case": {
+            "flags": re.IGNORECASE,
+            "patterns": {
+                r"real estate": -1.0, r"holding": -1.0, r"purchasing": -1.0, r"accountant": -1.0, r"accounting": -1.0,
+                r"sales": -1.0, r"audit": -1.0, r"consulting?": -0.7, r"(tax|steuer)": -0.7,
+                r"acquisition": -0.6, r"merger": -0.6, r"stack developer": -0.6, r"insurance": -0.5,
+                r"control": -0.4, r"risk": -0.4, r"finanz?": -0.3, r"bank(?:ing)?": -0.3,
+                r"assurance": -0.3, r"agile": -0.3, r"requirement": -0.3, r"product": -0.2,
+            }
+        }
+    },
+    "languages_location_extra": {
+        "ignore_case": {
+            "flags": re.IGNORECASE,
+            "patterns": {
+                r"hungarian": 1.9, r"hungary": 0.7, r"english": 0.2, r"deutsch": -0.2,
+                r"sehr\s+gut(e)?\s+deutsch": -1.0, r"wort\s+(&|und)\s+schrift": -0.4,
+                r"5(\+)?\s+years\s+of": -0.8, r"7(\+)?\s+years\s+of": -1.9, #German version?
+                r"5(\+)?\s+jahre\s+erfahrung": -0.8, r"7(\+)?\s+jahre\s+erfahrung": -1.9, #correct?
+                
+                r"home office": 0.15, r"relocation": 0.2,
+            }
+        }
+    },
 }
 
-COMPLEXSCI_KEYWORDS = ["complexity science", "complex systems", "complex system", "complex network", "complex networks"]
+BASE_TITLE_SCORING = {
+    "ignore_case": {
+        "flags": re.IGNORECASE,
+        "patterns": {
+            r"management": -0.7, r"head": -0.7, r"lead(?:er)?": -0.5, r"architect": -0.3
+        }
+    }
+}
+
+BASE_COMPANY_SCORING = {
+    "ignore_case": {
+        "flags": re.IGNORECASE,
+        "patterns": {
+            r"aithyra": 1.5, r"\bait\b": 0.8, r"science":0.5,
+            r"amazon": 0.5, r"google": 0.5, r"meta": 0.3, r"microsoft": 0.5,
+            r"nvidia": 0.5, r"ibm": 1.0, r"deepmind": 1.0,
+            r"österreichische post": 0.2,
+            r"capgemini": -0.5, r"accenture": -0.5, r"deloitte": -0.5,
+            r"lotterien": -1.0, r"win2day": -1.0, #Österreichisches l
+        }
+    }
+}
+
+#Deduct points for company if the description is not in English (-1.2 points)
+DEDUCT_COMPANIES = [r"\böbb\b", r"\bwkö\b", r"\bwko\b", r"anexia", r"techtalk"]
+
+COMPLEXSCI_KEYWORDS = ["complexity science", "complexity systems", "complexity system", "complex network", "complex networks"]
 GRAPH_KEYWORDS = ["graph data", "graph theory", "graph", "neo4j", "operations research", "social network",
                   "knowledge graph", "gnn", "graph neural network", "graph machine learning"]
 SEMANTIC_WEB_KEYWORDS = ["sparql", "semantic web", "rdf", "owl", "linked data", "ontology"]
