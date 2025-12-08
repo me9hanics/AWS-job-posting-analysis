@@ -4,7 +4,7 @@ import re
 import os
 from datetime import datetime
 from typing import List, Dict
-from methods.postings_utils import sort_dict_by_key, get_nested_dict_keys
+from methods.datastruct_utils import sort_dict_by_key, get_nested_dict_keys
 from methods.attributes import salary_from_text
 
 def filter_postings(postings:dict, banned_words=None, banned_capital_words=None):
@@ -145,43 +145,56 @@ def unify_postings(postings=None, folder_path=f"{RELATIVE_POSTINGS_PATH}/tech/",
     for postings in files:
         for key, value in postings.items():
             collected_on = value.get('collected_on', None)
+            first_collected = value.get('first_collected_on', collected_on)
+            first_collected = first_collected if first_collected and first_collected <= collected_on else collected_on
+            last_collected = value.get('last_collected_on', collected_on)
+            last_collected = last_collected if last_collected and last_collected >= collected_on else collected_on
+            
             if key not in all_postings:
                 all_postings[key] = value
-                all_postings[key]['first_collected_on'] = collected_on
-                all_postings[key]['last_collected_on'] = collected_on
+                all_postings[key]['first_collected_on'] = first_collected
+                all_postings[key]['last_collected_on'] = last_collected
             else:
                 if not extend:
+                    #Update missing fields
                     for col, row in value.items():
                         if (col not in all_postings[key].keys()) or (not all_postings[key][col]):
-                            all_postings[key][col] = row       
-                    if collected_on:
-                        stored_first_collected_on = all_postings[key]['first_collected_on']
-                        stored_last_collected_on = all_postings[key]['last_collected_on']
-                        if not stored_last_collected_on or collected_on > stored_last_collected_on:
-                            all_postings[key]['last_collected_on'] = collected_on
-                            #update text to latest version
-                            all_postings[key]["description"] = value.get("description", all_postings[key].get("description",None)) 
-                        if not stored_first_collected_on or collected_on < stored_first_collected_on:
-                            all_postings[key]['first_collected_on'] = collected_on
-                else:#extend==True
+                            all_postings[key][col] = row
+                    
+                    stored_first = all_postings[key].get('first_collected_on')
+                    if first_collected:
+                        if not stored_first or first_collected < stored_first:
+                            all_postings[key]['first_collected_on'] = first_collected
+                    
+                    stored_last = all_postings[key].get('last_collected_on')
+                    if last_collected:
+                        if not stored_last or last_collected > stored_last:
+                            all_postings[key]['last_collected_on'] = last_collected
+                            #Update description to latest version
+                            all_postings[key]["description"] = value.get("description", all_postings[key].get("description", None))
+                    
+                else:  # extend==True
                     if not isinstance(all_postings[key], list):
                         all_postings[key] = [all_postings[key]]
-                    value['first_collected_on'] = collected_on or all_postings[key][0]['first_collected_on']
-                    value['last_collected_on'] = collected_on or all_postings[key][0]['last_collected_on']
+                    value['first_collected_on'] = first_collected or all_postings[key][0].get('first_collected_on')
+                    value['last_collected_on'] = last_collected or all_postings[key][0].get('last_collected_on')
                     all_postings[key].append(value)
-                    if collected_on:
-                        stored_first_collected_on = all_postings[key][0]['first_collected_on']
-                        stored_last_collected_on = all_postings[key][0]['last_collected_on']
-                        if (not stored_first_collected_on or collected_on < stored_first_collected_on):
-                            for posting_store in all_postings[key]:
-                                posting_store['last_collected_on'] = collected_on
-                                posting_store["description"] = value.get("description", posting_store.get("description",None))
-                        if (not stored_last_collected_on or collected_on > stored_last_collected_on):
-                            for posting_store in all_postings[key]:
-                                posting_store['first_collected_on'] = collected_on
+                    
+                    # Update global min/max across all versions
+                    if first_collected or last_collected:
+                        global_first = min((v.get('first_collected_on') for v in all_postings[key] if v.get('first_collected_on')), default=None)
+                        global_last = max((v.get('last_collected_on') for v in all_postings[key] if v.get('last_collected_on')), default=None)
+                        
+                        for posting_store in all_postings[key]:
+                            posting_store['first_collected_on'] = global_first
+                            posting_store['last_collected_on'] = global_last
+                            if posting_store.get('last_collected_on') == global_last:
+                                posting_store["description"] = value.get("description", posting_store.get("description", None))
+    
     return all_postings
 
-def enrich_postings(postings:str|dict, filename=None, overwrite=True, keywords = BASE_KEYWORDS, extra_keywords = {}, **kwargs):
+def enrich_postings(postings:str|dict, filename=None, overwrite=True, keywords = BASE_KEYWORDS, 
+                    extra_keywords = {}, **kwargs): #rankings = BASE_KEYWORD_SCORING, 
     from methods.sites import BaseScraper
     if isinstance(postings, str):
         filename = filename or postings
@@ -190,9 +203,9 @@ def enrich_postings(postings:str|dict, filename=None, overwrite=True, keywords =
     scraper = BaseScraper(driver="skip", keywords=keywords, extra_keywords=extra_keywords)
     for posting_id, posting in postings.copy().items():
         if 'salary' in posting.keys():
-            salary_read = scraper.salary_from_text(posting['salary'])
+            salary_read = scraper._salary_from_text(posting['salary'])
         else:
-            salary_read = scraper.salary_from_description(posting.get("description",[]), **kwargs)
+            salary_read = scraper._salary_from_description(posting.get("description",[]), **kwargs)
         if overwrite or ('salary_guessed' not in posting.keys()) or (not posting['salary_guessed']):
             posting['salary_guessed'] = salary_read
         if overwrite or ('salary_monthly_guessed' not in posting.keys()) or (not posting['salary_monthly_guessed']):
@@ -201,8 +214,8 @@ def enrich_postings(postings:str|dict, filename=None, overwrite=True, keywords =
         if 'collected_on' not in posting.keys() or (not posting['collected_on']): #don't overwrite
             posting['collected_on'] = get_date_of_collection(value=posting, filename=filename, overwrite=False)
         
-    postings = scraper.find_keywords_in_postings(postings, sort=False, overwrite=overwrite, **kwargs)
-    postings = scraper.rank_postings(postings, overwrite=overwrite, **kwargs)
+    postings = scraper._find_keywords_in_postings(postings, sort=False, overwrite=overwrite, **kwargs)
+    postings = scraper._rank_postings(postings, overwrite=overwrite, **kwargs)
     return postings
 
 def process_posting_soups(soups, pattern, website = "",
