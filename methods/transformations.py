@@ -1,6 +1,7 @@
-from typing import List, Tuple
+from typing import List, Tuple, Callable
+from copy import deepcopy
 
-def apply_filters_transformations(postings, transformations: List[Tuple[callable, dict]] = []):
+def apply_filters_transformations(postings, transformations: List[Tuple[Callable, dict]] = []):
     """
     Apply a series of filter functions to postings.
     Parameters:
@@ -47,3 +48,13 @@ def filter_on_points(postings, min_points=0.01, default_points=0):
     filtered = {key: value for key, value in postings.items() if value.get('points', default_points) >= min_points}
     return filtered
 
+def add_postings(postings:dict, candidate_postings:dict, select_ids = []):
+    if not select_ids:
+        #TODO check
+        postings.update(candidate_postings)
+    else:
+        candidate_postings = deepcopy(candidate_postings)
+        for id in select_ids:
+            if id in candidate_postings:
+                postings[id] = candidate_postings[id]
+    return postings
