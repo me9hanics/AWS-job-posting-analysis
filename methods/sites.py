@@ -5,12 +5,12 @@ import time
 import json
 import os
 from copy import deepcopy
-from typing import List, Tuple
+from typing import List, Tuple, Callable
 try:
     from methods import scrape
     from methods import urls
-    from methods.macros import (SALARY_BEARABLE, BASE_RULES, BASE_KEYWORDS, BASE_RANKINGS,
-                                RELATIVE_POSTINGS_PATH)
+    from methods.macros import (SALARY_BEARABLE, BASE_RULES, BASE_KEYWORDS, BASE_KEYWORD_SCORING,
+                                RELATIVE_POSTINGS_PATH, LOCATIONS_DESIRED, LOCATIONS_SECONDARY) 
     from methods.attributes import *
     from methods.postings_utils import (filter_postings, process_posting_soups)
     from methods.transformations import apply_filters_transformations
@@ -19,8 +19,8 @@ try:
 except ModuleNotFoundError:
     import scrape
     import urls
-    from macros import (SALARY_BEARABLE, BASE_RULES, BASE_KEYWORDS, BASE_RANKINGS,
-                        RELATIVE_POSTINGS_PATH)
+    from macros import (SALARY_BEARABLE, BASE_RULES, BASE_KEYWORDS, BASE_KEYWORD_SCORING,
+                        RELATIVE_POSTINGS_PATH, LOCATIONS_DESIRED, LOCATIONS_SECONDARY)
     from attributes import *
     from postings_utils import (filter_postings, process_posting_soups)
     from transformations import apply_filters_transformations
@@ -37,7 +37,8 @@ SCROLL_DOWN_SCRIPT = "window.scrollTo(0, document.body.scrollHeight);" #scroll t
 SCROLL_1000_SCRIPT = "window.scrollTo(0, 1000);"
 CSS_SELECTOR = "css selector" #can use instead: from selenium.webdriver.common.by import By, then By.CSS_SELECTOR
 
-def get_all_keywords(keywords = BASE_KEYWORDS, rankings = BASE_RANKINGS):
+def get_all_keywords(keywords = BASE_KEYWORDS, #rankings = BASE_KEYWORD_SCORING
+                     ):
     """
     Returns union of keywords (as lists), non capitalized and capitalized.
     """
@@ -46,26 +47,23 @@ def get_all_keywords(keywords = BASE_KEYWORDS, rankings = BASE_RANKINGS):
         (keywords.get("titlewords", []) +
          keywords.get("banned_words", []) +
          keywords.get("banned_capital_words", []) +
-         list(rankings.get("ranking_lowercase", {}).keys()) +
-         rankings.get("neutral", []))
+         keywords.get("description_keywords_order", []))
+         #TODO add from rankings the ones with ignore flag
     ))
 
     all_keywords_capital = list(set(
-        list(rankings.get("ranking_case_sensitive", {}).keys())
+        keywords.get("banned_capital_words", [])
+        #TODO fix
     ))
 
     return all_keywords_noncapital, all_keywords_capital
+#ALL_KEYWORDS_NONCAPITAL, ALL_KEYWORDS_CAPITAL = get_all_keywords(keywords=BASE_KEYWORDS)
 
-ALL_KEYWORDS_NONCAPITAL, ALL_KEYWORDS_CAPITAL = get_all_keywords(keywords=BASE_KEYWORDS, rankings=BASE_RANKINGS)
-
-LOCATIONS_DESIRED = ["vienna", "wien", "österreich", "austria"]
-LOCATIONS_SECONDARY = ["st. pölten", "sankt pölten", "wiener neudorf", "linz", "krems", "nussdorf", 
-                       "klosterneuburg", "schwechat"] #graz, salzburg, innsbruck, #klagenfurt
 
 class BaseScraper:
     def __init__(self, driver=None, rules = BASE_RULES, keywords = BASE_KEYWORDS,
                  extra_keywords = {}, extra_titlewords = [], extra_locations = [],
-                 rankings = BASE_RANKINGS, salary_bearable = SALARY_BEARABLE, locations = None,
+                 rankings = BASE_KEYWORD_SCORING, salary_bearable = SALARY_BEARABLE, locations = None,
                  locations_desired = LOCATIONS_DESIRED, locations_secondary = LOCATIONS_SECONDARY,
                  transformations = []):
         if driver is None:
@@ -76,6 +74,7 @@ class BaseScraper:
         self.time = time.strftime("%Y-%m-%d-%H-%M-%S")
         self.day = self.time[:10]
 
+        #rules = rules or BASE_RULES
         self.rules = rules
         self.BASE_RULES = rules
 
@@ -96,13 +95,14 @@ class BaseScraper:
         self.BASE_RANKINGS = rankings
         #self.signed_rankings = rankings.get("ranking_case_sensitive", {}).copy().update(rankings.get("ranking_lowercase", {}))
         
-        self.all_keywords_noncapital, self.all_keywords_capital = get_all_keywords(keywords=keywords, rankings=rankings)
+        self.all_keywords = self.keywords.get("description_keywords_order", [])
+        self.description_keywords_order = self.keywords.get("description_keywords_order", [])
 
         self.salary_bearable = salary_bearable
 
         self.locations = locations
-        self.LOCATIONS_DESIRED = locations_desired
-        self.LOCATIONS_SECONDARY = locations_secondary
+        self.locations_desired = locations_desired
+        self.locations_secondary = locations_secondary
 
         self.transformations = transformations
 
@@ -212,19 +212,43 @@ class BaseScraper:
         return salary_from_text(text, keywords=keywords, clarity_comma_char=clarity_comma_char,
                                 decimal_separator=decimal_separator, conversion_rate=conversion_rate)
 
-    def _salary_points(self, salary, salary_bearable = SALARY_BEARABLE, salary_ratio = 0.15/100,
-                      high_dropoff = True, dropoff_bearable_ratio = 1.25): #better at around 1.4
-        return salary_points(salary, salary_bearable = salary_bearable, salary_ratio = salary_ratio,
-                             high_dropoff = high_dropoff, dropoff_bearable_ratio = dropoff_bearable_ratio)   
+    def _salary_from_description(self, text,
+                                 regexes = [r'(Salary|Gehalt|Compensation|Vergütung):.*',
+                                            r'\b(Gross|Brutto|Net|Netto)\b:.*',
+                                            r'(\d{5}[.,]\d+)(?:(?!\d{5}[.,]?\d*).)*?\b(netto|brutto|gross)\b',#select last such number
+                                            r'(\d{2}[.,]\d{3}[.,]\d+)(?:(?!\d{2}[.,]\d{3}[.,]\d*).)*?\b(netto|brutto|gross)\b',
+                                            r'(\d{4}[.,]\d+)(?:(?!\d{4}[.,]?\d*).)*?\b(netto|brutto|gross)\b',
+                                            r'(\d{1}[.,]\d{3}[.,]\d+)(?:(?!\d{1}[.,]\d{3}[.,]\d*).)*?\b(netto|brutto|gross)\b',
+                                            r'(\d{5})(?:(?!\d{5}).)*?\b(netto|brutto|gross)\b',
+                                            r'(\d{2}[.,]\d{3})(?:(?!\d{2}[.,]\d{3}).)*?\b(netto|brutto|gross)\b',
+                                            r'(\d{5}[.,]\d+)(?:(?!\d{5}[.,]?\d*).)*?\b(net|taxes|tax)\b',
+                                            r'(\d{4}[.,]\d+)(?:(?!\d{4}[.,]?\d*).)*?\b(net|taxes|tax)\b',
+                                            r'(\d{1}[.,]\d{3})(?:(?!\d{1}[.,]\d{3}).)*?\b(netto|brutto|gross)\b',
+                                            r'\d{4,5}[.,]\d{2}',
+                                            r'(\d{5})(?:(?!\d{5}).)*?\b(net|taxes|tax)\b',
+                                            ],
+                                 method : Callable = None,
+                                 **kwargs):
+        if type(text) != str:
+            return None
+        if not method:
+            method = self._salary_from_text
+        return salary_from_description(text, regexes=regexes, method=method, **kwargs)
 
-    def _process_posting_soups(self, soups, pattern, website = "",
-                      posting_id=False, posting_id_path=None,
-                      posting_id_regex=r'\d+', title_path=None, 
-                       company_path=None, salary_path=None):
-        return process_posting_soups(soups, pattern, website = website,
-                      posting_id=posting_id, posting_id_path=posting_id_path,
-                      posting_id_regex=posting_id_regex, title_path=title_path, 
-                       company_path=company_path, salary_path=salary_path)
+    def _salary_points(self, salary, salary_bearable=SALARY_BEARABLE, salary_ratio=0.15/100,
+                      high_dropoff=True, dropoff_bearable_ratio=1.25):
+        return salary_points(salary, root_value=salary_bearable, salary_ratio=salary_ratio,
+                           high_dropoff=high_dropoff, dropoff_bearable_ratio=dropoff_bearable_ratio)
+
+    def _process_posting_soups(self, soups, pattern, website="",
+                              posting_id=False, posting_id_path=None,
+                              posting_id_regex=r'\d+', title_path=None, 
+                              company_path=None, salary_path=None):
+        return process_posting_soups(soups, pattern, website=website,
+                                    posting_id=posting_id, posting_id_path=posting_id_path,
+                                    posting_id_regex=posting_id_regex, title_path=title_path, 
+                                    company_path=company_path, salary_path=salary_path,
+                                    salary_from_text_func=self._salary_from_text)
 
     def _save_data(self, data, path = f"{RELATIVE_POSTINGS_PATH}/", name="", with_timestamp = True, verbose = False):
         if not name:
@@ -241,55 +265,49 @@ class BaseScraper:
     
     def _check_locations(self, locations, locations_desired=["vienna", "wien", "österreich"]):
         if not locations_desired:
-            locations_desired = self.__dict__.get("LOCATIONS_DESIRED", LOCATIONS_DESIRED)
-        return check_locations(locations = locations, locations_desired=locations_desired)
+            locations_desired = getattr(self, "locations_desired", LOCATIONS_DESIRED)
+        return check_locations(locations=locations, locations_desired=locations_desired)
     
-    def _rank_postings(self, postings:dict, keyword_points=None, desc_ratio = 0.3,
-                      salary_bearable = None, salary_ratio = 0.15/100,
-                      dropoff_bearable_ratio = 1.4, overwrite = True,
+    def _rank_postings(self, postings: dict, keyword_points=None, desc_ratio=0.3,
+                      salary_bearable=None, salary_ratio=0.15/100,
+                      dropoff_bearable_ratio=1.4, overwrite=True,
                       locations_desired=None, locations_secodary=None, **kwargs):
         if not salary_bearable:
             salary_bearable = getattr(self, "salary_bearable", SALARY_BEARABLE)
         if not keyword_points:
-            keyword_points = getattr(self, "rankings", BASE_RANKINGS)
+            keyword_points = getattr(self, "rankings", BASE_KEYWORD_SCORING)
         if not locations_desired:
-            locations_desired = getattr(self, "LOCATIONS_DESIRED", LOCATIONS_DESIRED)
+            locations_desired = getattr(self, "locations_desired", LOCATIONS_DESIRED)
         if not locations_secodary:
-            locations_secodary = getattr(self, "LOCATIONS_SECONDARY", LOCATIONS_SECONDARY)
+            locations_secodary = getattr(self, "locations_secondary", LOCATIONS_SECONDARY)
 
-        return rank_postings(postings, keyword_points=keyword_points, desc_ratio = desc_ratio,
-                             salary_bearable = salary_bearable, salary_ratio = salary_ratio,
-                             dropoff_bearable_ratio = dropoff_bearable_ratio, overwrite = overwrite,
-                             locations_desired=locations_desired, locations_secodary=locations_secodary,
-                             **kwargs)
+        return rank_postings(postings, keyword_points=keyword_points, desc_ratio=desc_ratio,
+                           root_value=salary_bearable, salary_ratio=salary_ratio,
+                           dropoff_bearable_ratio=dropoff_bearable_ratio, overwrite=overwrite,
+                           locations_desired=locations_desired, locations_secodary=locations_secodary,
+                           **kwargs)
 
-    def _find_keywords(self, text, non_capital = None, capital = None, sort=True, rankings = None):
-        if not non_capital:
-            non_capital = getattr(self, "all_keywords_noncapital", ALL_KEYWORDS_NONCAPITAL)
-        if not capital:
-            capital = getattr(self, "all_keywords_capital", ALL_KEYWORDS_CAPITAL)
-        if sort and (not rankings):
-            rankings = getattr(self, "rankings", BASE_RANKINGS)
-
-        return find_keywords(text, non_capital=non_capital, capital=capital, sort=sort, rankings=rankings)
+    def _find_keywords(self, text, keywords_list=None, sort=False, **kwargs):
+        if not keywords_list:
+            keywords_list = getattr(self, "keywords", {}).get("description_keywords_order", [])
+        return find_keywords(text, keywords_list=keywords_list, sort=sort, **kwargs)
     
-    def _find_keywords_in_postings(self, postings:dict, description_key = "description", overwrite = True,
-                                  non_capital = None, capital=None, sort=True, rankings = None, **kwargs):
-        if not non_capital:
-            non_capital = getattr(self, "all_keywords_noncapital", ALL_KEYWORDS_NONCAPITAL)
-        if not capital:
-            capital = getattr(self, "all_keywords_capital", ALL_KEYWORDS_CAPITAL)
+    def _find_keywords_in_postings(self, postings: dict, ordered_keywords = None,
+                                   description_key="description", overwrite=True, sort=False, **kwargs):
+        if not ordered_keywords:
+            ordered_keywords = getattr(self, "keywords", {}).get("description_keywords_order", [])
+        return find_keywords_in_postings(postings, ordered_keywords=ordered_keywords, 
+                                         description_key=description_key,
+                                         method = self._find_keywords,
+                                         overwrite=overwrite, sort=sort, **kwargs)
 
-        return find_keywords_in_postings(postings, method = self._find_keywords, description_key = description_key, overwrite = overwrite,
-                                         non_capital=non_capital, capital=capital, sort=sort, rankings=rankings, **kwargs)
-
-    def _apply_filters_transformations(self, postings, filters: List[Tuple] = []):
+    def _apply_filters_transformations(self, postings, transformations: List[Tuple] = []):
         """
         Apply a series of transformations (e.g. on points) or filters to postings.
         """
-        if not filters:
-            filters = getattr(self, "transformations", [])
-        return apply_filters_transformations(postings, transformations=filters) 
+        if not transformations:
+            transformations = getattr(self, "transformations", [])
+        return apply_filters_transformations(postings, transformations=transformations)
 
     def gather_data(self, close_driver=True,
                     url_links = [],
@@ -361,7 +379,7 @@ class BaseScraper:
 class KarriereAT(BaseScraper):
     def __init__(self, driver="", rules = BASE_RULES, keywords = BASE_KEYWORDS,
                  extra_keywords = {}, extra_titlewords = [], extra_locations = [],
-                 rankings = BASE_RANKINGS, salary_bearable = SALARY_BEARABLE, locations = None,
+                 rankings = BASE_KEYWORD_SCORING, salary_bearable = SALARY_BEARABLE, locations = None,
                  locations_desired = LOCATIONS_DESIRED, locations_secondary = LOCATIONS_SECONDARY,
                  transformations = []):
         """
@@ -596,7 +614,7 @@ class KarriereAT(BaseScraper):
                     else:
                         if verbose:
                             print(f"Could not find id {id} in saved postings - likely programming error")
-                postings = self.find_keywords_in_postings(postings)
+                postings = self._find_keywords_in_postings(postings)
 
         postings = self._rank_postings(postings)
         postings = {k: v for k, v in sorted(postings.items(), key=lambda item: item[1]["points"], reverse=True)}
@@ -608,7 +626,7 @@ class KarriereAT(BaseScraper):
 class Raiffeisen(BaseScraper):
     def __init__(self, driver="", rules = BASE_RULES, keywords = BASE_KEYWORDS,
                  extra_keywords = {}, extra_titlewords = [], extra_locations = [],
-                 rankings = BASE_RANKINGS, salary_bearable = SALARY_BEARABLE, locations = None,
+                 rankings = BASE_KEYWORD_SCORING, salary_bearable = SALARY_BEARABLE, locations = None,
                  locations_desired=LOCATIONS_DESIRED, locations_secondary=LOCATIONS_SECONDARY,
                  transformations = []):
         rules["website"] = "raiffeisen_international"
@@ -694,24 +712,23 @@ class Raiffeisen(BaseScraper):
                     break
             posting = i
             contexts = posting.select("ul")
-            contexts = [context for context in contexts if context.attrs=={}]
-            if len(contexts) not in [3,4]:
+            contexts = [context for context in contexts if context.attrs == {}]
+            if len(contexts) not in [3, 4]:
                 if verbose:
                     #print(f"Contexts length not 4, but {len(contexts)}; something incorrect. Contexts: {contexts}")
                     pass
 
             role = contexts[0].text if contexts else None
-            requirements = contexts[1].text if len(contexts)>1 else None
-            benefits = contexts[2].text if len(contexts)>2 else None
+            requirements = contexts[1].text if len(contexts) > 1 else None
+            benefits = contexts[2].text if len(contexts) > 2 else None
             nice_to_have = None
 
-            if len(contexts)==3:
+            if len(contexts) == 3:
                 benefits = contexts[2].text
-            elif len(contexts)==4:
+            elif len(contexts) == 4:
                 nice_to_have = contexts[2].text
                 benefits = contexts[3].text
-            elif len(contexts)>4:
-                #join all contexts
+            elif len(contexts) > 4:
                 benefits = "\n ".join([context.text for context in contexts[2:]])
 
             description = posting.text
