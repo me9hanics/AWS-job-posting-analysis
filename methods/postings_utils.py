@@ -47,6 +47,14 @@ def get_added_and_removed(new, previous):
     """
     new = load_file_if_str(new, "dict")
     previous = load_file_if_str(previous, "dict")
+    
+    for posting in new.values():
+        if 'points' not in posting or posting['points'] is None:
+            posting['points'] = 0
+    for posting in previous.values():
+        if 'points' not in posting or posting['points'] is None:
+            posting['points'] = 0
+    
     added_keys = list(set(new) - set(previous))
     removed_keys = list(set(previous) - set(new))
     added = {key: new[key] for key in added_keys}
