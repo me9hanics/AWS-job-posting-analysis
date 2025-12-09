@@ -1,5 +1,7 @@
-def sort_dict_by_key(x, key="points", descending = True):
-    return {k: v for k, v in sorted(x.items(), key=lambda item: item[1][key], reverse = descending)} if x else {}
+def sort_dict_by_key(x, key="points", descending=True, default=0):
+    return {k: v for k, v in sorted(x.items(), key=lambda item: item[1].get(key, default
+                                                                            ) if item[1].get(key) is not None else default,
+                                    reverse=descending)} if x else {}
 
 def reorder_dict(d, keys_order, nested=False):
     return {k: d[k] for k in keys_order if k in d} if not nested else {
