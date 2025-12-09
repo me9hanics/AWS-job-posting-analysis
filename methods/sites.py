@@ -267,7 +267,7 @@ class BaseScraper:
         if not locations_desired:
             locations_desired = getattr(self, "locations_desired", LOCATIONS_DESIRED)
         return check_locations(locations=locations, locations_desired=locations_desired)
-    
+
     def _rank_postings(self, postings: dict, keyword_points=None, desc_ratio=0.3,
                       salary_bearable=None, salary_ratio=0.15/100,
                       dropoff_bearable_ratio=1.4, overwrite=True,
@@ -356,6 +356,7 @@ class BaseScraper:
                                       title_path=title_path, company_path=company_path, salary_path=salary_path)
         
         postings = self._filter_postings(postings)
+        postings = analyze_postings_language(postings)
         postings = self._rank_postings(postings)
         postings = self._find_keywords_in_postings(postings)
         postings = self._apply_filters_transformations(postings, transformations=transformations)

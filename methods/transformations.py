@@ -48,6 +48,15 @@ def filter_on_points(postings, min_points=0.01, default_points=0):
     filtered = {key: value for key, value in postings.items() if value.get('points', default_points) >= min_points}
     return filtered
 
+def extra_points_if_missing_keywords(postings, keywords_points: List[Tuple[List[str], float]]):
+    for key, value in postings.items():
+        title = value.get('title', '').lower()
+        description = value.get('description', '').lower()
+        for keywords, point in keywords_points:
+            if all(keyword not in title and keyword not in description for keyword in keywords):
+                value['points'] = value.get('points', 0) + point
+    return postings
+
 def add_postings(postings:dict, candidate_postings:dict, select_ids = []):
     if not select_ids:
         #TODO check

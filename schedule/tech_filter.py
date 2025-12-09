@@ -7,6 +7,10 @@ sys.path.append(parent_path)
 from methods.macros import POSTINGS_PATH
 import json
 from datetime import datetime
+from methods.transformations import apply_filters_transformations, select_keywords, filter_out_keywords, filter_on_points
+
+FILE_PATH = f"{POSTINGS_PATH}/tech/newly_added_postings.json"
+OUTPUT = f"C:/GitHubRepo/cv-automation/src/cvscripts/generation/"
 
 title_keywords = [
     "data", "research", "python", "software", "developer", "graph", "network", "time",
@@ -27,7 +31,7 @@ desctiption_capital_keywords = ["AI", "ML", "NLP", "GNN", "R&D", "Master", "GIS"
 
 filter_out_title_keywords = [
     "java", "angular", "react", "plsql", "oracle", "salesforce",
-    "cloudera", "apache flink",
+    "cloudera", "apache flink", "servicenow",
     "sap", "human resources", #"marketing",
     "teamlead", "team lead", "manager", "leiter", #"intern", "internship",
     "test engineer", "cybersecurity engineer", "test automation", "qa engineer",
@@ -35,67 +39,44 @@ filter_out_title_keywords = [
 ]
 filter_out_title_capital_keywords = ["UX", "C#", ".NET", "PHP"]
 
-FILE_PATH = f"{POSTINGS_PATH}/tech/newly_added_postings.json"
-OUTPUT = f"C:/GitHubRepo/cv-automation/src/cvscripts/generation/"
-
-def select_keywords(postings, title_keywords=[], title_capital_keywords=[],
-                    description_keywords=[], description_capital_keywords=[]):
-    filtered = {}
-    for key, value in postings.items():
-        title = value.get('title', '').lower()
-        description = value.get('description', '').lower()
-        if any(term.lower() in title for term in title_keywords) or \
-           any(term.lower() in description for term in description_keywords) or \
-           any(term in title for term in title_capital_keywords) or \
-           any(term in description for term in description_capital_keywords):
-            filtered[key] = value
-    return filtered
-
-def filter_out_keywords(postings, title_keywords=[], title_capital_keywords=[],
-                         description_keywords=[], description_capital_keywords=[]):
-    filtered = postings.copy()
-    for key, value in postings.items():
-        title = value.get('title', '')
-        description = value.get('description', '')
-        if any(term.lower() in title.lower() for term in title_keywords) or \
-           any(term.lower() in description.lower() for term in description_keywords) or \
-           any(term in title for term in title_capital_keywords) or \
-           any(term in description for term in description_capital_keywords):
-            filtered.pop(key, None)
-    return filtered
-
-def filter_on_points(postings, min_points=0.01, default_points=0):
-    filtered = {key: value for key, value in postings.items() if value.get('points', default_points) >= min_points}
-    return filtered
-
-def apply_filters(postings, functions = [], kwargs_list = []):
-    filtered = postings
-    for func, kwargs in zip(functions, kwargs_list):
-        filtered = func(filtered, **kwargs)
-    return filtered
-
 def main(current_postings:dict=None, output_path:str=None):
     if current_postings is None:
         with open(FILE_PATH, 'r', encoding='utf-8') as f:
             current_postings = json.load(f)
-    filtered_results = apply_filters(
+    filtered_results = apply_filters_transformations(
         current_postings,
-        functions=[select_keywords, filter_out_keywords, filter_on_points],
-        kwargs_list=[{
-            'title_keywords': title_keywords,
-            'title_capital_keywords': title_capital_keywords,
-            'description_keywords': description_keywords,
-            'description_capital_keywords': desctiption_capital_keywords
-        },
-        {
-            'title_keywords': filter_out_title_keywords,
-            'title_capital_keywords': filter_out_title_capital_keywords
-        },
-        {}
+        [
+            (select_keywords, {
+                'title_keywords': title_keywords,
+                'title_capital_keywords': title_capital_keywords,
+                'description_keywords': description_keywords,
+                'description_capital_keywords': desctiption_capital_keywords
+                },),
+            (filter_out_keywords, {
+                'title_keywords': filter_out_title_keywords,
+                'title_capital_keywords': filter_out_title_capital_keywords
+                },),
+            (filter_on_points, {})
         ]
     )
+    #filtered_results = apply_filters(
+    #    current_postings,
+    #    functions=[select_keywords, filter_out_keywords, filter_on_points],
+    #    kwargs_list=[{
+    #        'title_keywords': title_keywords,
+    #        'title_capital_keywords': title_capital_keywords,
+    #        'description_keywords': description_keywords,
+    #        'description_capital_keywords': desctiption_capital_keywords
+    #    },
+    #    {
+    #        'title_keywords': filter_out_title_keywords,
+    #        'title_capital_keywords': filter_out_title_capital_keywords
+    #    },
+    #    {}
+    #    ]
+    #)
     
-    add_back = ["karriere.at7670267", "karriere.at7670270"]
+    add_back = ["karriere.at7670267", "karriere.at7670270"] #TODO think of something
     for key in add_back:
         if key in current_postings:
             filtered_results[key] = current_postings[key]
