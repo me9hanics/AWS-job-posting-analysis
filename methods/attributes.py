@@ -246,38 +246,62 @@ def find_keywords_in_postings(postings:dict, ordered_keywords:List | Dict, overw
     return postings
 
 def analyze_text_language(texts):
-    #TODO exact word match instead
-    """Returns 'en', 'de', 'mixed', or 'unclear' based on text content"""
+    """Returns 'en', 'de', or None based on text content"""
     english_patterns = [
-        'graduated with honors', 'selected courses:', 'works:', 'grade:', 
-        'developed', 'implemented', 'designed', 'built', 'created', 
-        'managed', 'led', 'analyzed', 'gave a talk', 'presenting a poster'
+        r'\buniversity\b', r'\bcourse', r'\bwork', r'\bgrade:\b', r'\band\b', r'\bfor\b', r'\bwith\b', #r'\bthe\b',
+        r'\bdevelop\b', r'\bimplement\b', r'\bdesign\b', r'\bbuild\b', r'\bcreate\b', r'\bproduct\b', 
+        r'\bmanage\b', r'\blead\b', r'\banalyze\b', r'\btalk\b', r'\bneed\b', 
+        r'\bpresenting\b' r'\bcreating\b', r'\badding\b', r'\bable\b', r'\bsuccessful\b',
+        r'\bhave\b', r'\bhas\b', r'\bhad\b', r'\bwill\b', r'\bwould\b', r'\bshould\b', r'\bcould\b',
+        r'\bgood\b', r'\bbetter\b', r'\bbest\b', r'\bgreat\b', r'\bway\b', r'\bways\b',
+        r'\bour\b', r'\byour\b', r'\btheir\b', r'\bthis\b', r'\bthat\b', r'\bthese\b', r'\bthose\b',
+        r'\bare\b', r'\bis\b', r'\bwas\b', r'\bwere\b', r'\bbeen\b', r'\bbeing\b',
+        r'\bwe\b', r'\byou\b', r'\bthey\b', r'\bwho\b', r'\bwhich\b', r'\bwhat\b', r'\bwhen\b', r'\bwhere\b',
+        r'\bsome\b', r'\bany\b', r'\bmany\b', r'\bmuch\b', r'\bmore\b', r'\bmost\b',
+        r'\bthrough\b', r'\babout\b', r'\binto\b', r'\bfrom\b', r'\bwith\b', r'\bwithin\b',
+        r'\bprovide\b', r'\bsupport\b', r'\bhelp\b', r'\bmake\b', r'\btake\b', r'\bget\b',
+        r'\bincluding\b', r'\bsuch\b', r'\bboth\b', r'\beach\b', r'\bother\b',
+        r'\blooking\b', r'\bseeking\b', r'\bjoin\b', r'\bgrow\b', r'\blearn\b'
     ]
     german_patterns = [
-        'für', 'mit', 'der', 'das', 'und', 'über', #'die',
-        'von', 'zu', 'bei', 'im', 'abteilung', 'gegenwart'
-        'entwicklung', 'zusammenarbeit',
-        'implementierung', 'optimierung','automatisierte', 
-
+        r'\bder\b', r'\bdie\b', r'\bdas\b', r'\bden\b', r'\bdem\b', r'\bdes\b',
+        r'\bein\b', r'\beine\b', r'\beinen\b', r'\beinem\b', r'\beiner\b', r'\beines\b',
+        r'\bund\b', r'\boder\b', r'\baber\b', r'\bdenn\b', r'\bweil\b', r'\bdass\b',
+        r'\bist\b', r'\bsind\b', r'\bwar\b', r'\bwaren\b', r'\bwird\b', r'\bwerden\b', r'\bwurde\b', r'\bwurden\b',
+        r'\bhaben\b', r'\bhat\b', r'\bhatte\b', r'\bhatten\b',
+        r'abteilung', r'gegen', r'wart', r'\bentwickl', r'\barbeit\b',
+        r'\bimplementier', r'\boptimier', r'\bautomatisier',
+        r'\bsie\b', r'\bihr\b', r'\bihre\b', r'\bihren\b', r'\bihrem\b', r'\bwir\b', r'\bunser\b', r'\bunsere\b',
+        r'\bfür\b', r'\bmit\b', r'\bzu\b', r'\bvon\b', r'\baus\b', r'\bbei\b', r'\bnach\b', r'\bim\b', r'\ban\b', r'\bauf\b',
+        r'\bauch\b', r'\bnur\b', r'\bschon\b', r'\bnoch\b', r'\bnicht\b', r'\bkein\b', r'\bkeine\b',
+        r'\bdurch\b', r'\büber\b', r'\bunter\b', r'\bsehr\b', r'\bmehr\b', r'\balle\b', r'\bjede\b', r'\bjeder\b',
+        r'\bsuchen\b', r'\bsucht\b', r'\bbieten\b', r'\bbietet\b', r'\bsowie\b', r'\bwerden\b',
+        r'\bals\b', r'\bwenn\b', r'\bwann\b', r'\bwie\b', r'\bwas\b', r'\bwo\b'
     ]
-    
     english_count = 0
     german_count = 0
-    
+    if ((not isinstance(texts, list)) and (not isinstance(texts, str))) or not texts:
+        return None
+    if isinstance(texts, str):
+        texts = [texts]
     for text in texts:
         text_lower = text.lower()
         for pattern in english_patterns:
-            if pattern in text_lower:
+            if re.search(pattern, text_lower):
                 english_count += 1
         for pattern in german_patterns:
-            if pattern in text_lower:
+            if re.search(pattern, text_lower):
                 german_count += 1
     
-    if english_count > 0 and german_count == 0:
+    if english_count > german_count:
         return 'en'
-    elif german_count > 0 and english_count == 0:
+    elif german_count > english_count:
         return 'de'
-    elif english_count > 0 and german_count > 0:
-        return 'mixed'
     else:
-        return 'unclear'
+        return None
+    
+def analyze_postings_language(postings: Dict):
+    descriptions = [posting.get("description", "") for posting in postings.values()]
+    for key in postings.keys():
+        postings[key]["language"] = analyze_text_language(descriptions)
+    return postings
