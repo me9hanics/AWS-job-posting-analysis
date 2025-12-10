@@ -204,7 +204,8 @@ def rank_postings(postings: dict, keyword_points=None, desc_ratio=0.3,
     
     return postings
 
-def find_keywords(text: str, keywords_list: List[str], **kwargs) -> List[str]:
+def find_keywords(text: str, keywords_list: List[str], case_sensitive = False,
+                  **kwargs) -> List[str]:
     """
     Find keywords in text from a predefined list.
     
@@ -222,11 +223,14 @@ def find_keywords(text: str, keywords_list: List[str], **kwargs) -> List[str]:
     if not keywords_list:
         return []
     
-    text_lower = text.lower()
     found = []
-    
+    if not case_sensitive:
+        text = text.lower()
+
     for keyword in keywords_list:
-        if keyword.lower() in text_lower:
+        if not case_sensitive:
+            keyword = keyword.lower()
+        if keyword in text:
             found.append(keyword)
     
     return found
@@ -236,12 +240,17 @@ def find_keywords_in_postings(postings:dict, ordered_keywords:List | Dict, overw
                               description_key = "description", **kwargs):
     if isinstance(ordered_keywords, dict):
         ordered_keywords = list(ordered_keywords.keys()) #TODO fix
+
+    case_sensitive_keywords = [kw for kw in ordered_keywords if any(c.isupper() for c in kw)]
+    case_insensitive_keywords = [kw for kw in ordered_keywords if not any(c.isupper() for c in kw)]
+    
     for id, posting in postings.items():
         if overwrite or ("keywords" not in posting.keys()) or (not posting["keywords"]):
             postings[id]["keywords"] = []
             if description_key in posting.keys():
                 text = posting[description_key]
-                keywords = method(text, keywords_list=ordered_keywords, sort=sort)
+                keywords = method(text, keywords_list=case_sensitive_keywords, case_sensitive=True, sort=sort)
+                keywords.extend(method(text, keywords_list=case_insensitive_keywords, case_sensitive=False, sort=sort))
                 postings[id]["keywords"] = keywords
     return postings
 
