@@ -6,10 +6,12 @@ sys.path.append(parent_path)
 
 from methods.macros import POSTINGS_PATH
 import json
-from datetime import datetime
-from methods.transformations import apply_filters_transformations, select_keywords, filter_out_keywords, filter_on_points
+from datetime import datetime, timedelta
+from methods.transformations import (apply_filters_transformations, select_keywords, filter_out_keywords,
+                                     filter_on_points, filter_on_date)
 
-FILE_PATH = f"{POSTINGS_PATH}/tech/newly_added_postings.json"
+NEWLY_ADDED_FILE_PATH = f"{POSTINGS_PATH}/tech/newly_added_postings.json"
+CURRENT_FILE_PATH = f"{POSTINGS_PATH}/tech/current_postings.json"
 OUTPUT = f"C:/GitHubRepo/cv-automation/src/cvscripts/generation/"
 
 title_keywords = [
@@ -39,12 +41,13 @@ filter_out_title_keywords = [
 ]
 filter_out_title_capital_keywords = ["UX", "C#", ".NET", "PHP"]
 
-def main(current_postings:dict=None, output_path:str=None):
-    if current_postings is None:
-        with open(FILE_PATH, 'r', encoding='utf-8') as f:
-            current_postings = json.load(f)
+def main(postings:dict=None, output_path:str=None, min_date:datetime=None,
+         input_path:str=NEWLY_ADDED_FILE_PATH):
+    if postings is None:
+        with open(input_path, 'r', encoding='utf-8') as f:
+            postings = json.load(f)
     filtered_results = apply_filters_transformations(
-        current_postings,
+        postings,
         [
             (select_keywords, {
                 'title_keywords': title_keywords,
@@ -56,7 +59,8 @@ def main(current_postings:dict=None, output_path:str=None):
                 'title_keywords': filter_out_title_keywords,
                 'title_capital_keywords': filter_out_title_capital_keywords
                 },),
-            (filter_on_points, {})
+            (filter_on_points, {}),
+            (filter_on_date, {'min_date': min_date} )
         ]
     )
     #filtered_results = apply_filters(
@@ -78,8 +82,8 @@ def main(current_postings:dict=None, output_path:str=None):
     
     add_back = ["karriere.at7670267", "karriere.at7670270"] #TODO think of something
     for key in add_back:
-        if key in current_postings:
-            filtered_results[key] = current_postings[key]
+        if key in postings:
+            filtered_results[key] = postings[key]
     
     if output_path:
         if not output_path.endswith('.json'):
@@ -90,4 +94,20 @@ def main(current_postings:dict=None, output_path:str=None):
     return filtered_results
 
 if __name__ == "__main__":
-    main(output_path=OUTPUT)
+    import argparse
+    
+    parser = argparse.ArgumentParser(description='Filter tech job postings')
+    parser.add_argument('--current', '-c', nargs='?', const=21, type=int, metavar='DAYS',
+                       help='Use current postings instead of newly added, and filter to last N days (default: 21)')
+    args = parser.parse_args()
+    
+    input_path = NEWLY_ADDED_FILE_PATH
+    min_date = None
+    
+    if args.current is not None:
+        input_path = CURRENT_FILE_PATH
+        days = args.current
+        min_date = (datetime.now() - timedelta(days=days)).strftime('%Y-%m-%d')
+        print(f"Using all active postings and filtering to last {days} days")
+    
+    main(output_path=OUTPUT, input_path=input_path, min_date=min_date)

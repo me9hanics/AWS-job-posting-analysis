@@ -48,6 +48,16 @@ def filter_on_points(postings, min_points=0.01, default_points=0):
     filtered = {key: value for key, value in postings.items() if value.get('points', default_points) >= min_points}
     return filtered
 
+def filter_on_date(postings, min_date=None, date_key='first_collected_on'):
+    if min_date is None:
+        return postings
+    filtered = {}
+    for key, value in postings.items():
+        post_date = value.get(date_key)
+        if post_date and post_date >= min_date:
+            filtered[key] = value
+    return filtered
+
 def extra_points_if_missing_keywords(postings, keywords_points: List[Tuple[List[str], float]]):
     for key, value in postings.items():
         title = value.get('title', '').lower()
