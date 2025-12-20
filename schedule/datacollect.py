@@ -33,8 +33,8 @@ def categorize_postings_by_date(df):
     
     def get_category(row):
         try:
-            if 'last_collected_on' in row and row['last_collected_on']:
-                date = datetime.datetime.strptime(row['last_collected_on'], "%Y-%m-%d")
+            if 'first_collected_on' in row and row['first_collected_on']:
+                date = datetime.datetime.strptime(row['first_collected_on'], "%Y-%m-%d")
                 if date >= two_weeks_ago:
                     return 0
                 elif date >= four_weeks_ago:
@@ -129,22 +129,20 @@ def create_excel_report(df, path_excel = f"{RELATIVE_EXCELS_PATH}/", prefix ='po
                         font.color = "E30A0A"
                         cell.font = font
 
-        #Bold columns, hyperlink
+        #Bold columns (hyperlinks will be set later after separator insertion)
         for row in sheet.iter_rows(min_row=1, max_row=len(df)+1):
             for cell in row:
                 if cell.column_letter in ["B", "D", "E"]:
                     cell.font = cell.font + Font(bold=True)
-                if cell.column_letter == "F" and cell.row > 1:
-                    url = cell.value
-                    if url and not (str(url).startswith("https://") or str(url).startswith("http://")):
-                        url = "https://" + str(url)
-                    cell.hyperlink = url
-                    cell.style = 'Hyperlink'
 
-        #Style separator rows (insert actual separator rows, delete old ones)
+        #Style separator rows (insert actual separator rows)
         if separator_rows:
-            gray_fill = PatternFill(start_color="D3D3D3", end_color="D3D3D3", fill_type="solid")
-            separator_font = Font(bold=True, size=11, color="000000")
+            separator_colors = {
+                "Last 2 weeks postings": "FFCCCC", #light yellow
+                "Last 4 weeks postings": "FFE6CC", #light orange
+                "Older postings": "E6F2E6" #light green
+            }
+            separator_font = Font(bold=True, size=22, color="000000")
             
             #Process separators from bottom to top to maintain row numbers
             for row_num in sorted(separator_rows.keys(), reverse=True):
@@ -158,11 +156,23 @@ def create_excel_report(df, path_excel = f"{RELATIVE_EXCELS_PATH}/", prefix ='po
                 sep_row[1].font = separator_font
                 sep_row[1].alignment = Alignment(horizontal="center", vertical="center")
                 
-                for cell in sep_row:
-                    cell.fill = gray_fill
+                color = separator_colors.get(separator_label, "CCCCCC")
+                fill = PatternFill(start_color=color, end_color=color, fill_type="solid")
                 
-                sheet.row_dimensions[row_num].height = 20
+                for cell in sep_row:
+                    cell.fill = fill
+                    cell.font = separator_font
+                
+                sheet.row_dimensions[row_num].height = 32
 
+        for row in sheet.iter_rows(min_row=2):
+            for cell in row:
+                if cell.column_letter == "F" and cell.value:
+                    url = cell.value
+                    if url and not (str(url).startswith("https://") or str(url).startswith("http://")):
+                        url = "https://" + str(url)
+                    cell.hyperlink = url
+                    cell.style = 'Hyperlink'
         workbook.save(excel_file_path)
     except Exception as e:
         if throw_error:
@@ -258,11 +268,15 @@ def get_postings(scrapers = SCRAPERS, keywords =KEYWORDS, rankings=RANKINGS, sal
         cols_ids = [vals['column'] for key, vals in excel_cols.items()]
         cols_ids_sorted = sorted(cols_ids, key=lambda x: (len(x), x))
         cols_sorted = [key for col_id in cols_ids_sorted for key, vals in excel_cols.items() if vals['column'] == col_id]
+        if 'first_collected_on' not in cols_sorted and 'first_collected_on' in df.columns:
+            cols_sorted.append('first_collected_on')
         excel_df = df[cols_sorted].copy()
-        excel_df = excel_df.rename(columns={col: vals['as'] for col, vals in excel_cols.items()})
+        excel_df = categorize_postings_by_date(excel_df)
+
         if 'url' in excel_df.columns:
             excel_df.loc[:, "url"] = excel_df["url"].apply(lambda x: reduce_url(x))
-        excel_df = categorize_postings_by_date(excel_df)
+        
+        excel_df = excel_df.rename(columns={col: vals['as'] for col, vals in excel_cols.items()})
         excel_file_path = create_excel_report(excel_df, path_excel = path_excel, prefix = excel_prefix,
                                               added = added, keywords = keywords, throw_error=True,
                                               widths = {vals['column']: vals.get('width', 20)
