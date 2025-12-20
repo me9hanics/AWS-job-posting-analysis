@@ -60,7 +60,7 @@ def get_all_keywords(keywords = BASE_KEYWORDS, #rankings = BASE_KEYWORD_SCORING
 #ALL_KEYWORDS_NONCAPITAL, ALL_KEYWORDS_CAPITAL = get_all_keywords(keywords=BASE_KEYWORDS)
 
 
-class BaseScraper:
+class BaseScraper: #Make abstract?
     def __init__(self, driver=None, rules = BASE_RULES, keywords = BASE_KEYWORDS,
                  extra_keywords = {}, extra_titlewords = [], extra_locations = [],
                  rankings = BASE_KEYWORD_SCORING, salary_bearable = SALARY_BEARABLE, locations = None,
@@ -309,6 +309,16 @@ class BaseScraper:
             transformations = getattr(self, "transformations", [])
         return apply_filters_transformations(postings, transformations=transformations)
 
+    def process_data(self, postings: dict, banned_words = None, banned_capital_words = None,
+                     description_key="description", transformations = [], **kwargs):
+        postings = self._filter_postings(postings, banned_words=banned_words,
+                                        banned_capital_words=banned_capital_words)
+        postings = analyze_postings_language(postings, description_key=description_key)
+        postings = self._rank_postings(postings, **kwargs)
+        postings = self._find_keywords_in_postings(postings, description_key=description_key, **kwargs)
+        postings = self._apply_filters_transformations(postings, transformations=transformations)
+        return postings
+
     def gather_data(self, close_driver=True,
                     url_links = [],
                     posting_id = False,
@@ -317,6 +327,7 @@ class BaseScraper:
                     titles = False,
                     companies = False,
                     salary = False,
+                    description_key = "description",
                     transformations = []):
         """
         url_links: list | function
@@ -355,11 +366,7 @@ class BaseScraper:
                                       posting_id_path=posting_id_path, posting_id_regex=posting_id_regex,
                                       title_path=title_path, company_path=company_path, salary_path=salary_path)
         
-        postings = self._filter_postings(postings)
-        postings = analyze_postings_language(postings)
-        postings = self._rank_postings(postings)
-        postings = self._find_keywords_in_postings(postings)
-        postings = self._apply_filters_transformations(postings, transformations=transformations)
+        postings = self.process_data(postings, transformations=transformations, description_key=description_key)
         if titles:
             title_list = [posting["text"] for posting in postings.values()]
         if companies:
@@ -531,7 +538,8 @@ class KarriereAT(BaseScraper):
         return super()._salary_from_text(text, keywords=keywords, clarity_comma_char=clarity_comma_char,
                                         decimal_separator=decimal_separator, conversion_rate=conversion_rate)
         
-    def gather_data(self, descriptions=False, save_data=False, verbose=False, transformations = []):
+    def gather_data(self, descriptions=False, save_data=False, verbose=False,
+                    transformations = [], description_key="description"):
         website = self.rules["website"]
         locations = self.keywords["locations"]
         titlewords = self.keywords["titlewords"] #expected not to have dashes, but spaces
@@ -617,9 +625,7 @@ class KarriereAT(BaseScraper):
                             print(f"Could not find id {id} in saved postings - likely programming error")
                 postings = self._find_keywords_in_postings(postings)
 
-        postings = self._rank_postings(postings)
-        postings = {k: v for k, v in sorted(postings.items(), key=lambda item: item[1]["points"], reverse=True)}
-        postings = self._apply_filters_transformations(postings, transformations=transformations)
+        postings = self.process_data(postings, transformations=transformations, description_key=description_key)
         if save_data:
             self._save_data(postings, name=f"karriere_at", with_timestamp=True)
         return postings
@@ -755,7 +761,8 @@ class Raiffeisen(BaseScraper):
         return super()._salary_from_text(text, keywords=keywords, clarity_comma_char=clarity_comma_char,
                                         decimal_separator=decimal_separator, conversion_rate=conversion_rate)
 
-    def gather_data(self, url_links=[], descriptions=False, verbose=False, transformations = []):
+    def gather_data(self, url_links=[], descriptions=False, verbose=False,
+                    transformations = [], description_key ="description"):
         titles_pattern = self.rules["gather_data_selector"]
         website = self.rules["website"]
         usecase = self.rules["usecase"]
@@ -803,7 +810,5 @@ class Raiffeisen(BaseScraper):
                                 "collected_on": self.day,
                                 }
         
-        postings = self._rank_postings(postings)
-        postings = self._find_keywords_in_postings(postings)
-        postings = self._apply_filters_transformations(postings, transformations=transformations)
+        postings = self.process_data(postings, transformations=transformations, description_key=description_key)
         return postings
