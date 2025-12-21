@@ -13,7 +13,7 @@ SALARY_BEARABLE = 3400
 
 LOCATIONS_DESIRED = ["vienna", "wien", "österreich", "austria", "remote"]
 LOCATIONS_SECONDARY = ["st. pölten", "sankt pölten", "wiener neudorf", "linz", "krems", "nussdorf", 
-                       "klosterneuburg", "schwechat", "graz"] #salzburg, innsbruck, #klagenfurt
+                       "klosterneuburg", "schwechat", "brunn am gebirge", "graz"] #salzburg, innsbruck, #klagenfurt
 
 BASE_RULES = {"website":"",
               "scraping_base_url": "",
@@ -40,8 +40,8 @@ BASE_KEYWORDS = {
                    "complexity science", "statistician", "scientist", "mathematician", #"network science", "combinatorics",
                    "life science", "computational biology", "bioinformatics", "bioengineer", "biotech",
                    "molecular biology", "chemistry informatics", 
-                   "Python engineer", "DataOps", "full stack data scientist",
-                   "forward deployed engineer",
+                   "energy systems", "power grid",
+                   "Python engineer", "DataOps", "full stack data scientist", "forward deployed engineer",
                    "software engineer", "software developer", #"full stack developer",
                   ],
     "banned_words": ["manager", "team leader", "teamleader", "teamleiter", "team leiter", "geschäft",
@@ -60,24 +60,24 @@ BASE_KEYWORDS = {
     "description_keywords_order": [
         "complexity science", "network science", "graph theory", "network medicine", "graph data",
         "aithyra", "hungarian", "network biology", "graph machine learning", "graph deep learning",
-        "graph neural network", "operations research", "graph", "gnn", "geospatial", "neo4j", "graph database",
-        "knowledge graph", "data scientist", "data science", "bioinformatic", "time series", "complex systems", 
-        "data mining", "phd", "advanced degree", "real estate", "holding", "purchasing", "accounting", "accountant", "algorithm",
+        "graph neural network", "operations research", "gnn", "geospatial", "neo4j", "graph database",
+        "knowledge graph", "bioinformatic", "time series", "complex systems", "graph",
+        "claude code", "claude", "spec-driven", "codex", "copilot",
+        "biology", "nlp", "data mining", "phd", "advanced degree", "algorithm",
         "marketing", "sales", "audit", "manager", "owner", "consultant", "consulting", "officer",
-        "head", "management", "machine learning engineer", "forward deployed", "python", "scientist",
+        "head", "management", "machine learning engineer", "forward deployed", "python",
         "ETL", "ML", "AI", "sparql", "conference", "researcher", "scraping", "geodata",
         "combinatori", "optimization", "knime", "data collection", "analytics", "bioengineer",
-        "causal", "inference", "lidar", "radar", "steuer", "SAP", "HR", "research", "weather forecast",
-        "data engineering", "forecasting", "acquisition", "merger", "stack developer",
+        "causal", "inference", "lidar", "radar", "HR", "research", "weather forecast", "forecasting",
         "robot", "sensor", "ai agents", "neural network", "semantic web", "spatial", "duckdb",
         "master", "msc", "deepmind", "R&D", "embedding", "modeling", "modelling",
-        "predictive", "biotech", "ELT", "data engineer", "thesis", "dissertation", "technik", "student",
-        "lead", "leader", "deep learning", "insurance", "open source", "engineer", "developer",
+        "predictive", "biotech", "ELT", "thesis", "dissertation", "technik", "student",
+        "lead", "leader", "deep learning", "insurance", "open source",
         "full stack", "full-stack", "fabric", "r&d", "security", "data management",
         "data modeling", "data modelling", "knowledge management", "API", "reinforcement learning",
-        "biology", "nlp", "scientific", "physics", "maps", "geometry", "social network", "risk", "control",
+        "scientific", "physics", "maps", "geometry", "social network", "risk", "control",
         "safety", "machine learning", "genetics", "data analysis", "estimation", "full stack data scientist",
-        "docker", "electro", "signal", "data", "platform engineer", "complexity", "theory", "power bi",
+        "docker", "electro", "signal", "platform engineer", "complexity", "theory", "power bi",
         "qlik", "pattern recognition", "ontology", "molecules", "simulation", "quantitative", "cell",
         "molecular", "protein", "postgres", "microcontroller", "big data", "postgres", "mysql",
         "LLM", "electrical", "statistic", "circuit", "ci cd", "ci/cd", "energy", "relocation",
@@ -93,7 +93,10 @@ BASE_KEYWORDS = {
         "spark", "hadoop", "kafka", "airflow", "apache", "html", "javascript", "react", "angular",
         "node", "flask", "cloud", "workflow", "kubernetes", "jenkins", "terraform", "azure", "gcp",
         "gitlab", "bitbucket", "sonarqube", "excel", "powerpoint", "b2c", "b2b", "lean",
-        "data-driven", "data driven", "kpi", "customer service", "communication", "stakeholder", "scrum"
+        "data-driven", "data driven", "kpi", "customer service", "communication", "stakeholder", "scrum",
+        "real estate", "holding", "purchasing", "accounting", "accountant",
+        "data scientist", "data science", "data engineering", "data engineer", "scientist", "engineer", "developer",
+        "stack developer", "data",
     ]
 }
 BASE_KEYWORDS["titlewords_dashed"] = [word.replace(" ", "-") for word in BASE_KEYWORDS["titlewords"]]
@@ -198,6 +201,15 @@ BASE_KEYWORD_SCORING = {
             "patterns": {r"\bAI\b": 0.8, r"\bML\b": 0.9, r"\bLLM\b": 0.25}
         }
     },
+    "ai_tools_platforms": {
+        "ignore_case": {
+            "flags": re.IGNORECASE,
+            "patterns": {
+                r"claude code": 1.2, r"claude": 1.0, r"spec[-\s]?driven": 0.8,
+                r"codex": 0.6, r"copilot": 0.5,
+            }
+        }
+    },
     "job_titles_roles": {
         "ignore_case": {
             "flags": re.IGNORECASE,
@@ -221,7 +233,7 @@ BASE_KEYWORD_SCORING = {
                 r"fabric": 0.4, r"docker": 0.35, r"postgres": 0.3, r"power bi": 0.3, r"qlik": 0.3, r"matplotlib": 0.3,
                 r"mysql": 0.2, r"jinja": 0.2, r"github": 0.2, r"\bc\+\+": 0.2, r"\bd3\b": 0.2,
                 r"visualization": 0.15, r"\bgit\b": 0.1, r"vector": 0.1,
-                # Negative tech
+                #Negative tech
                 r"microsoft": -0.2, r"linux": -0.4, r"test": -0.3, r"java": -0.2, r"devops": -0.1, r"cyber": -0.1,
             }
         },
@@ -240,9 +252,10 @@ BASE_KEYWORD_SCORING = {
             "patterns": {
                 r"lidar": 0.7, r"radar": 0.7, r"robot": 0.6, r"sensor": 0.6, r"embedded": 0.5,
                 r"signal": 0.35, r"electro": 0.3, r"microcontroller": 0.3, r"electrical": 0.25, r"circuit": 0.25,
-                r"energy": 0.2, r"electric": 0.2, r"smart": 0.2, r"audio": 0.2, r"video": 0.2, r"vision": 0.2,
+                r"energy": 0.1, r"electric": 0.2, r"smart": 0.2, r"audio": 0.2, r"video": 0.2, r"vision": 0.2,
                 r"wireless": 0.15, r"spectral": 0.15, r"semiconductor": 0.15, r"hardware": 0.15,
-                r"telecom": 0.1, r"compression": 0.1, r"fpga": 0.1, r"verilog": 0.1, r"digital": 0.1, r"power": 0.1, r"media": 0.1,
+                r"telecom": 0.1, r"compression": 0.1, r"fpga": 0.1, r"verilog": 0.1, r"digital": 0.1, r"media": 0.1,
+                r"power": 0.05, r"power grid": 0.1, #r"energy systems": 0.15,
             }
         }
     },
@@ -323,7 +336,7 @@ MAIN_DESCRIPTION_KEYWORDS = (COMPLEXSCI_KEYWORDS + GRAPH_KEYWORDS + SEMANTIC_WEB
 
 COLUMN_ORDER = ["title", "company",  "salary_monthly_guessed",
                 "locations", "keywords",
-                "points", "url", 
+                "points", "url", "language",
                 "snippet", "description", "salary",
                 "employmentTypes", "salary_guessed",
                 "collected_on", "date", "id", "isHomeOffice", "isActive", "source"]
@@ -336,7 +349,7 @@ EXCEL_COLUMNS = {
     'url': {'as': 'URL', 'column': 'F', 'width': 20.44},
     'isHomeOffice': {'as': 'HomeOffice', 'column': 'G', 'width': 6},
     'points': {'as': 'Points', 'column': 'H', 'width': 6},
-    'first_collected_on': {'as': 'First date', 'column': 'I', 'width': 20},
+    'first_collected_on': {'as': 'First date', 'column': 'I', 'width': 12},
     'description': {'as': 'Description', 'column': 'J', 'width': 114}
 }
 CURRENT_POSTINGS_FILENAME = "current_postings.json"
