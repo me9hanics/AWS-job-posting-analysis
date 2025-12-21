@@ -251,8 +251,8 @@ def find_keywords_in_postings(postings:dict, ordered_keywords:List | Dict, overw
                 postings[id]["keywords"] = keywords
     return postings
 
-def analyze_text_language(texts) -> str:
-    """Returns 'en', 'de', or None based on text content, optimized for speed."""
+def analyze_text_language(texts) -> list:
+    """Returns a list of 'en', 'de', or None for each text in texts."""
     #Separated string sets and regexes for speed 
     english_words = {
         'university', 'course', 'work', 'grade', 'and', 'for', 'with', 'develop', 'implement', 'design', 'build',
@@ -264,7 +264,7 @@ def analyze_text_language(texts) -> str:
         'get', 'including', 'such', 'both', 'each', 'other', 'looking', 'seeking', 'join', 'grow', 'learn'
     }
     german_words = {
-        'der', 'das', 'den', 'dem', 'des', 'ein', 'eine', 'einen', 'einem', 'einer', 'eines', 'und', 'oder', #'die',
+        'der', 'das', 'den', 'dem', 'des', 'ein', 'eine', 'einen', 'einem', 'einer', 'eines', 'und', 'oder',
         'aber', 'denn', 'weil', 'dass', 'ist', 'sind', 'war', 'waren', 'wird', 'werden', 'wurde', 'wurden', 'haben',
         'hat', 'hatte', 'hatten', 'abteilung', 'gegen', 'wart', 'entwickl', 'arbeit', 'implementier', 'optimier',
         'automatisier', 'sie', 'ihr', 'ihre', 'ihren', 'ihrem', 'wir', 'unser', 'unsere', 'für', 'mit', 'zu', 'von',
@@ -279,13 +279,14 @@ def analyze_text_language(texts) -> str:
         re.compile(r'abteilung'), re.compile(r'gegen'), re.compile(r'wart'), re.compile(r'\bentwickl'), re.compile(r'\barbeit\b'),
         re.compile(r'\bimplementier'), re.compile(r'\boptimier'), re.compile(r'\bautomatisier')
     ]
-    english_count = 0
-    german_count = 0
     if ((not isinstance(texts, list)) and (not isinstance(texts, str))) or not texts:
-        return None
+        return []
     if isinstance(texts, str):
         texts = [texts]
+    results = []
     for text in texts:
+        english_count = 0
+        german_count = 0
         text_lower = text.lower()
         words = set(re.findall(r'\b\w+\b', text_lower))
         english_count += len(words & english_words)
@@ -296,15 +297,17 @@ def analyze_text_language(texts) -> str:
         for pattern in german_regex:
             if pattern.search(text_lower):
                 german_count += 1
-    if english_count > german_count:
-        return 'en'
-    elif german_count > english_count:
-        return 'de'
-    else:
-        return None
+        if english_count > german_count:
+            results.append('en')
+        elif german_count > english_count:
+            results.append('de')
+        else:
+            results.append(None)
+    return results
     
-def analyze_postings_language(postings: Dict, description_key="description", short = True) -> Dict:
+def analyze_postings_language(postings: Dict, description_key="description", short=True) -> Dict:
     descriptions = [posting.get(description_key, "") for posting in postings.values()]
-    for key in postings.keys():
-        postings[key]["language"] = analyze_text_language(descriptions)
+    languages = analyze_text_language(descriptions)
+    for key, lang in zip(postings.keys(), languages):
+        postings[key]["language"] = lang
     return postings
