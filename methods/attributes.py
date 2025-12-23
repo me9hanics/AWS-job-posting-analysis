@@ -305,7 +305,7 @@ def analyze_text_language(texts) -> list:
             results.append(None)
     return results
     
-def analyze_postings_language(postings: Dict, description_key="description", short=True) -> Dict:
+def analyze_postings_language(postings: Dict, description_key="description", **kwargs) -> Dict:
     descriptions = [posting.get(description_key, "") for posting in postings.values()]
     languages = analyze_text_language(descriptions)
     for key, lang in zip(postings.keys(), languages):

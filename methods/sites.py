@@ -12,7 +12,7 @@ try:
     from methods.macros import (SALARY_BEARABLE, BASE_RULES, BASE_KEYWORDS, BASE_KEYWORD_SCORING,
                                 RELATIVE_POSTINGS_PATH, LOCATIONS_DESIRED, LOCATIONS_SECONDARY) 
     from methods.attributes import *
-    from methods.postings_utils import (filter_postings, process_posting_soups)
+    from methods.postings_utils import (filter_postings, process_posting_soups, process_data)
     from methods.transformations import apply_filters_transformations
     from methods.files_io import save_data
     from methods.scrape import next_page_logic_by_length
@@ -309,15 +309,17 @@ class BaseScraper: #Make abstract?
             transformations = getattr(self, "transformations", [])
         return apply_filters_transformations(postings, transformations=transformations)
 
-    def process_data(self, postings: dict, banned_words = None, banned_capital_words = None,
+    def _process_data(self, postings: dict, banned_words = None, banned_capital_words = None,
                      description_key="description", transformations = [], **kwargs):
-        postings = self._filter_postings(postings, banned_words=banned_words,
-                                        banned_capital_words=banned_capital_words)
-        postings = analyze_postings_language(postings, description_key=description_key)
-        postings = self._rank_postings(postings, **kwargs)
-        postings = self._find_keywords_in_postings(postings, description_key=description_key, **kwargs)
-        postings = self._apply_filters_transformations(postings, transformations=transformations)
-        return postings
+        return process_data(postings = postings, banned_words=banned_words,
+                            banned_capital_words=banned_capital_words,
+                            filter_method=self._filter_postings,
+                            language_analysis_method=analyze_postings_language,
+                            rank_method=self._rank_postings,
+                            keyword_finding_method=self._find_keywords_in_postings,
+                            apply_filters_transformations=self._apply_filters_transformations,
+                            description_key=description_key, transformations=transformations,
+                            **kwargs)
 
     def gather_data(self, close_driver=True,
                     url_links = [],
@@ -366,7 +368,7 @@ class BaseScraper: #Make abstract?
                                       posting_id_path=posting_id_path, posting_id_regex=posting_id_regex,
                                       title_path=title_path, company_path=company_path, salary_path=salary_path)
         
-        postings = self.process_data(postings, transformations=transformations, description_key=description_key)
+        postings = self._process_data(postings, transformations=transformations, description_key=description_key)
         if titles:
             title_list = [posting["text"] for posting in postings.values()]
         if companies:
@@ -625,7 +627,7 @@ class KarriereAT(BaseScraper):
                             print(f"Could not find id {id} in saved postings - likely programming error")
                 postings = self._find_keywords_in_postings(postings)
 
-        postings = self.process_data(postings, transformations=transformations, description_key=description_key)
+        postings = self._process_data(postings, transformations=transformations, description_key=description_key)
         if save_data:
             self._save_data(postings, name=f"karriere_at", with_timestamp=True)
         return postings
@@ -810,5 +812,5 @@ class Raiffeisen(BaseScraper):
                                 "collected_on": self.day,
                                 }
         
-        postings = self.process_data(postings, transformations=transformations, description_key=description_key)
+        postings = self._process_data(postings, transformations=transformations, description_key=description_key)
         return postings

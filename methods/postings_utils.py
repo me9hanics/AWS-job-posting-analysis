@@ -5,9 +5,11 @@ import os
 from datetime import datetime
 from typing import List, Dict
 from methods.datastruct_utils import sort_dict_by_key, get_nested_dict_keys
-from methods.attributes import salary_from_text
+from methods.attributes import (salary_from_text, analyze_postings_language,
+                                rank_postings, find_keywords_in_postings)
+from methods.transformations import apply_filters_transformations
 
-def filter_postings(postings:dict, banned_words=None, banned_capital_words=None):
+def filter_postings(postings:dict, banned_words=None, banned_capital_words=None, **kwargs):
     filtered_postings = {}
     for id, posting in postings.items():
         title = posting["title"]
@@ -201,9 +203,24 @@ def unify_postings(postings=None, folder_path=f"{RELATIVE_POSTINGS_PATH}/tech/",
     
     return all_postings
 
+def process_data(postings: dict, banned_words = None, banned_capital_words = None,
+                 filter_method = filter_postings, language_analysis_method = analyze_postings_language, 
+                 rank_method = rank_postings, keyword_finding_method = find_keywords_in_postings,
+                 apply_filters_transformations = apply_filters_transformations,
+                 description_key="description", transformations = [], **kwargs):
+    postings = filter_method(postings, banned_words=banned_words,
+                             banned_capital_words=banned_capital_words, **kwargs)
+    postings = language_analysis_method(postings, description_key=description_key, **kwargs)
+    postings = rank_method(postings, **kwargs)
+    postings = keyword_finding_method(postings, description_key=description_key, **kwargs)
+    postings = apply_filters_transformations(postings, transformations=transformations, **kwargs)
+    return postings
+
 def enrich_postings(postings:str|dict, filename=None, overwrite=True, keywords = BASE_KEYWORDS, 
-                    extra_keywords = {}, **kwargs): #rankings = BASE_KEYWORD_SCORING, 
+                    extra_keywords = {}, process_method = process_data, **kwargs): #rankings = BASE_KEYWORD_SCORING, 
     from methods.sites import BaseScraper
+    if not process_method:
+        process_method = BaseScraper._process_data
     if isinstance(postings, str):
         filename = filename or postings
 
@@ -222,8 +239,9 @@ def enrich_postings(postings:str|dict, filename=None, overwrite=True, keywords =
         if 'collected_on' not in posting.keys() or (not posting['collected_on']): #don't overwrite
             posting['collected_on'] = get_date_of_collection(value=posting, filename=filename, overwrite=False)
         
-    postings = scraper._find_keywords_in_postings(postings, sort=False, overwrite=overwrite, **kwargs)
-    postings = scraper._rank_postings(postings, overwrite=overwrite, **kwargs)
+    #postings = scraper._find_keywords_in_postings(postings, sort=False, overwrite=overwrite, **kwargs)
+    #postings = scraper._rank_postings(postings, overwrite=overwrite, **kwargs)
+    postings = process_method(postings, overwrite=overwrite, sort=False, **kwargs)
     return postings
 
 def process_posting_soups(soups, pattern, website = "",

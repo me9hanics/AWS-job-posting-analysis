@@ -1,7 +1,7 @@
 from typing import List, Tuple, Callable
 from copy import deepcopy
 
-def apply_filters_transformations(postings, transformations: List[Tuple[Callable, dict]] = []):
+def apply_filters_transformations(postings, transformations: List[Tuple[Callable, dict]] = [], **kwargs):
     """
     Apply a series of filter functions to postings.
     Parameters:
@@ -69,7 +69,7 @@ def extra_points_if_missing_keywords(postings, keywords_points: List[Tuple[List[
 
 def add_postings(postings:dict, candidate_postings:dict, select_ids = []):
     if not select_ids:
-        #TODO check
+        #consider no-overwrite as option
         postings.update(candidate_postings)
     else:
         candidate_postings = deepcopy(candidate_postings)
