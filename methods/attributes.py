@@ -248,7 +248,7 @@ def find_keywords_in_postings(postings:dict, ordered_keywords:List | Dict, overw
                 text = posting[description_key]
                 keywords = method(text, keywords_list=case_sensitive_keywords, case_sensitive=True, sort=sort)
                 keywords.extend(method(text, keywords_list=case_insensitive_keywords, case_sensitive=False, sort=sort))
-                postings[id]["keywords"] = keywords
+                postings[id]["keywords"] = list(dict.fromkeys(keywords)) #preserve order
     return postings
 
 def analyze_text_language(texts) -> list:

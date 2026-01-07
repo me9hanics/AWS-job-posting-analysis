@@ -276,7 +276,9 @@ BASE_KEYWORD_SCORING = {
             "flags": re.IGNORECASE,
             "patterns": {
                 r"hungarian": 1.9, r"hungary": 0.7, r"english": 0.2, r"deutsch": -0.2,
-                r"sehr\s+gut(e)?\s+deutsch": -1.0, r"wort\s+(&|und)\s+schrift": -0.4,
+                r"sehr\s+gut(e)?\s+deutsch": -1.1, r"wort\s+(&|und)\s+schrift": -0.4,
+                r"fluency\s+in\s+german": -1.1, r"fluent\s+in\s+german": -1.1,
+                r"deutschkenntnisse verhandlungssicher":-1.1,
                 r"5(\+)?\s+years\s+of": -0.8, r"7(\+)?\s+years\s+of": -1.9, #German version?
                 r"5(\+)?\s+jahre\s+erfahrung": -0.8, r"7(\+)?\s+jahre\s+erfahrung": -1.9, #correct?
                 

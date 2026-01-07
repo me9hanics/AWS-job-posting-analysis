@@ -23,7 +23,7 @@ def get_tech_postings(keywords=BASE_KEYWORDS, rankings=BASE_KEYWORD_SCORING, sal
     Returns:
     dict: A dictionary containing the results, added and removed postings, and companies.
     """
-    kwargs['raiffeisen_extra_titlewords'] = kwargs.get('raiffeisen_extra_titlewords', ["machine", "engineer", "scientist"])
+    kwargs['raiffeisen_extra_titlewords'] = kwargs.get('raiffeisen_extra_titlewords', ["machine", "engineer", "developer", "scientist", "quantitative"])
     data = get_postings(
         keywords=keywords, 
         rankings=rankings, 

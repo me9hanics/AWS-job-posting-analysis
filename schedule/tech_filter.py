@@ -41,6 +41,17 @@ filter_out_title_keywords = [
 ]
 filter_out_title_capital_keywords = ["UX", "C#", ".NET", "PHP"]
 
+filter_out_description_keywords = [r"sehr\s+gut(e)?\s+deutsch", r"fluency\s+in\s+german", r"fluent\s+in\s+german",
+                                   r"deutschkenntnisse verhandlungssicher", ]
+
+def add_back_postings(postings:dict, additions:dict, keys:list=[]):
+    if not keys:
+        keys = additions.keys()
+    for key in keys:
+        if key in additions:
+            postings[key] = additions[key]
+    return postings
+
 def main(postings:dict=None, output_path:str=None, min_date:datetime=None,
          input_path:str=NEWLY_ADDED_FILE_PATH):
     if postings is None:
@@ -59,31 +70,14 @@ def main(postings:dict=None, output_path:str=None, min_date:datetime=None,
                 'title_keywords': filter_out_title_keywords,
                 'title_capital_keywords': filter_out_title_capital_keywords
                 },),
+            (filter_out_keywords, {
+                'description_keywords': filter_out_description_keywords
+                },),
             (filter_on_points, {}),
-            (filter_on_date, {'min_date': min_date} )
+            (filter_on_date, {'min_date': min_date} ),
         ]
     )
-    #filtered_results = apply_filters(
-    #    current_postings,
-    #    functions=[select_keywords, filter_out_keywords, filter_on_points],
-    #    kwargs_list=[{
-    #        'title_keywords': title_keywords,
-    #        'title_capital_keywords': title_capital_keywords,
-    #        'description_keywords': description_keywords,
-    #        'description_capital_keywords': desctiption_capital_keywords
-    #    },
-    #    {
-    #        'title_keywords': filter_out_title_keywords,
-    #        'title_capital_keywords': filter_out_title_capital_keywords
-    #    },
-    #    {}
-    #    ]
-    #)
-    
-    add_back = ["karriere.at7670267", "karriere.at7670270"] #TODO think of something
-    for key in add_back:
-        if key in postings:
-            filtered_results[key] = postings[key]
+    #filtered_results = add_back_postings(filtered_results, postings, ["karriere.at7670267", "karriere.at7670270"])
     
     if output_path:
         if not output_path.endswith('.json'):
