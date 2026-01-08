@@ -1,33 +1,67 @@
+"""
+Runtime configuration for AWS Job Posting Analysis.
+
+This module contains environment-specific and tunable configuration parameters.
+These values typically change based on deployment environment, user preferences,
+or periodic tuning and should be modified separately from core code logic.
+
+Configs include:
+- File paths and URLs
+- Thresholds and weights (scoring parameters)
+- User preferences (locations, job preferences)
+- Website-specific scraping rules
+"""
+
 import re
+# ============================================================================
+# FILE PATHS AND DIRECTORIES
+# ============================================================================
+# These are environment-specific paths that may change per deployment
+
 REPO_ROOT_PATH = "C:/GitHubRepo/AWS-job-posting-analysis"
 SAVING_PATH = f"{REPO_ROOT_PATH}/data/save"
 RELATIVE_SAVING_PATH = "data/save"
 POSTINGS_PATH = f"{SAVING_PATH}/postings"
 RELATIVE_POSTINGS_PATH = f"{RELATIVE_SAVING_PATH}/postings"
-EXCELS_PATH=f"{SAVING_PATH}/excels"
+EXCELS_PATH = f"{SAVING_PATH}/excels"
 RELATIVE_EXCELS_PATH = f"{RELATIVE_SAVING_PATH}/excels"
 COMPANIES_PATH = f"{SAVING_PATH}/companies"
 RELATIVE_COMPANIES_PATH = f"{RELATIVE_SAVING_PATH}/companies"
 
-SALARY_BEARABLE = 3400
+# ============================================================================
+# USER PREFERENCES, POINTS, THRESHOLDS
+# ============================================================================
+# These are adjustable preferences and thresholds
+
+SALARY_BEARABLE = 3400 
 
 LOCATIONS_DESIRED = ["vienna", "wien", "österreich", "austria", "remote"]
-LOCATIONS_SECONDARY = ["st. pölten", "sankt pölten", "wiener neudorf", "linz", "krems", "nussdorf", 
-                       "klosterneuburg", "schwechat", "brunn am gebirge", "graz"] #salzburg, innsbruck, #klagenfurt
+LOCATIONS_SECONDARY = ["st. pölten", "sankt pölten", "wiener neudorf", "linz", "krems", "nussdorf",
+                       "klosterneuburg", "schwechat", "brunn am gebirge", "graz"]
 
-BASE_RULES = {"website":"",
-              "scraping_base_url": "",
-              "close_website_popup":False,
-              "usecase":'http',
-              "gather_data_selector":"",
-              "load_page_button_selector":"",
-              #"load_page_press_button_until_gone_selector":"",
-              "request_wait_time":0.15,
-              "title_path":None,
-              "company_path":None,
-              "salary_path":None,
-              }
-BASE_KEYWORDS = {
+COMPLEXSCI_KEYWORDS = ["complexity science", "complexity systems", "complexity system", "complex network", "complex networks"]
+GRAPH_KEYWORDS = ["graph data", "graph theory", "graph", "neo4j", "operations research", "social network",
+                  "knowledge graph", "gnn", "graph neural network", "graph machine learning"]
+SEMANTIC_WEB_KEYWORDS = ["sparql", "semantic web", "rdf", "owl", "linked data", "ontology"]
+GEOSPATIAL_KEYWORDS = ["geospatial", "spatial", "geographic", "geographical", "gis"]
+BIOTECH_KEYWORDS = ["network medicine", "network biology", "biotech", "bioinformatic", "bioinformatics",
+                    "computational biology"]
+RELEVANT_TECH_KEYWORDS = ["fabric", "duckdb", "vector", "knime"]
+TITLE_KEYWORDS = ["full stack", "full-stack", "forward deployed", "platform engineer"]
+SCIENCE_KEYWORDS = ["research", "theory", "theoretical", "scientific", "algorithm", "data", "science", "math", "causal",
+                    "inference", "causal inference", "conference", "phd", "master", "msc", "advanced degree"]
+DATA_SCIENCE_KEYWORDS = ["data science", "data mining", "time series", "natural language processing", "nlp", 
+                          "analytics", "web scraping", "scraping", "scrape"]
+MACHINE_LEARNING_KEYWORDS = ["machine learning", "deep learning", "neural network", "reinforcement learning",
+                             "computer vision", "image processing", "pattern recognition", "opencv", "audio",
+                             "artificial intelligence", "ai"]
+ENGINEERING_KEYWORDS = ["sensor", "radar", "lidar", "robotics", "robot", "embedded", "c++"]
+MAIN_DESCRIPTION_KEYWORDS = (COMPLEXSCI_KEYWORDS + GRAPH_KEYWORDS + SEMANTIC_WEB_KEYWORDS +
+                             GEOSPATIAL_KEYWORDS + BIOTECH_KEYWORDS + RELEVANT_TECH_KEYWORDS +
+                             TITLE_KEYWORDS + SCIENCE_KEYWORDS + DATA_SCIENCE_KEYWORDS +
+                             MACHINE_LEARNING_KEYWORDS + ENGINEERING_KEYWORDS)
+
+BASE_PHRASES = {
     "locations" : ["vienna"],
     "titlewords": ["machine learning", "machine learning engineer", "machine learning scientist",
                    "ML engineer", "ML researcher", "ML developer", "AI ML", "research engineer",
@@ -99,7 +133,7 @@ BASE_KEYWORDS = {
         "stack developer", "data",
     ]
 }
-BASE_KEYWORDS["titlewords_dashed"] = [word.replace(" ", "-") for word in BASE_KEYWORDS["titlewords"]]
+BASE_PHRASES["titlewords_dashed"] = [word.replace(" ", "-") for word in BASE_PHRASES["titlewords"]]
 
 BASE_KEYWORD_SCORING = {
     "complexity_networks": {
@@ -217,7 +251,7 @@ BASE_KEYWORD_SCORING = {
                 r"scientist": 1.2, r"forward deployed": 1.0, r"engineer": 0.45, r"developer": 0.4,
                 r"full[\s-]stack": 0.4, r"platform engineer": 0.3, r"analyst": 0.1, r"senior": 0.1,
                 r"leiter": -1.5, r"manager": -0.9, r"owner": -0.9, r"officer": -0.8,
-                r"security": -0.4, r"safety": -0.4, r"support": -0.3, r"quality": -0.2, 
+                r"security": -0.4, r"safety": -0.4, r"support": -0.3, r"quality": -0.2,
             }
         },
         "case_sensitive": {
@@ -233,7 +267,6 @@ BASE_KEYWORD_SCORING = {
                 r"fabric": 0.4, r"docker": 0.35, r"postgres": 0.3, r"power bi": 0.3, r"qlik": 0.3, r"matplotlib": 0.3,
                 r"mysql": 0.2, r"jinja": 0.2, r"github": 0.2, r"\bc\+\+": 0.2, r"\bd3\b": 0.2,
                 r"visualization": 0.15, r"\bgit\b": 0.1, r"vector": 0.1,
-                #Negative tech
                 r"microsoft": -0.2, r"linux": -0.4, r"test": -0.3, r"java": -0.2, r"devops": -0.1, r"cyber": -0.1,
             }
         },
@@ -255,7 +288,7 @@ BASE_KEYWORD_SCORING = {
                 r"energy": 0.1, r"electric": 0.2, r"smart": 0.2, r"audio": 0.2, r"video": 0.2, r"vision": 0.2,
                 r"wireless": 0.15, r"spectral": 0.15, r"semiconductor": 0.15, r"hardware": 0.15,
                 r"telecom": 0.1, r"compression": 0.1, r"fpga": 0.1, r"verilog": 0.1, r"digital": 0.1, r"media": 0.1,
-                r"power": 0.05, r"power grid": 0.1, #r"energy systems": 0.15,
+                r"power": 0.05, r"power grid": 0.1,
             }
         }
     },
@@ -278,10 +311,9 @@ BASE_KEYWORD_SCORING = {
                 r"hungarian": 1.9, r"hungary": 0.7, r"english": 0.2, r"deutsch": -0.2,
                 r"sehr\s+gut(e)?\s+deutsch": -1.1, r"wort\s+(&|und)\s+schrift": -0.4,
                 r"fluency\s+in\s+german": -1.1, r"fluent\s+in\s+german": -1.1,
-                r"deutschkenntnisse verhandlungssicher":-1.1,
-                r"5(\+)?\s+years\s+of": -0.8, r"7(\+)?\s+years\s+of": -1.9, #German version?
-                r"5(\+)?\s+jahre\s+erfahrung": -0.8, r"7(\+)?\s+jahre\s+erfahrung": -1.9, #correct?
-                
+                r"deutschkenntnisse verhandlungssicher": -1.1,
+                r"5(\+)?\s+years\s+of": -0.8, r"7(\+)?\s+years\s+of": -1.9,
+                r"5(\+)?\s+jahre\s+erfahrung": -0.8, r"7(\+)?\s+jahre\s+erfahrung": -1.9,
                 r"home office": 0.15, r"relocation": 0.2,
             }
         }
@@ -301,59 +333,14 @@ BASE_COMPANY_SCORING = {
     "ignore_case": {
         "flags": re.IGNORECASE,
         "patterns": {
-            r"aithyra": 1.5, r"\bait\b": 0.8, r"science":0.5,
+            r"aithyra": 1.5, r"\bait\b": 0.8, r"science": 0.5,
             r"amazon": 0.5, r"google": 0.5, r"meta": 0.3, r"microsoft": 0.5,
             r"nvidia": 0.5, r"ibm": 1.0, r"deepmind": 1.0,
             r"österreichische post": 0.2,
             r"capgemini": -0.5, r"accenture": -0.5, r"deloitte": -0.5,
-            r"lotterien": -1.0, r"win2day": -1.0, #Österreichisches l
+            r"lotterien": -1.0, r"win2day": -1.0,
         }
     }
 }
 
-#Deduct points for company if the description is not in English (-1.2 points)
 DEDUCT_COMPANIES = [r"\böbb\b", r"\bwkö\b", r"\bwko\b", r"anexia", r"techtalk"]
-
-COMPLEXSCI_KEYWORDS = ["complexity science", "complexity systems", "complexity system", "complex network", "complex networks"]
-GRAPH_KEYWORDS = ["graph data", "graph theory", "graph", "neo4j", "operations research", "social network",
-                  "knowledge graph", "gnn", "graph neural network", "graph machine learning"]
-SEMANTIC_WEB_KEYWORDS = ["sparql", "semantic web", "rdf", "owl", "linked data", "ontology"]
-GEOSPATIAL_KEYWORDS = ["geospatial", "spatial", "geographic", "geographical", "gis"]
-BIOTECH_KEYWORDS = ["network medicine", "network biology", "biotech", "bioinformatic", "bioinformatics",
-                    "computational biology"]
-RELEVANT_TECH_KEYWORDS = ["fabric", "duckdb", "vector", "knime"]
-TITLE_KEYWORDS = ["full stack", "full-stack", "forward deployed", "platform engineer"]
-SCIENCE_KEYWORDS = ["research", "theory", "theoretical", "scientific", "algorithm", "data", "science", "math", "causal",
-                    "inference", "causal inference", "conference", "phd", "master", "msc", "advanced degree"]
-DATA_SCIENCE_KEYWORDS = ["data science", "data mining", "time series", "natural language processing", "nlp", 
-                          "analytics", "web scraping", "scraping", "scrape"]
-MACHINE_LEARNING_KEYWORDS = ["machine learning", "deep learning", "neural network", "reinforcement learning",
-                             "computer vision", "image processing", "pattern recognition", "opencv", "audio",
-                             "artificial intelligence", "ai"]
-ENGINEERING_KEYWORDS = ["sensor", "radar", "lidar", "robotics", "robot", "embedded", "c++"]
-MAIN_DESCRIPTION_KEYWORDS = (COMPLEXSCI_KEYWORDS + GRAPH_KEYWORDS + SEMANTIC_WEB_KEYWORDS +
-                             GEOSPATIAL_KEYWORDS + BIOTECH_KEYWORDS + RELEVANT_TECH_KEYWORDS +
-                             TITLE_KEYWORDS + SCIENCE_KEYWORDS + DATA_SCIENCE_KEYWORDS +
-                             MACHINE_LEARNING_KEYWORDS + ENGINEERING_KEYWORDS)
-
-COLUMN_ORDER = ["title", "company",  "salary_monthly_guessed",
-                "locations", "keywords",
-                "points", "url", "language",
-                "snippet", "description", "salary",
-                "employmentTypes", "salary_guessed",
-                "collected_on", "date", "id", "isHomeOffice", "isActive", "source"]
-EXCEL_COLUMNS = {
-    'title': {'as': 'Title', 'column': 'A', 'width': 38},
-    'company': {'as': 'Company', 'column': 'B', 'width': 24},
-    'salary_monthly_guessed': {'as': 'Salary?', 'column': 'C', 'width': 6.56},
-    'locations': {'as': 'Locations', 'column': 'D', 'width': 14.33},
-    'keywords': {'as': 'Keywords', 'column': 'E', 'width': 50.44},
-    'url': {'as': 'URL', 'column': 'F', 'width': 20.44},
-    'isHomeOffice': {'as': 'HomeOffice', 'column': 'G', 'width': 6},
-    'points': {'as': 'Points', 'column': 'H', 'width': 6},
-    'first_collected_on': {'as': 'First date', 'column': 'I', 'width': 12},
-    'description': {'as': 'Description', 'column': 'J', 'width': 114}
-}
-CURRENT_POSTINGS_FILENAME = "current_postings.json"
-NEWLY_ADDED_POSTINGS_FILENAME = "newly_added_postings.json"
-POSTINGS_HISTORY_FILENAME = "postings_history.json"

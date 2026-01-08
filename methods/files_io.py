@@ -2,7 +2,7 @@ import json
 import os
 import time
 from datetime import datetime
-from methods.macros import *
+from methods.constants import *
 
 def save_list(list_, filename):
     """

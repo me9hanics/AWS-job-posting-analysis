@@ -7,9 +7,9 @@ try:
     from datacollect import get_postings
 except:
     from .datacollect import get_postings
-from methods.macros import *
+from methods.constants import *
 
-def get_tech_postings(keywords=BASE_KEYWORDS, rankings=BASE_KEYWORD_SCORING, salary_bearable=SALARY_BEARABLE,
+def get_tech_postings(keywords=BASE_PHRASES, rankings=BASE_KEYWORD_SCORING, salary_bearable=SALARY_BEARABLE,
                       path=f"{POSTINGS_PATH}/tech/", path_excel=f"{EXCELS_PATH}/excel_tech/",
                       excel_prefix ="postings", **kwargs):
     """
@@ -42,7 +42,7 @@ def get_tech_postings(keywords=BASE_KEYWORDS, rankings=BASE_KEYWORD_SCORING, sal
 def main():
     print("Collecting tech job postings...")
     data = get_tech_postings(
-        keywords=BASE_KEYWORDS, 
+        keywords=BASE_PHRASES, 
         rankings=BASE_KEYWORD_SCORING,
         salary_bearable=SALARY_BEARABLE,
         verbose=True,

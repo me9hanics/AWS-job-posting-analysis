@@ -4,7 +4,7 @@ schedule_path = os.path.dirname(os.path.abspath(__file__))
 parent_path = os.path.join(schedule_path, "..")
 sys.path.append(parent_path)
 
-from methods.macros import POSTINGS_PATH
+from methods.constants import POSTINGS_PATH
 import json
 from datetime import datetime, timedelta
 from methods.transformations import (apply_filters_transformations, select_keywords, filter_out_keywords,

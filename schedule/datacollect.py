@@ -10,13 +10,13 @@ import os
 schedule_path = os.path.dirname(os.path.abspath(__file__))
 parent_path = os.path.join(schedule_path, "..")
 sys.path.append(parent_path)
-from methods import files_io, postings_utils, datastruct_utils, sites, macros
-from methods.macros import *
+from methods import files_io, postings_utils, datastruct_utils, sites, constants
+from methods.constants import *
 
-KEYWORDS = macros.BASE_KEYWORDS.copy()
-RANKINGS = macros.BASE_KEYWORD_SCORING.copy()
+KEYWORDS = constants.BASE_PHRASES.copy()
+RANKINGS = constants.BASE_KEYWORD_SCORING.copy()
 SCRAPERS = [sites.KarriereAT, sites.Raiffeisen]
-SALARY_BEARABLE = macros.SALARY_BEARABLE
+SALARY_BEARABLE = constants.SALARY_BEARABLE
 
 def reduce_url(url):
     return url.split("www.")[1] if "www." in url else url.split("://")[1] if "://" in url else url

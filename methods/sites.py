@@ -9,7 +9,7 @@ from typing import List, Tuple, Callable
 try:
     from methods import scrape
     from methods import urls
-    from methods.macros import (SALARY_BEARABLE, BASE_RULES, BASE_KEYWORDS, BASE_KEYWORD_SCORING,
+    from methods.constants import (SALARY_BEARABLE, BASE_RULES, BASE_PHRASES, BASE_KEYWORD_SCORING,
                                 RELATIVE_POSTINGS_PATH, LOCATIONS_DESIRED, LOCATIONS_SECONDARY) 
     from methods.attributes import *
     from methods.postings_utils import (filter_postings, process_posting_soups, process_data)
@@ -19,7 +19,7 @@ try:
 except ModuleNotFoundError:
     import scrape
     import urls
-    from macros import (SALARY_BEARABLE, BASE_RULES, BASE_KEYWORDS, BASE_KEYWORD_SCORING,
+    from constants import (SALARY_BEARABLE, BASE_RULES, BASE_PHRASES, BASE_KEYWORD_SCORING,
                         RELATIVE_POSTINGS_PATH, LOCATIONS_DESIRED, LOCATIONS_SECONDARY)
     from attributes import *
     from postings_utils import (filter_postings, process_posting_soups)
@@ -37,7 +37,7 @@ SCROLL_DOWN_SCRIPT = "window.scrollTo(0, document.body.scrollHeight);" #scroll t
 SCROLL_1000_SCRIPT = "window.scrollTo(0, 1000);"
 CSS_SELECTOR = "css selector" #can use instead: from selenium.webdriver.common.by import By, then By.CSS_SELECTOR
 
-def get_all_keywords(keywords = BASE_KEYWORDS, #rankings = BASE_KEYWORD_SCORING
+def get_all_keywords(keywords = BASE_PHRASES, #rankings = BASE_KEYWORD_SCORING
                      ):
     """
     Returns union of keywords (as lists), non capitalized and capitalized.
@@ -57,11 +57,11 @@ def get_all_keywords(keywords = BASE_KEYWORDS, #rankings = BASE_KEYWORD_SCORING
     ))
 
     return all_keywords_noncapital, all_keywords_capital
-#ALL_KEYWORDS_NONCAPITAL, ALL_KEYWORDS_CAPITAL = get_all_keywords(keywords=BASE_KEYWORDS)
+#ALL_KEYWORDS_NONCAPITAL, ALL_KEYWORDS_CAPITAL = get_all_keywords(keywords=BASE_PHRASES)
 
 
 class BaseScraper: #Make abstract?
-    def __init__(self, driver=None, rules = BASE_RULES, keywords = BASE_KEYWORDS,
+    def __init__(self, driver=None, rules = BASE_RULES, keywords = BASE_PHRASES,
                  extra_keywords = {}, extra_titlewords = [], extra_locations = [],
                  rankings = BASE_KEYWORD_SCORING, salary_bearable = SALARY_BEARABLE, locations = None,
                  locations_desired = LOCATIONS_DESIRED, locations_secondary = LOCATIONS_SECONDARY,
@@ -88,7 +88,7 @@ class BaseScraper: #Make abstract?
         if extra_locations:
             locations = list(set(locations + extra_locations))
         self.keywords["locations"] = locations
-        self.BASE_KEYWORDS = deepcopy(self.keywords)
+        self.BASE_PHRASES = deepcopy(self.keywords)
 
         #TODO same with rankings
         self.rankings = rankings
@@ -387,7 +387,7 @@ class BaseScraper: #Make abstract?
 
 
 class KarriereAT(BaseScraper):
-    def __init__(self, driver="", rules = BASE_RULES, keywords = BASE_KEYWORDS,
+    def __init__(self, driver="", rules = BASE_RULES, keywords = BASE_PHRASES,
                  extra_keywords = {}, extra_titlewords = [], extra_locations = [],
                  rankings = BASE_KEYWORD_SCORING, salary_bearable = SALARY_BEARABLE, locations = None,
                  locations_desired = LOCATIONS_DESIRED, locations_secondary = LOCATIONS_SECONDARY,
@@ -633,7 +633,7 @@ class KarriereAT(BaseScraper):
         return postings
     
 class Raiffeisen(BaseScraper):
-    def __init__(self, driver="", rules = BASE_RULES, keywords = BASE_KEYWORDS,
+    def __init__(self, driver="", rules = BASE_RULES, keywords = BASE_PHRASES,
                  extra_keywords = {}, extra_titlewords = [], extra_locations = [],
                  rankings = BASE_KEYWORD_SCORING, salary_bearable = SALARY_BEARABLE, locations = None,
                  locations_desired=LOCATIONS_DESIRED, locations_secondary=LOCATIONS_SECONDARY,
@@ -652,7 +652,7 @@ class Raiffeisen(BaseScraper):
                 rules[key] = value
 
         if not keywords:
-            keywords = deepcopy(BASE_KEYWORDS)
+            keywords = deepcopy(BASE_PHRASES)
         
         super().__init__(driver=driver, rules=rules, keywords=keywords, rankings=rankings,
                          extra_keywords = extra_keywords, extra_titlewords=extra_titlewords,

@@ -1,4 +1,4 @@
-from methods.macros import *
+from methods.constants import *
 from methods.files_io import load_file_if_str, load_list_items
 import re
 import os
@@ -216,7 +216,7 @@ def process_data(postings: dict, banned_words = None, banned_capital_words = Non
     postings = apply_filters_transformations(postings, transformations=transformations, **kwargs)
     return postings
 
-def enrich_postings(postings:str|dict, filename=None, overwrite=True, keywords = BASE_KEYWORDS, 
+def enrich_postings(postings:str|dict, filename=None, overwrite=True, keywords = BASE_PHRASES, 
                     extra_keywords = {}, process_method = process_data, **kwargs): #rankings = BASE_KEYWORD_SCORING, 
     from methods.sites import BaseScraper
     if not process_method:
