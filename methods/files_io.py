@@ -3,6 +3,7 @@ import os
 import time
 from datetime import datetime
 from methods.constants import *
+from methods.configs import RELATIVE_POSTINGS_PATH
 
 def save_list(list_, filename):
     """

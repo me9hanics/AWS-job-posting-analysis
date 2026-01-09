@@ -3,7 +3,7 @@ import time
 import json
 import requests
 from methods import sites
-from methods.constants import RELATIVE_POSTINGS_PATH
+from methods.configs import RELATIVE_POSTINGS_PATH
 
 websites = {
     "karriereat": sites.KarriereAT(),

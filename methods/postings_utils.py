@@ -1,4 +1,5 @@
 from methods.constants import *
+from methods.configs import RELATIVE_POSTINGS_PATH
 from methods.files_io import load_file_if_str, load_list_items
 import re
 import os

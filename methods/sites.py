@@ -9,8 +9,8 @@ from typing import List, Tuple, Callable
 try:
     from methods import scrape
     from methods import urls
-    from methods.constants import (SALARY_BEARABLE, BASE_RULES, BASE_PHRASES, BASE_KEYWORD_SCORING,
-                                RELATIVE_POSTINGS_PATH, LOCATIONS_DESIRED, LOCATIONS_SECONDARY) 
+    from methods.constants import BASE_RULES
+    from methods.configs import (SALARY_BEARABLE, BASE_PHRASES, BASE_KEYWORD_SCORING, RELATIVE_POSTINGS_PATH, LOCATIONS_DESIRED, LOCATIONS_SECONDARY) 
     from methods.attributes import *
     from methods.postings_utils import (filter_postings, process_posting_soups, process_data)
     from methods.transformations import apply_filters_transformations
@@ -19,8 +19,8 @@ try:
 except ModuleNotFoundError:
     import scrape
     import urls
-    from constants import (SALARY_BEARABLE, BASE_RULES, BASE_PHRASES, BASE_KEYWORD_SCORING,
-                        RELATIVE_POSTINGS_PATH, LOCATIONS_DESIRED, LOCATIONS_SECONDARY)
+    from constants import BASE_RULES
+    from configs import (SALARY_BEARABLE, BASE_PHRASES, BASE_KEYWORD_SCORING, RELATIVE_POSTINGS_PATH, LOCATIONS_DESIRED, LOCATIONS_SECONDARY)
     from attributes import *
     from postings_utils import (filter_postings, process_posting_soups)
     from transformations import apply_filters_transformations

@@ -10,8 +10,9 @@ import os
 schedule_path = os.path.dirname(os.path.abspath(__file__))
 parent_path = os.path.join(schedule_path, "..")
 sys.path.append(parent_path)
-from methods import files_io, postings_utils, datastruct_utils, sites, constants
+from methods import files_io, postings_utils, datastruct_utils, sites, constants, configs
 from methods.constants import *
+from methods.configs import *
 
 KEYWORDS = constants.BASE_PHRASES.copy()
 RANKINGS = constants.BASE_KEYWORD_SCORING.copy()

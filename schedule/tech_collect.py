@@ -8,6 +8,7 @@ try:
 except:
     from .datacollect import get_postings
 from methods.constants import *
+from methods.configs import *
 
 def get_tech_postings(keywords=BASE_PHRASES, rankings=BASE_KEYWORD_SCORING, salary_bearable=SALARY_BEARABLE,
                       path=f"{POSTINGS_PATH}/tech/", path_excel=f"{EXCELS_PATH}/excel_tech/",
