@@ -14,10 +14,10 @@ from methods import files_io, postings_utils, datastruct_utils, sites, constants
 from methods.constants import *
 from methods.configs import *
 
-KEYWORDS = constants.BASE_PHRASES.copy()
-RANKINGS = constants.BASE_KEYWORD_SCORING.copy()
+KEYWORDS = configs.BASE_PHRASES.copy()
+RANKINGS = configs.BASE_KEYWORD_SCORING.copy()
 SCRAPERS = [sites.KarriereAT, sites.Raiffeisen]
-SALARY_BEARABLE = constants.SALARY_BEARABLE
+SALARY_BEARABLE = configs.SALARY_BEARABLE
 
 def reduce_url(url):
     return url.split("www.")[1] if "www." in url else url.split("://")[1] if "://" in url else url

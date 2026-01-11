@@ -42,7 +42,10 @@ filter_out_title_keywords = [
 filter_out_title_capital_keywords = ["UX", "C#", ".NET", "PHP"]
 
 filter_out_description_keywords = [r"sehr\s+gut(e)?\s+deutsch", r"fluency\s+in\s+german", r"fluent\s+in\s+german",
-                                   r"deutschkenntnisse verhandlungssicher", ]
+                                   r"deutschkenntnisse verhandlungssicher",
+                                   r"(fliessend(e)?|verhandlungssicher(e)?|fundiert(e)?)\s+und\s+deutsch",
+                                   r"(fliessend(e)?|verhandlungssicher(e)?|fundiert(e)?)\s+englisch(-)?\s+und\s+deutsch"
+                                   ]
 
 def add_back_postings(postings:dict, additions:dict, keys:list=[]):
     if not keys:
