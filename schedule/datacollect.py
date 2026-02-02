@@ -50,7 +50,7 @@ def categorize_postings_by_date(df):
     df['_points'] = pd.to_numeric(df['points'], errors='coerce').fillna(0)
     df = df.sort_values(by=['_category', '_points'], ascending=[True, False])
 
-    category_labels = {0: "Last 2 weeks postings", 1: "Last 4 weeks postings", 2: "Older postings"}
+    category_labels = {0: "Last 2 weeks postings - SCROLL FOR OLDER!!!", 1: "Last 4 weeks postings", 2: "Older postings"}
     current_category = None
     separators = []
     
@@ -139,7 +139,7 @@ def create_excel_report(df, path_excel = f"{RELATIVE_EXCELS_PATH}/", prefix ='po
         #Style separator rows (insert actual separator rows)
         if separator_rows:
             separator_colors = {
-                "Last 2 weeks postings": "FFCCCC", #light yellow
+                "Last 2 weeks postings - SCROLL FOR OLDER!!!": "FFCCCC", #light yellow
                 "Last 4 weeks postings": "FFE6CC", #light orange
                 "Older postings": "E6F2E6" #light green
             }

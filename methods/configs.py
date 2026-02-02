@@ -164,6 +164,8 @@ BASE_KEYWORD_SCORING = {
             "flags": re.IGNORECASE,
             "patterns": {
                 r"geospatial": 1.4, r"geodata": 0.8, r"spatial": 0.7,
+                r"earth":0.1, r"earth observation":0.6,
+                r"openstreetmap": 0.3,
                 r"maps": 0.4, r"geometry": 0.4,
             }
         },
