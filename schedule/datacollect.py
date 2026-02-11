@@ -294,6 +294,26 @@ def get_postings(scrapers = SCRAPERS, keywords =KEYWORDS, rankings=RANKINGS, sal
     }
     return output_dict
 
+def log_to_markdown(postings, log_file_path="newly_added_history.md"):
+    """
+    Append postings (typically newly added ones) to a markdown log file.
+    
+    Parameters:
+    added (dict): Dictionary of newly added postings
+    log_file_path (str): Path to the markdown log file
+    """
+    if not postings:
+        return
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    mode = 'a' if os.path.exists(log_file_path) else 'w'
+    with open(log_file_path, mode, encoding='utf-8') as f:
+        f.write(f"\n### {timestamp}\n")
+        for key, posting in postings.items():
+            if "title" in posting and "company" in posting:
+                f.write(f"{posting['title']} - at - {posting['company']}\n")
+        f.write("\n")
+
 def send_email(results, to_email, file_path = None, subject="Daily report", from_email=None):
     import smtplib
     #from email import encoders

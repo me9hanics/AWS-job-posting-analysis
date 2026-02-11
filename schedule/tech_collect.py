@@ -4,9 +4,9 @@ schedule_path = os.path.dirname(os.path.abspath(__file__))
 parent_path = os.path.join(schedule_path, "..")
 sys.path.append(parent_path)
 try:
-    from datacollect import get_postings
+    from datacollect import get_postings, log_to_markdown
 except:
-    from .datacollect import get_postings
+    from .datacollect import get_postings, log_to_markdown
 from methods.constants import *
 from methods.configs import *
 
@@ -60,6 +60,9 @@ def main():
     print(f"\nNew postings above threshold:\n")
     for title in added:
         print(title)
+    log_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "newly_added_history.md")
+    log_to_markdown(data["added"], log_file_path)
+    
     #print(f"\nRemoved postings:\n")
     #for title in removed:
     #    print(title)
