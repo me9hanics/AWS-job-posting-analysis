@@ -716,9 +716,14 @@ class Raiffeisen(BaseScraper):
         descriptions = {}
         for id, soup in id_soup_dicts.items():
             posting = soup.select("div.joblayouttoken.rtltextaligneligible.displayDTM") #TODO
+            i = None
             for i in posting:
                 if i.select("ul"):
                     break
+            if i is None:
+                if verbose:
+                    print(f"Warning: No posting content found for ID {id}")
+                continue
             posting = i
             contexts = posting.select("ul")
             contexts = [context for context in contexts if context.attrs == {}]
