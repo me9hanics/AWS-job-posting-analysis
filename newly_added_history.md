@@ -75,3 +75,101 @@ IT-Systemadministrator – Applikationen und Digitalisierung in der Produktion (
 Solution Architekt*in - at - WienIT GmbH
 Business Analyst Corporate Business (m/w/d) - at - UNIQA Insurance Group AG
 
+
+### 2026-02-15 15:06:00
+Data Scientist (m/w/d) - at - voestalpine AG
+Enterprise Data & AI Architect (m/f/d) - at - UNIQA Insurance Group AG
+Senior Python & Odoo Developer (m/w/d) - at - cloudunify GmbH
+Cloud AI-Engineer - at - FiveSquare GmbH
+Data Analyst (f/m/d) * - at - IT:U – Interdisciplinary Transformation University Austria
+Data Excellence Management (w/m/d) - at - APG - Austrian Power Grid AG
+Software Engineer (w/m/d) für Batteriespeicher-Analyse - at - AIT Austrian Institute of Technology GmbH
+Group Senior Engineer (m/f/d) - IT Endpoint Management - at - Octapharma Pharmazeutika Produktionsges.m.b.H.
+Senior Fullstack Engineer für GenAI (w/m/d) - at - Helvetia Versicherungen AG
+Strategische*r Netzplaner*in für Glasfaserinfrastruktur - at - Wien Energie GmbH
+.NET-Entwickler (w/m/x) - at - Raiffeisen International
+Development Engineer, Digital Signal Processing (m/w/d) - at - Med-el Elektromedizinische Geräte GmbH
+Group IT Security Architect (m/f/d) - Business Applications - at - Octapharma Pharmazeutika Produktionsges.m.b.H.
+Software Developer (f/m/x) - at - EBG MedAustron GmbH
+(Senior) Project Leader (m/f/d) - at - Fresenius Kabi Austria GmbH
+DevOps Engineer - at - ITG Informationstechnik Graz GmbH
+Trainee - Bereich Customer Insights/ Data Analytics (w/m/d) - at - Österreichische Post AG
+Frontend Engineer (f/m/x) - at - kununu Austria GmbH
+
+
+### 2026-02-16 18:45:49
+Data Scientist (m/w/d) - at - eXperts consulting center
+Senior Consultant (all genders) Data Integration & AI - at - Deloitte
+(Senior) AI Engineer (w/m/d) - at - PwC Österreich
+Senior Cloud Data Engineer m, w, d - at - ACP Gruppe
+Team Lead Computational Cancer Biology (m/f/d) - at - Boehringer Ingelheim RCV GmbH & Co KG
+Software Engineer  (gn*) - at - TÜV AUSTRIA
+Senior Software Engineer (m/f/d) - at - EXIAS Medical GmbH
+Team Lead Applied AI and Analytics (m/f/d) - at - Boehringer Ingelheim RCV GmbH & Co KG
+Software Engineer für HMI (m/w/d) - at - Brunel Austria GmbH
+Software Developer (m/w/d) - at - Michael Page International Austria GmbH
+Software Engineer (m/w/d) - at - Translogica GmbH
+Teamlead Software Development (m/w/d) - at - GAMED
+
+
+### 2026-02-17 19:47:55
+Team Lead Data Science (m/f/d) - at - kununu Austria GmbH
+Senior Expert:in Energiesystem- und Strommarktentwicklung - at - APG - Austrian Power Grid AG
+Studentenjob (w/m/x) - Interne Revision mit Fokus auf KI & Analytics (20-25 h/Woche) - at - Raiffeisen International
+Senior Software Engineer in Test (f/m/x) - at - Raiffeisen International
+Data Analyst (w/m/d) - at - Raiffeisen Niederösterreich-Wien
+Full Stack Entwickler (m/w/x) - at - BEKO Solutions GmbH
+Softwareentwickler C++ für Embedded Linux Systeme (m/w/d) - at - Fronius
+Network Security Engineer (m/w/d) - at - Anexia Cloud Solutions GmbH
+IT Support and Service Engineer (all gender) - at - Best in Parking AG
+Mitarbeiter/in VIP Card Service Operations (m/w/d) - at - Raiffeisen International
+
+
+### 2026-02-19 23:22:39
+Senior Scientist (m/w/d) - Scientific Operations Services - R&D Plasma - at - Octapharma Pharmazeutika Produktionsges.m.b.H.
+Industrial Data Scientist (w/m/d) - at - KERN engineering careers GmbH
+Principal Scientist Preclinical PK/PD Modelling Oncology Research (m/f/d) - at - Boehringer Ingelheim RCV GmbH & Co KG
+Medical Physicist - Beam Delivery (f/m/x) - at - EBG MedAustron GmbH
+Embedded Firmware Entwicklungsingenieur für Leistungselektronik (m/w/d)* - at - PULS Vario GmbH
+Senior Systems Engineer (m/w/d) Microsoft Cloud & On-Premise - at - Ströck GmbH
+IT Application Engineer (w/m/d) - at - APG - Austrian Power Grid AG
+Lecturer/Researcher - Molekularbiolog*in mit Schwerpunkt Geneditierung und Sequenzdatenanalyse (m/w/d) - at - Fachhochschule Technikum Wien
+Senior BI Analyst (m/w/d) - at - Kwizda Holding GmbH
+Full Stack Web Developer mit Fokus auf C# / Svelte - at - Hochschule für Angewandte Wissenschaften Campus Wien
+Hardware Entwicklungsingenieur für Leistungselektronik* - at - PULS Vario GmbH
+Group Process Engineer (m/f/d) - Technical Unit - at - Octapharma Pharmazeutika Produktionsges.m.b.H.
+Group Senior Process Engineer (m/f/d) - Technical Unit - at - Octapharma Pharmazeutika Produktionsges.m.b.H.
+Java Developer:in (all genders) - at - Bauarbeiter-Urlaubs- und Abfertigungskasse
+Senior Cloud Backend/ Fullstack Engineer (w/m/d) - Entwickle moderne Energiemanagement-Lösungen - at - TRESCON Betriebsberatungsges.m.b.H.
+Europe Graduate Austria (m/f/d) - at - Philip Morris Austria GmbH
+Group Automation Engineer (m/f/d) - Technical Unit - at - Octapharma Pharmazeutika Produktionsges.m.b.H.
+Data Engineer - Architecture & Business Collaboration (w/m/x) - at - epunkt GmbH
+Senior System Engineer Infrastruktur (w/m/d) - at - TODAY Experts GmbH
+PHP Software Engineer (m/f/d) - at - IXOPAY GmbH
+Senior Data & BI Specialist (w/m/d) - at - KERN engineering careers GmbH
+Treasury / Hedging Specialist (m/w/d) - at - epunkt GmbH
+Database Engineer BI (m/w/d) - at - Dedalus HealthCare GesmbH
+Software Developer C++ (w/m/d) - at - Bachmann electronic GmbH
+Integration Engineer - Voice Communication Systems (all genders) - at - FREQUENTIS AG
+Junior Software Support & Application Engineer - at - "RailNetEurope" - Vereinigung zur Förderung des internationalen Verkehrs auf der Eisenbahninfrastruktur
+Team Assistant for Professors and their international Research Groups - at - ISTA - Institute of Science and Technology Austria
+Project Leader (f/m/d) Medical Software - at - GE Healthcare Austria GmbH & Co OG
+Experte künstliche Intelligenz und digitale Innovation (m/w/d) - at - Rheinmetall MAN Military Vehicles Österreich GesmbH
+Expert:in für Technische Dokumentation & Technisches Training (all genders) - vorrangig Defence-Bereich - at - FREQUENTIS AG
+Embedded Softwareentwickler/in C++ Linux für Solar & Energy (m/w/d) - at - Fronius
+
+
+### 2026-02-21 00:31:56
+Energy Data Engineer (w/m/d) - at - Raiffeisen Niederösterreich-Wien
+Group Expert Analytical Specialist (m/f/d) - Quality Control - at - Octapharma Pharmazeutika Produktionsges.m.b.H.
+Senior Backend Developer (w/m/x) - at - epunkt GmbH
+Junior AI & Software Developer (m/w/d) - at - ENGEL AUSTRIA
+Senior Software Engineer – Remote Tower Control (all genders) - at - FREQUENTIS AG
+Pega Senior System Architect (m/w/d) - at - Capgemini
+Software Architekt - Senior Developer (all genders) - at - KEBA Group AG
+Anwendungsentwickler (m/w/d) - at - Santander Consumer Bank
+Cloud & Platform Engineer (w/m/d) - at - Raiffeisen Niederösterreich-Wien
+Linux System Engineer m/w/d - at - RUBICON IT GmbH
+Test Automation Engineer C# (m/f/x) - at - ADMIRAL Technologies
+Development Engineer (m/w/d) mit Schwerpunkt Prozessentwicklung in der Glas-/Metallindustrie - at - electrovac austria GmbH
+
