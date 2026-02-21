@@ -82,7 +82,7 @@ def main(postings:dict=None, output_path:str=None, min_date:datetime=None,
     )
     #filtered_results = add_back_postings(filtered_results, postings, ["karriere.at7670267", "karriere.at7670270"])
     
-    if output_path:
+    if output_path and filtered_results:
         if not output_path.endswith('.json'):
             output_path = output_path + '/' if not output_path.endswith('/') else output_path
             output_path = os.path.join(output_path, f'filtered_postings_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json')
