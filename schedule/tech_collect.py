@@ -60,7 +60,7 @@ def main():
     print(f"\nNew postings above threshold:\n")
     for title in added:
         print(title)
-    log_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "newly_added_history.md")
+    log_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "save", "postings", "tech", "newly_added_history.md")
     log_to_markdown(data["added"], log_file_path)
     
     #print(f"\nRemoved postings:\n")
