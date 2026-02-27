@@ -1,6 +1,16 @@
 import re
 
 # ============================================================================
+# TIMEOUT AND RETRY CONSTANTS
+# ============================================================================
+# These constants control timeout and retry behavior (HTTP requests)
+
+DEFAULT_REQUEST_TIMEOUT = 30  # seconds - timeout for normal requests
+RETRY_TIMEOUT = 60  # seconds - timeout for retry attempts (more lenient)
+BACKOFF_DURATION = 180  # seconds (3 minutes) - wait time after consecutive failures
+CONSECUTIVE_FAILURES_THRESHOLD = 2  # number of consecutive failures before backoff
+
+# ============================================================================
 # DATA STORAGE CONSTANTS
 # ============================================================================
 # These constants define file paths and naming conventions for storing job postings data

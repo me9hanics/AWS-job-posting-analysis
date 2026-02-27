@@ -611,7 +611,8 @@ class KarriereAT(BaseScraper):
                                            "X-CSRF-Token": self.X_CSRF_TOKEN,
                                            "X-Requested-With": "XMLHttpRequest",
                                        },
-                                       return_kind='responses')
+                                       return_kind='responses',
+                                       verbose=verbose)
             if responses:
                 for response in responses:
                     content = (json.loads(response.text))
@@ -783,8 +784,14 @@ class Raiffeisen(BaseScraper):
 
         soups = []
         for url in url_links:
-            soup = scrape.requests_responses([url], https=True if usecase=="https" else False,
-                                              return_kind="soups", wait_time=request_wait_time)[0]
+            result = scrape.requests_responses([url], https=True if usecase=="https" else False,
+                                              return_kind="soups", wait_time=request_wait_time,
+                                              verbose=verbose)
+            if not result:
+                if verbose:
+                    print(f"No response received for {url}, skipping...")
+                continue
+            soup = result[0]
             soups.append(soup)
             row = 25
             get_next_page = self._next_page_logic(soup, titles_pattern)
@@ -792,8 +799,14 @@ class Raiffeisen(BaseScraper):
                 if verbose:
                     print(f"Getting next page for {url}")
                 next_page = url + more_pages_url_extension + str(row)
-                soup = scrape.requests_responses([next_page], https=True if usecase=="https" else False,
-                                                  return_kind="soups", wait_time=request_wait_time)[0]
+                result = scrape.requests_responses([next_page], https=True if usecase=="https" else False,
+                                                  return_kind="soups", wait_time=request_wait_time,
+                                                  verbose=verbose)
+                if not result:
+                    if verbose:
+                        print(f"No response for next page {next_page}, stopping pagination...")
+                    break
+                soup = result[0]
                 soups.append(soup)
                 get_next_page = self._next_page_logic(soup, titles_pattern)
                 row += 25
@@ -806,8 +819,10 @@ class Raiffeisen(BaseScraper):
             urls = [posting["url"] for posting in postings.values()]
             ids = [website+re.search(r'/\d+/$', url).group().replace("/", "") for url in urls]
             soups = scrape.requests_responses(urls, https=True if usecase=="https" else False,
-                                              return_kind="soups", wait_time=request_wait_time)
-            ids_soups = {id:soup for id,soup in zip(ids, soups)}
+                                              return_kind="soups", wait_time=request_wait_time,
+                                              verbose=verbose)
+            #Match ids to soups (if some requests failed, soups may be shorter)
+            ids_soups = {id:soup for id,soup in zip(ids[:len(soups)], soups)}
             descriptions = self._get_descriptions_from_soups(ids_soups, verbose=verbose)
             for id, posting in descriptions.items():
                 postings[id] = {'id':id, 'title':postings[id]["title"],

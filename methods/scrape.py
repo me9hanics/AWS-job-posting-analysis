@@ -1,7 +1,19 @@
 import requests
+from requests.exceptions import Timeout, RequestException
 from bs4 import BeautifulSoup
-from typing import Callable
+from typing import Callable, List, Tuple
 import time
+
+try:
+    from methods.constants import (
+        DEFAULT_REQUEST_TIMEOUT, RETRY_TIMEOUT,
+        BACKOFF_DURATION, CONSECUTIVE_FAILURES_THRESHOLD
+    )
+except ModuleNotFoundError:
+    from constants import (
+        DEFAULT_REQUEST_TIMEOUT, RETRY_TIMEOUT,
+        BACKOFF_DURATION, CONSECUTIVE_FAILURES_THRESHOLD
+    )
 
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
@@ -147,18 +159,75 @@ def scroll_scrape_website(url=None, driver: webdriver.Firefox = None, close_driv
 
 
 def requests_responses(urls, return_kind = 'responses', https = False,
-                       headers = {}, wait_time = 0.3):
+                       headers = {}, wait_time = 0.3, timeout = None,
+                       verbose = False):
+    """
+    Make HTTP requests to a list of URLs with timeout, retry, and backoff logic.
+    
+    Args:
+        urls: List of URLs to request
+        return_kind: 'responses' or 'soups'
+        https: Whether to use HTTPS headers
+        headers: Custom headers dict
+        wait_time: Time to wait between requests
+        timeout: Request timeout in seconds (default: DEFAULT_REQUEST_TIMEOUT)
+        verbose: Print status messages
+    
+    Returns:
+        List of responses or BeautifulSoup objects
+    """
+    if timeout is None:
+        timeout = DEFAULT_REQUEST_TIMEOUT
+    
     responses = []
+    retry_later = []  #(url, index) tuples
+    consecutive_failures = 0
+    
     session = requests.Session()
     if https:
         if 'User-Agent' not in headers:
             headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
-    for url in urls:
+    
+    for idx, url in enumerate(urls):
         if wait_time:
-            time.sleep(wait_time)
-        response = session.get(url, headers = headers)
-        responses.append(response)
-        
+            time.sleep(wait_time)        
+        try:
+            response = session.get(url, headers=headers, timeout=timeout)
+            responses.append(response)
+            consecutive_failures = 0 
+            
+        except (Timeout, RequestException) as e:
+            if verbose:
+                print(f"Request failed for {url}: {type(e).__name__} - {e}")
+            retry_later.append((url, idx))
+            responses.append(None) #placeholder
+            consecutive_failures += 1
+            
+            if consecutive_failures >= CONSECUTIVE_FAILURES_THRESHOLD:
+                #timeout for repetitive failures
+                print(f"WARNING: {consecutive_failures} consecutive request failures. Backing off for {BACKOFF_DURATION // 60} minutes...")
+                time.sleep(BACKOFF_DURATION)
+                consecutive_failures = 0
+    
+    #Retry failed requests
+    if retry_later:
+        if verbose:
+            print(f"Retrying {len(retry_later)} failed requests with extended timeout...")
+        for url, idx in retry_later:
+            if wait_time:
+                time.sleep(wait_time)
+            try:
+                response = session.get(url, headers=headers, timeout=RETRY_TIMEOUT)
+                responses[idx] = response
+                if verbose:
+                    print(f"Retry successful for {url}")
+            except (Timeout, RequestException) as e:
+                if verbose:
+                    print(f"Retry failed for {url}: {type(e).__name__} - {e}")
+                # Keep None placeholder
+    
+    responses = [r for r in responses if r is not None]
+    
     if return_kind == 'responses':
         return responses
     if return_kind == 'soups':
@@ -171,7 +240,28 @@ def requests_responses(urls, return_kind = 'responses', https = False,
 def requests_responses_with_cookies(base_url, pages, base_path, referer=None,
                                     return_kind = 'responses', wait_time = 0.3,
                                     headers = {}, headers_more = {},
-                                    verbose = False):
+                                    timeout = None, verbose = False):
+    """
+    Make HTTP requests with cookie persistence, timeout, retry, and backoff logic.
+    
+    Args:
+        base_url: Base URL to append pages to
+        pages: List of page identifiers to append to base_url
+        base_path: Base path for headers
+        referer: Referer header value
+        return_kind: 'responses' or 'soups'
+        wait_time: Time to wait between requests
+        headers: Custom headers dict
+        headers_more: Additional headers to merge
+        timeout: Request timeout in seconds (default: DEFAULT_REQUEST_TIMEOUT)
+        verbose: Print status messages
+    
+    Returns:
+        List of responses or BeautifulSoup objects
+    """
+    if timeout is None:
+        timeout = DEFAULT_REQUEST_TIMEOUT
+    
     if not headers:
         headers = {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
@@ -192,22 +282,69 @@ def requests_responses_with_cookies(base_url, pages, base_path, referer=None,
     headers.update(headers_more)
 
     responses = []
+    retry_later = []  #(page, index) tuples for failed requests
+    consecutive_failures = 0
+    
     session = requests.Session()
-    for page in pages:
+    for idx, page in enumerate(pages):
         url = base_url + str(page)
         path = base_path + str(page)
         headers['Path'] = path
         if wait_time:
             time.sleep(wait_time)
-        response = session.get(url, headers = headers)
-        if response.status_code != 200:
-            if verbose:
-                print(f"Stopped at page {page}, error: {response.status_code}")
-            break
-        responses.append(response)
-        for cookie in response.cookies:
-            session.cookies.set(cookie.name, cookie.value)
         
+        try:
+            response = session.get(url, headers=headers, timeout=timeout)
+            if response.status_code != 200:
+                if verbose:
+                    print(f"Stopped at page {page}, error: {response.status_code}")
+                break
+            responses.append(response)
+            consecutive_failures = 0  # Reset on success
+            for cookie in response.cookies:
+                session.cookies.set(cookie.name, cookie.value)
+                
+        except (Timeout, RequestException) as e:
+            if verbose:
+                print(f"Request failed for page {page} ({url}): {type(e).__name__} - {e}")
+            retry_later.append((page, len(responses)))  # Track position for retry
+            consecutive_failures += 1
+            
+            if consecutive_failures >= CONSECUTIVE_FAILURES_THRESHOLD:
+                print(f"WARNING: {consecutive_failures} consecutive request failures. Backing off for {BACKOFF_DURATION // 60} minutes...")
+                time.sleep(BACKOFF_DURATION)
+                consecutive_failures = 0  # Reset after backoff
+    
+    # Retry failed requests (insert at correct positions)
+    if retry_later:
+        if verbose:
+            print(f"Retrying {len(retry_later)} failed requests with extended timeout...")
+        retry_responses = []
+        for page, original_idx in retry_later:
+            url = base_url + str(page)
+            path = base_path + str(page)
+            headers['Path'] = path
+            if wait_time:
+                time.sleep(wait_time)
+            try:
+                response = session.get(url, headers=headers, timeout=RETRY_TIMEOUT)
+                if response.status_code == 200:
+                    retry_responses.append((original_idx, response))
+                    if verbose:
+                        print(f"Retry successful for page {page}")
+                    for cookie in response.cookies:
+                        session.cookies.set(cookie.name, cookie.value)
+                else:
+                    if verbose:
+                        print(f"Retry got status {response.status_code} for page {page}")
+            except (Timeout, RequestException) as e:
+                if verbose:
+                    print(f"Retry failed for page {page}: {type(e).__name__} - {e}")
+        
+        # Insert retry responses at correct positions
+        for original_idx, response in sorted(retry_responses, key=lambda x: x[0], reverse=True):
+            responses.insert(original_idx, response)
+    
     if return_kind == 'responses':
         return responses
     if return_kind == 'soups':
