@@ -1,0 +1,26 @@
+[project]
+name = "postings"
+version = "0.1.0"
+description = "Scraping and analyzing job postings"
+readme = "README.md"
+authors = [{name="Mihaly Hanics", email="hanicsm@gmail.com"}]
+requires-python = ">=3.12"
+dependencies = [
+    "pip",
+    "ipykernel",
+    "requests",
+    "bs4",
+    "selenium",
+    "pandas",
+    "numpy",
+    "matplotlib",
+    "boto3",
+    "nltk",
+    "openpyxl",
+    "smtplib",
+]
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
