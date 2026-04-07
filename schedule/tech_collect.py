@@ -1,5 +1,6 @@
 import sys
 import os
+import time
 schedule_path = os.path.dirname(os.path.abspath(__file__))
 parent_path = os.path.join(schedule_path, "..")
 sys.path.append(parent_path)
@@ -42,14 +43,16 @@ def get_tech_postings(keywords=BASE_PHRASES, rankings=BASE_KEYWORD_SCORING, sala
 
 def main():
     print("Collecting tech job postings...")
+    start_time = time.time()
     data = get_tech_postings(
         keywords=BASE_PHRASES, 
         rankings=BASE_KEYWORD_SCORING,
         salary_bearable=SALARY_BEARABLE,
         verbose=True,
     )
+    elapsed_time = time.time() - start_time
     results = data["results"]
-    print(f"\nFound {len(results)} postings above threshold.")
+    print(f"\nFound {len(results)} postings above threshold in {elapsed_time:.2f}s.")
     added = [instance["title"] + " - at - " + instance["company"] for key, instance in data["added"].items() if "title" in instance]
     removed = [instance["title"] + " - at - " + instance["company"] for key, instance in data["removed"].items() if "title" in instance]
     keyword_counts = {keyword: sum(keyword in instance["keywords"]

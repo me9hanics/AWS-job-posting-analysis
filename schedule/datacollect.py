@@ -194,9 +194,11 @@ def scrape_sites(scrapers: List[Type[sites.BaseScraper]] = SCRAPERS, keywords=KE
                                 rules=kwargs.get(f"{scraper_class.__name__.lower()}_rules", kwargs.get("rules", BASE_RULES)),
                                 transformations = kwargs.get(f"{scraper_class.__name__.lower()}_transformations", kwargs.get("transformations", [])),
                                 )
+        scrape_start = time.time()
         run_results = scraper.gather_data(descriptions=True, verbose=verbose_data_gathering)
+        scrape_elapsed = time.time() - scrape_start
         if verbose:
-            print(f"Found {len(run_results)} postings on {scraper_class.__name__}")
+            print(f"Found {len(run_results)} postings on {scraper_class.__name__} in {scrape_elapsed:.2f}s")
         results = {**results, **run_results}
     return results
 
