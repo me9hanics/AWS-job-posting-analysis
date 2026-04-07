@@ -12,13 +12,13 @@ from methods.transformations import apply_filters_transformations
 
 def filter_postings(postings:dict, banned_words=None, banned_capital_words=None, **kwargs):
     filtered_postings = {}
-    for id, posting in postings.items():
+    for _id, posting in postings.items():
         title = posting["title"]
         if any([word in title.lower() for word in banned_words]):
             continue
         if any([word in title for word in banned_capital_words]):
             continue
-        filtered_postings[id] = posting
+        filtered_postings[_id] = posting
     return filtered_postings
 
 def get_date_of_collection(value=None, filename=None, overwrite=False):

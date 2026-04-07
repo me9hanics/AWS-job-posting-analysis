@@ -71,8 +71,10 @@ class BaseScraper: #Make abstract?
         else:
             self.driver = driver
 
-        self.time = time.strftime("%Y-%m-%d-%H-%M-%S")
+        _time = time.time()
+        self.time = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime(_time))
         self.day = self.time[:10]
+        self.business_day = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime(_time - 8*(60*60)))[:10] #8hrs shift
 
         #rules = rules or BASE_RULES
         self.rules = rules
@@ -586,7 +588,7 @@ class KarriereAT(BaseScraper):
                                             "employmentTypes": posting['employmentTypes'],
                                             "url": posting['link'],
                                             "snippet": posting['snippet'],
-                                            "collected_on": self.day,
+                                            "collected_on": self.business_day,
                                             "date": posting['date'],
                                             "id": posting['id']}
                                             })
@@ -822,14 +824,14 @@ class Raiffeisen(BaseScraper):
                                               return_kind="soups", wait_time=request_wait_time,
                                               verbose=verbose)
             #Match ids to soups (if some requests failed, soups may be shorter)
-            ids_soups = {id:soup for id,soup in zip(ids[:len(soups)], soups)}
+            ids_soups = {_id:soup for _id,soup in zip(ids[:len(soups)], soups)}
             descriptions = self._get_descriptions_from_soups(ids_soups, verbose=verbose)
-            for id, posting in descriptions.items():
-                postings[id] = {'id':id, 'title':postings[id]["title"],
-                                'company':postings[id]["company"],
-                                **posting, 'url':postings[id]["url"],
-                                'source':postings[id]["source"],
-                                "collected_on": self.day,
+            for _id, posting in descriptions.items():
+                postings[_id] = {'id':_id, 'title':postings[_id]["title"],
+                                'company':postings[_id]["company"],
+                                **posting, 'url':postings[_id]["url"],
+                                'source':postings[_id]["source"],
+                                "collected_on": self.business_day,
                                 }
         
         postings = self._process_data(postings, transformations=transformations, description_key=description_key)
