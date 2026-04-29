@@ -22,13 +22,33 @@ SALARY_BEARABLE = configs.SALARY_BEARABLE
 def reduce_url(url):
     return url.split("www.")[1] if "www." in url else url.split("://")[1] if "://" in url else url
 
+def ensure_output_paths(path, path_excel, current_postings_filename, newly_added_postings_filename,
+                        postings_history_filename):
+    if path:
+        if not path.endswith("/"):
+            path = f"{path}/"
+        os.makedirs(path, exist_ok=True)
+        for filename in [current_postings_filename, newly_added_postings_filename, postings_history_filename]:
+            if filename:
+                file_path = f"{path}{filename}"
+                if not os.path.exists(file_path):
+                    files_io.save_data({}, path=path, name=filename, with_timestamp=False)
+
+    if path_excel:
+        if not path_excel.endswith("/"):
+            path_excel = f"{path_excel}/"
+        os.makedirs(path_excel, exist_ok=True)
+
+    return path, path_excel
+
 def categorize_postings_by_date(df):
     """
     Categorize postings by date ranges and return DataFrame sorted with separator markers.
-    Categories: Last 2 weeks, Last 4 weeks (2-4), Older than 4 weeks
+    Categories: This week, Last 2 weeks, Last 4 weeks (2-4), Older than 4 weeks
     Adds a '_separator' column to mark group boundaries.
     """
     today = datetime.datetime.now()
+    one_week_ago = today - datetime.timedelta(days=7)
     two_weeks_ago = today - datetime.timedelta(days=14)
     four_weeks_ago = today - datetime.timedelta(days=28)
     
@@ -36,21 +56,28 @@ def categorize_postings_by_date(df):
         try:
             if 'first_collected_on' in row and row['first_collected_on']:
                 date = datetime.datetime.strptime(row['first_collected_on'], "%Y-%m-%d")
-                if date >= two_weeks_ago:
+                if date >= one_week_ago:
                     return 0
-                elif date >= four_weeks_ago:
+                elif date >= two_weeks_ago:
                     return 1
-                else:
+                elif date >= four_weeks_ago:
                     return 2
-            return 2
+                else:
+                    return 3
+            return 3
         except (ValueError, TypeError):
-            return 2
+            return 3
     
     df['_category'] = df.apply(get_category, axis=1)
     df['_points'] = pd.to_numeric(df['points'], errors='coerce').fillna(0)
     df = df.sort_values(by=['_category', '_points'], ascending=[True, False])
 
-    category_labels = {0: "Last 2 weeks postings - SCROLL FOR OLDER!!!", 1: "Last 4 weeks postings", 2: "Older postings"}
+    category_labels = {
+        0: "Postings from this week",
+        1: "Last 2 weeks postings - SCROLL FOR OLDER!!!",
+        2: "Last 4 weeks postings",
+        3: "Older postings",
+    }
     current_category = None
     separators = []
     
@@ -139,6 +166,7 @@ def create_excel_report(df, path_excel = f"{RELATIVE_EXCELS_PATH}/", prefix ='po
         #Style separator rows (insert actual separator rows)
         if separator_rows:
             separator_colors = {
+                "Postings from this week": "CCE5FF", #light blue
                 "Last 2 weeks postings - SCROLL FOR OLDER!!!": "FFCCCC", #light yellow
                 "Last 4 weeks postings": "FFE6CC", #light orange
                 "Older postings": "E6F2E6" #light green
@@ -207,6 +235,13 @@ def get_postings(scrapers = SCRAPERS, keywords =KEYWORDS, rankings=RANKINGS, sal
                  col_order = COLUMN_ORDER, excel_cols = EXCEL_COLUMNS, efficient_storing = True, only_thresholded_stored = False,
                  current_postings_filename = CURRENT_POSTINGS_FILENAME, newly_added_postings_filename = NEWLY_ADDED_POSTINGS_FILENAME,
                  postings_history_filename = POSTINGS_HISTORY_FILENAME, **kwargs):
+    path, path_excel = ensure_output_paths(
+        path,
+        path_excel,
+        current_postings_filename,
+        newly_added_postings_filename,
+        postings_history_filename,
+    )
     keywords['titlewords'] = list(set(keywords['titlewords']))
     results = scrape_sites(scrapers = scrapers, keywords=keywords, rankings=rankings, salary_bearable=salary_bearable,
                             verbose=verbose, verbose_data_gathering=verbose_data_gathering, **kwargs)
@@ -233,17 +268,23 @@ def get_postings(scrapers = SCRAPERS, keywords =KEYWORDS, rankings=RANKINGS, sal
     else: #efficient storing
         history = postings_utils.unify_postings(folder_path=path) #includes newly_added_postings
         for key in history.keys():
-            dt_last = datetime.datetime.strptime(history[key]['last_collected_on'], "%Y-%m-%d")
-            dt_first = datetime.datetime.strptime(history[key]['first_collected_on'], "%Y-%m-%d")
+            try:
+                dt_last = datetime.datetime.strptime(history[key].get('last_collected_on', ""), "%Y-%m-%d")
+                dt_first = datetime.datetime.strptime(history[key].get('first_collected_on', ""), "%Y-%m-%d")
+            except ValueError:
+                continue
             history[key]['timespan_days'] = (dt_last - dt_first).days
         for key in results.keys() & history.keys():
             results[key]['first_collected_on'] = history[key]['first_collected_on']
             results[key]['last_collected_on'] = history[key]['last_collected_on']
-            results[key]['timespan_days'] = history[key]['timespan_days']
+            if 'timespan_days' in history[key]:
+                results[key]['timespan_days'] = history[key]['timespan_days']
         for key in added.keys() & history.keys():
             added[key]['first_collected_on'] = history[key]['first_collected_on']
             added[key]['last_collected_on'] = history[key]['last_collected_on']
-            added[key]['timespan_days'] = history[key]['timespan_days']
+            if 'timespan_days' in history[key]:
+                added[key]['timespan_days'] = history[key]['timespan_days']
+
         files_io.save_data(history, path=path, name=postings_history_filename, with_timestamp=False)
         #Re-run: adding first and last collected on to results
         files_io.save_data(results, path=path, name=current_postings_filename, with_timestamp=False)
@@ -307,6 +348,9 @@ def log_to_markdown(postings, log_file_path="newly_added_history.md"):
     """
     if not postings:
         return
+    log_dir = os.path.dirname(log_file_path)
+    if log_dir:
+        os.makedirs(log_dir, exist_ok=True)
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     existing_content = ""
