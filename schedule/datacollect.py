@@ -20,10 +20,15 @@ SCRAPERS = [sites.KarriereAT, sites.Raiffeisen]
 SALARY_BEARABLE = configs.SALARY_BEARABLE
 
 def reduce_url(url):
+    """
+    Reduce URL to main domain for better readability in excel report
+    E.g. 'https://www.karriere.at/at/job/12345' -> 'karriere.at'
+    """
     return url.split("www.")[1] if "www." in url else url.split("://")[1] if "://" in url else url
 
 def ensure_output_paths(path, path_excel, current_postings_filename, newly_added_postings_filename,
                         postings_history_filename):
+    """Ensure output paths exist, create them if they don't."""
     if path:
         if not path.endswith("/"):
             path = f"{path}/"
@@ -44,7 +49,7 @@ def ensure_output_paths(path, path_excel, current_postings_filename, newly_added
 def categorize_postings_by_date(df):
     """
     Categorize postings by date ranges and return DataFrame sorted with separator markers.
-    Categories: This week, Last 2 weeks, Last 4 weeks (2-4), Older than 4 weeks
+    Categories: Last 7 days, Last 2 weeks, Last 4 weeks (2-4), Older than 4 weeks
     Adds a '_separator' column to mark group boundaries.
     """
     today = datetime.datetime.now()
@@ -73,8 +78,8 @@ def categorize_postings_by_date(df):
     df = df.sort_values(by=['_category', '_points'], ascending=[True, False])
 
     category_labels = {
-        0: "Postings from this week",
-        1: "Last 2 weeks postings - SCROLL FOR OLDER!!!",
+        0: "Postings last 7 days - SCROLL FOR OLDER!!!",
+        1: "Last 2 weeks postings:",
         2: "Last 4 weeks postings",
         3: "Older postings",
     }
@@ -94,6 +99,7 @@ def categorize_postings_by_date(df):
     return df
 
 def reorder_locations(locations, primary = LOCATIONS_DESIRED):
+    """Reorder locations: have primary first, then the rest."""
     if not isinstance(locations, list) or not locations:
         return locations
     first_locs = []
@@ -166,8 +172,8 @@ def create_excel_report(df, path_excel = f"{RELATIVE_EXCELS_PATH}/", prefix ='po
         #Style separator rows (insert actual separator rows)
         if separator_rows:
             separator_colors = {
-                "Postings from this week": "CCE5FF", #light blue
-                "Last 2 weeks postings - SCROLL FOR OLDER!!!": "FFCCCC", #light yellow
+                "Postings last 7 days - SCROLL FOR OLDER!!!": "CCE5FF", #light blue
+                "Last 2 weeks postings:": "FFCCCC", #light yellow
                 "Last 4 weeks postings": "FFE6CC", #light orange
                 "Older postings": "E6F2E6" #light green
             }
