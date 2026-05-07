@@ -25,3 +25,10 @@ def urls_builder(base_url, slash_elements_list = [], zipped = True, all_combinat
     if no_duplicates:
         urls = list(set(urls))
     return urls
+
+def reduce_url(url):
+    """
+    Reduce URL to main domain for better readability in excel report
+    E.g. 'https://www.karriere.at/at/job/12345' -> 'karriere.at'
+    """
+    return url.split("www.")[1] if "www." in url else url.split("://")[1] if "://" in url else url

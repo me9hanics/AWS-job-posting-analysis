@@ -251,6 +251,30 @@ def find_keywords_in_postings(postings:dict, ordered_keywords:List | Dict, overw
                 postings[id]["keywords"] = list(dict.fromkeys(keywords)) #preserve order
     return postings
 
+def add_matched_titleword(posting_data, titleword):
+    if not titleword:
+        return
+    matched = posting_data.get("matched_titlewords")
+    if not matched:
+        posting_data["matched_titlewords"] = [titleword]
+    elif titleword not in matched:
+        matched.append(titleword)
+    return posting_data
+
+def merge_matched_titlewords(target_posting, incoming_posting):
+    incoming_titlewords = incoming_posting.get("matched_titlewords")
+    if not incoming_titlewords:
+        return
+    if not isinstance(incoming_titlewords, list):
+        incoming_titlewords = [incoming_titlewords]
+    existing_titlewords = target_posting.get("matched_titlewords")
+    if not existing_titlewords:
+        target_posting["matched_titlewords"] = list(incoming_titlewords)
+        return
+    for titleword in incoming_titlewords:
+        if titleword not in existing_titlewords:
+            existing_titlewords.append(titleword)
+
 def analyze_text_language(texts) -> list:
     """Returns a list of 'en', 'de', or None for each text in texts."""
     #Separated string sets and regexes for speed 
@@ -260,7 +284,7 @@ def analyze_text_language(texts) -> list:
         'successful', 'have', 'has', 'had', 'will', 'would', 'should', 'could', 'good', 'better', 'best', 'great',
         'way', 'ways', 'our', 'your', 'their', 'this', 'that', 'these', 'those', 'are', 'is', 'was', 'were', 'been',
         'being', 'we', 'you', 'they', 'who', 'which', 'what', 'when', 'where', 'some', 'any', 'many', 'much', 'more',
-        'most', 'through', 'about', 'into', 'from', 'with', 'within', 'provide', 'support', 'help', 'make', 'take',
+        'most', 'through', 'about', 'into', 'from', 'within', 'provide', 'support', 'help', 'make', 'take',
         'get', 'including', 'such', 'both', 'each', 'other', 'looking', 'seeking', 'join', 'grow', 'learn'
     }
     german_words = {
@@ -270,7 +294,7 @@ def analyze_text_language(texts) -> list:
         'automatisier', 'sie', 'ihr', 'ihre', 'ihren', 'ihrem', 'wir', 'unser', 'unsere', 'für', 'mit', 'zu', 'von',
         'aus', 'bei', 'nach', 'im', 'an', 'auf', 'auch', 'nur', 'schon', 'noch', 'nicht', 'kein', 'keine', 'durch',
         'über', 'unter', 'sehr', 'mehr', 'alle', 'jede', 'jeder', 'suchen', 'sucht', 'bieten', 'bietet', 'sowie',
-        'werden', 'als', 'wenn', 'wann', 'wie', 'was', 'wo'
+        'als', 'wenn', 'wann', 'wie', 'was', 'wo'
     }
     english_regex = [
         re.compile(r'\bgrade:\b'), re.compile(r'\bpresenting\b'), re.compile(r'\bcreating\b'), re.compile(r'\badding\b')

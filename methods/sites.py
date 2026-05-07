@@ -550,6 +550,14 @@ class KarriereAT(BaseScraper):
         wait_time = self.rules["request_wait_time"]
         pairs = [(title, location) for title in titlewords for location in locations]
         postings = {}
+        def _add_matched_titleword(posting_data, titleword):
+            if not titleword:
+                return
+            matched = posting_data.get("matched_titlewords")
+            if not matched:
+                posting_data["matched_titlewords"] = [titleword]
+            elif titleword not in matched:
+                matched.append(titleword)
         for pair in pairs:
             base_url = 'https://www.karriere.at/jobs?keywords='+pair[0]+'&location='+pair[1]
             path = '/jobs?keywords='+pair[0]+'&location='+pair[1]
@@ -575,23 +583,28 @@ class KarriereAT(BaseScraper):
                             posting = items[i]['jobsItem']
                             locs = posting['locations']
                             salary_read = self._salary_from_text(posting['salary'])
-                            postings.update({(website+str(posting['id'])):{
-                                            "title": posting['title'],
-                                            "company": posting['company']['name'],
-                                            "locations": [loc['name'] for loc in locs],
-                                            "salary": posting['salary'],
-                                            "salary_monthly_guessed": salary_read["monthly"] if salary_read else None,
-                                            "salary_guessed": salary_read,
-                                            "source": website,
-                                            "isActive": posting['isActive'],
-                                            "isHomeOffice": posting['isHomeOffice'],
-                                            "employmentTypes": posting['employmentTypes'],
-                                            "url": posting['link'],
-                                            "snippet": posting['snippet'],
-                                            "collected_on": self.business_day,
-                                            "date": posting['date'],
-                                            "id": posting['id']}
-                                            })
+                            posting_id = website + str(posting['id'])
+                            if posting_id not in postings:
+                                postings[posting_id] = {
+                                    "title": posting['title'],
+                                    "company": posting['company']['name'],
+                                    "locations": [loc['name'] for loc in locs],
+                                    "salary": posting['salary'],
+                                    "salary_monthly_guessed": salary_read["monthly"] if salary_read else None,
+                                    "salary_guessed": salary_read,
+                                    "source": website,
+                                    "isActive": posting['isActive'],
+                                    "isHomeOffice": posting['isHomeOffice'],
+                                    "employmentTypes": posting['employmentTypes'],
+                                    "url": posting['link'],
+                                    "snippet": posting['snippet'],
+                                    "collected_on": self.business_day,
+                                    "date": posting['date'],
+                                    "id": posting['id'],
+                                    "matched_titlewords": [pair[0]] if pair[0] else [],
+                                }
+                            else:
+                                _add_matched_titleword(postings[posting_id], pair[0])
                         else:
                             if ('alarmDisruptor' not in items[i]) and ('contentAd' not in items[i]) and ('bsAd' not in items[i]):
                                 if verbose:
@@ -619,15 +632,15 @@ class KarriereAT(BaseScraper):
                 for response in responses:
                     content = (json.loads(response.text))
                     posting = content['data']['jobDetailContent']['jobContent']['text']
-                    id = content['data']['jobDetailContent']['jobHeader']['job']['id']
-                    id = website+str(id)
-                    if id in postings.keys():
+                    _id = content['data']['jobDetailContent']['jobHeader']['job']['id']
+                    _id = website+str(_id)
+                    if _id in postings.keys():
                         if posting:
                             posting = BeautifulSoup(posting, 'html.parser').get_text()
-                            postings[id]["description"] = posting
+                            postings[_id]["description"] = posting
                     else:
                         if verbose:
-                            print(f"Could not find id {id} in saved postings - likely programming error")
+                            print(f"Could not find id {_id} in saved postings - likely programming error")
                 postings = self._find_keywords_in_postings(postings)
 
         postings = self._process_data(postings, transformations=transformations, description_key=description_key)
@@ -784,8 +797,45 @@ class Raiffeisen(BaseScraper):
         if url_links == []:
             url_links = self._construct_page_urls(self.rules["scraping_base_url"])
 
-        soups = []
+        postings = {}
+        def _add_matched_titleword(posting_data, titleword):
+            if not titleword:
+                return
+            matched = posting_data.get("matched_titlewords")
+            if not matched:
+                posting_data["matched_titlewords"] = [titleword]
+            elif titleword not in matched:
+                matched.append(titleword)
+
+        def _titleword_from_url(url):
+            base_url = self.rules["scraping_base_url"]
+            if url.startswith(base_url):
+                return url[len(base_url):].split("&")[0]
+            return None
+
+        def _add_postings_from_soup(soup, matched_titleword):
+            selects = soup.select(titles_pattern)
+            for select in selects:
+                title = select.text
+                url = jobs_base_url + select["href"]
+                posting_id = re.search(r'/\d+/$', url).group().replace("/", "")
+                posting_id = website + posting_id
+                if posting_id not in postings:
+                    if title:
+                        title = title.strip()
+                    postings[posting_id] = {
+                        "title": title,
+                        "url": url,
+                        "company": "Raiffeisen International",
+                        "source": website,
+                        "id": posting_id,
+                        "matched_titlewords": [matched_titleword] if matched_titleword else [],
+                    }
+                else:
+                    _add_matched_titleword(postings[posting_id], matched_titleword)
+
         for url in url_links:
+            matched_titleword = _titleword_from_url(url)
             result = scrape.requests_responses([url], https=True if usecase=="https" else False,
                                               return_kind="soups", wait_time=request_wait_time,
                                               verbose=verbose)
@@ -794,7 +844,7 @@ class Raiffeisen(BaseScraper):
                     print(f"No response received for {url}, skipping...")
                 continue
             soup = result[0]
-            soups.append(soup)
+            _add_postings_from_soup(soup, matched_titleword)
             row = 25
             get_next_page = self._next_page_logic(soup, titles_pattern)
             while get_next_page:
@@ -809,12 +859,10 @@ class Raiffeisen(BaseScraper):
                         print(f"No response for next page {next_page}, stopping pagination...")
                     break
                 soup = result[0]
-                soups.append(soup)
+                _add_postings_from_soup(soup, matched_titleword)
                 get_next_page = self._next_page_logic(soup, titles_pattern)
                 row += 25
-                
-        postings = self._process_posting_soups(soups, titles_pattern, website=website,
-                                      jobs_base_url=jobs_base_url)
+
         postings = self._filter_postings(postings)
 
         if descriptions:
