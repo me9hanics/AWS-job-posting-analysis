@@ -6,7 +6,6 @@
 ### Take into account how easy it is for a regex to be matched in an irrelevant context.
 ### E.g., "lead" commonly appears in descriptions, but don't necessarily indicate a "lead" role.
 
-import re
 
 REGEX_LOOKUP = {
 ### BIOGRAPHICAL

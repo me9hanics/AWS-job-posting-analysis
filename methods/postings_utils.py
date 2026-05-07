@@ -1,13 +1,12 @@
 from methods.constants import *
 from methods.configs import RELATIVE_POSTINGS_PATH, BASE_PHRASES
 from methods.files_io import load_file_if_str, load_list_items
-import re
-import os
-from datetime import datetime
-from typing import List, Dict
+import re, os, datetime
+#from typing import List, Dict
 from methods.datastruct_utils import sort_dict_by_key, get_nested_dict_keys
 from methods.attributes import (salary_from_text, analyze_postings_language,
-                                rank_postings, find_keywords_in_postings)
+                                rank_postings, find_keywords_in_postings,
+                                merge_matched_titlewords)
 from methods.transformations import apply_filters_transformations
 
 def filter_postings(postings:dict, banned_words=None, banned_capital_words=None, **kwargs):
@@ -29,7 +28,7 @@ def get_date_of_collection(value=None, filename=None, overwrite=False):
         if match:
             return match.group()
     if filename and isinstance(filename,str) and os.path.exists(filename):
-        return str(datetime.fromtimestamp(os.path.getctime(filename)).date())
+        return str(datetime.datetime.fromtimestamp(os.path.getctime(filename)).date())
     return None
 
 def get_added_and_removed(new, previous):
@@ -77,7 +76,7 @@ def threshold_postings_by_points(postings, points_threshold = 0.01):
     Returns:
     filtered_postings (dict): The filtered list of postings.
     """
-    filtered_postings = {key: value for key, value in postings.items() if (points_threshold == None) or value.get("points", 0) >= points_threshold}
+    filtered_postings = {key: value for key, value in postings.items() if (points_threshold is None) or value.get("points", 0) >= points_threshold}
     return filtered_postings
 
 def compare_postings(new = [], previous = [], print_attrs=["title", "company", "points"], printed_text_max_length = 100,
@@ -102,7 +101,7 @@ def compare_postings(new = [], previous = [], print_attrs=["title", "company", "
         _added, _removed = get_added_and_removed(new, previous)
         added = added or threshold_postings_by_points(_added, points_threshold)
         removed = removed or threshold_postings_by_points(_removed, points_threshold)
-    
+
     print_out = print_attrs if print_attrs else "none"
     if print_out=="complete_lists":
         #make print out a list of all of the keys in the dictionaries, every single key that appears at least once
@@ -142,6 +141,10 @@ def unify_postings(postings=None, folder_path=f"{RELATIVE_POSTINGS_PATH}/tech/",
     Compress multiple lists of postings into one list.
     If postings is a string, the list is read from a file.
 
+    If extend=False, duplicates are merged into a single record and missing fields
+    are filled in from newer entries. If extend=True, all versions are kept as a list
+    per posting key, and global min/max dates are propagated to each version.
+
     Parameters:
     postings (list | *): The list of postings to combine - or overwritten if not a list.
     folder_path (str): The directory path to load the files from.
@@ -171,6 +174,9 @@ def unify_postings(postings=None, folder_path=f"{RELATIVE_POSTINGS_PATH}/tech/",
                     for col, row in value.items():
                         if (col not in all_postings[key].keys()) or (not all_postings[key][col]):
                             all_postings[key][col] = row
+
+                    #Merge matched_titlewords so duplicates keep all titleword hits
+                    merge_matched_titlewords(all_postings[key], value)
                     
                     stored_first = all_postings[key].get('first_collected_on')
                     if first_collected:
@@ -195,10 +201,24 @@ def unify_postings(postings=None, folder_path=f"{RELATIVE_POSTINGS_PATH}/tech/",
                     if first_collected or last_collected:
                         global_first = min((v.get('first_collected_on') for v in all_postings[key] if v.get('first_collected_on')), default=None)
                         global_last = max((v.get('last_collected_on') for v in all_postings[key] if v.get('last_collected_on')), default=None)
+
+                        # Keep matched_titlewords consistent across versions
+                        union_titlewords = []
+                        for posting_store in all_postings[key]:
+                            titlewords = posting_store.get("matched_titlewords")
+                            if not titlewords:
+                                continue
+                            if not isinstance(titlewords, list):
+                                titlewords = [titlewords]
+                            for titleword in titlewords:
+                                if titleword not in union_titlewords:
+                                    union_titlewords.append(titleword)
                         
                         for posting_store in all_postings[key]:
                             posting_store['first_collected_on'] = global_first
                             posting_store['last_collected_on'] = global_last
+                            if union_titlewords:
+                                posting_store['matched_titlewords'] = list(union_titlewords)
                             if posting_store.get('last_collected_on') == global_last:
                                 posting_store["description"] = value.get("description", posting_store.get("description", None))
     

@@ -16,7 +16,7 @@ CONSECUTIVE_FAILURES_THRESHOLD = 2  # number of consecutive failures before back
 # These constants define file paths and naming conventions for storing job postings data
 
 COLUMN_ORDER = ["title", "company",  "salary_monthly_guessed",
-                "locations", "keywords",
+                "locations", "keywords", "matched_titlewords",
                 "points", "url", "language",
                 "snippet", "description", "salary",
                 "employmentTypes", "salary_guessed",
