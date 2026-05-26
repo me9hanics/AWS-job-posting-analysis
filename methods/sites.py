@@ -578,9 +578,9 @@ class KarriereAT(BaseScraper):
                 for response in responses:
                     content = json.loads(response.text)
                     items = content['data']['jobsSearchList']['activeItems']['items']
-                    for i in range(len(items)):
-                        if 'jobsItem' in items[i]:
-                            posting = items[i]['jobsItem']
+                    for _, item in enumerate(items):
+                        if 'jobsItem' in item:
+                            posting = item['jobsItem']
                             locs = posting['locations']
                             salary_read = self._salary_from_text(posting['salary'])
                             posting_id = website + str(posting['id'])
@@ -606,9 +606,9 @@ class KarriereAT(BaseScraper):
                             else:
                                 _add_matched_titleword(postings[posting_id], pair[0])
                         else:
-                            if ('alarmDisruptor' not in items[i]) and ('contentAd' not in items[i]) and ('bsAd' not in items[i]):
+                            if ('alarmDisruptor' not in item) and ('contentAd' not in item) and ('bsAd' not in item):
                                 if verbose:
-                                    print(items[i])
+                                    print(item)
                             continue
 
         postings = self._filter_postings(postings)
