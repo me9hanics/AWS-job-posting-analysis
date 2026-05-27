@@ -373,7 +373,7 @@ def find_keywords_in_postings(
     case_insensitive_keywords = [
         kw for kw in ordered_keywords if not any(c.isupper() for c in kw)
     ]
-    
+
     for posting_id, posting in postings.items():
         if overwrite or ("keywords" not in posting.keys()) or (not posting["keywords"]):
             postings[posting_id]["keywords"] = []
