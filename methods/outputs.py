@@ -1,3 +1,5 @@
+"""Output helpers for reports, Excel exports, and email notifications."""
+
 import datetime
 import time
 import os
@@ -7,13 +9,17 @@ from methods.constants import EXCEL_COLUMNS
 from methods.configs import RELATIVE_EXCELS_PATH
 from methods.urls import reduce_url
 
-def remove_bad_chars(df):
-    from openpyxl.cell.cell import ILLEGAL_CHARACTERS_RE
+def remove_bad_chars(df: pd.DataFrame) -> pd.DataFrame:
+    """Strip illegal characters before exporting to Excel."""
+    #Imported here to avoid requiring openpyxl unless Excel output is used.
+    from openpyxl.cell.cell import ILLEGAL_CHARACTERS_RE  # pylint: disable=import-outside-toplevel
     #illegal_chars = re.compile(r'[\x00-\x1F]')
     #return df.map(lambda x: x.encode('unicode_escape').decode('utf-8') if isinstance(x, str) else x)
-    return df.map(lambda x: ILLEGAL_CHARACTERS_RE.sub(r'', x) if isinstance(x, str) else x)
+    return df.map(
+        lambda x: ILLEGAL_CHARACTERS_RE.sub(r"", x) if isinstance(x, str) else x
+    )
 
-def categorize_postings_by_date(df):
+def categorize_postings_by_date(df: pd.DataFrame) -> pd.DataFrame:
     """
     Categorize postings by date ranges and return DataFrame sorted with separator markers.
     Categories: Last 7 days, Last 2 weeks, Last 4 weeks (2-4), Older than 4 weeks
@@ -24,25 +30,27 @@ def categorize_postings_by_date(df):
     two_weeks_ago = today - datetime.timedelta(days=14)
     four_weeks_ago = today - datetime.timedelta(days=28)
     
-    def get_category(row):
+    def get_category(row: pd.Series) -> int:
         try:
             if 'first_collected_on' in row and row['first_collected_on']:
                 date = datetime.datetime.strptime(row['first_collected_on'], "%Y-%m-%d")
                 if date >= one_week_ago:
                     return 0
-                elif date >= two_weeks_ago:
+                if date >= two_weeks_ago:
                     return 1
-                elif date >= four_weeks_ago:
+                if date >= four_weeks_ago:
                     return 2
-                else:
-                    return 3
+                return 3
             return 3
         except (ValueError, TypeError):
             return 3
-    
+
     df['_category'] = df.apply(get_category, axis=1)
     df['_points'] = pd.to_numeric(df['points'], errors='coerce').fillna(0)
-    df = df.sort_values(by=['_category', '_points'], ascending=[True, False])
+    df = df.sort_values(
+        by=['_category', '_points'],
+        ascending=[True, False],
+    )
 
     category_labels = {
         0: "Postings last 7 days - SCROLL FOR OLDER!!!",
@@ -58,23 +66,34 @@ def categorize_postings_by_date(df):
         if cat != current_category:
             separators.append((idx, category_labels[cat]))
             current_category = cat
-    
+
     df['_separator'] = ""
     for idx, label in separators:
         df.iloc[idx, df.columns.get_loc('_separator')] = label
-    
+
     return df
 
-def create_excel_report(df, path_excel = f"{RELATIVE_EXCELS_PATH}/", prefix ='postings',
-                        added=None, keywords=None, throw_error=True, widths = None,
-                        highlight_titles=None):
-    from openpyxl import load_workbook
-    from openpyxl.styles import Font, PatternFill, Alignment
-    
+def create_excel_report(
+    df: pd.DataFrame,
+    path_excel: str = f"{RELATIVE_EXCELS_PATH}/",
+    prefix: str = "postings",
+    added: dict | None = None,
+    keywords: dict | None = None,
+    throw_error: bool = True,
+    widths: dict | None = None,
+    highlight_titles: list | None = None,
+) -> str:
+    """Create and style an Excel report from a DataFrame."""
+    #Imported here to avoid requiring openpyxl unless Excel output is used.
+    from openpyxl import load_workbook  # pylint: disable=import-outside-toplevel
+    from openpyxl.styles import Font, PatternFill, Alignment  # pylint: disable=import-outside-toplevel
+
     excel_file_path = f"{path_excel}{prefix}_{datetime.datetime.now().strftime('%Y-%m-%d')}.xlsx"
     try:
-        df_export = remove_bad_chars(df.drop(columns=['_category', '_points', '_separator'], errors='ignore'))
-        df_export.to_excel(excel_file_path, index=False) #can also use engine='xlsxwriter'
+        df_export = remove_bad_chars(
+            df.drop(columns=['_category', '_points', '_separator'], errors='ignore')
+        )
+        df_export.to_excel(excel_file_path, index=False)
         time.sleep(1)
         workbook = load_workbook(excel_file_path)
         sheet = workbook.active
@@ -93,21 +112,27 @@ def create_excel_report(df, path_excel = f"{RELATIVE_EXCELS_PATH}/", prefix ='po
             highlighted_titles = [title for title in highlight_titles if title]
         highlighted_titles = list(dict.fromkeys(highlighted_titles))
         separator_rows = {}
-        
+
+        keywords = keywords or {}
         for idx, row_num in enumerate(range(2, len(df) + 2)):
             row = sheet[row_num]
             if idx < len(df) and '_separator' in df.columns:
                 separator_value = df.iloc[idx]['_separator']
                 if separator_value:
                     separator_rows[row_num] = separator_value
-            
+
             if row[0].value in highlighted_titles:
                 for cell in row:
                     if cell.column_letter in ["A", "E"]:
-                        font = copy(cell.font) #TODO pack this into a function - or class method e.g. cell.update_font(color = ..., ...)
+                        # Consider a small helper if more styles are added later.
+                        font = copy(cell.font)
                         font.color = "FF229F22"
                         cell.font = font
-            if row[1].value and any(company_title in str(row[1].value).lower() for company_title in keywords.get("highlighted_company_titles", []) if isinstance(row[1].value, str)):
+            if row[1].value and any(
+                company_title in str(row[1].value).lower()
+                for company_title in keywords.get("highlighted_company_titles", [])
+                if isinstance(row[1].value, str)
+            ):
                 for cell in row:
                     if cell.column_letter in ["B"]:
                         font = copy(cell.font)
@@ -115,7 +140,7 @@ def create_excel_report(df, path_excel = f"{RELATIVE_EXCELS_PATH}/", prefix ='po
                         cell.font = font
 
         #Bold columns (hyperlinks will be set later after separator insertion)
-        for row in sheet.iter_rows(min_row=1, max_row=len(df)+1):
+        for row in sheet.iter_rows(min_row=1, max_row=len(df) + 1):
             for cell in row:
                 if cell.column_letter in ["B", "D", "E"]:
                     cell.font = cell.font + Font(bold=True)
@@ -123,56 +148,67 @@ def create_excel_report(df, path_excel = f"{RELATIVE_EXCELS_PATH}/", prefix ='po
         #Style separator rows (insert actual separator rows)
         if separator_rows:
             separator_colors = {
-                "Postings last 7 days - SCROLL FOR OLDER!!!": "CCE5FF", #light blue
-                "Last 2 weeks postings:": "FFCCCC", #light yellow
-                "Last 4 weeks postings": "FFE6CC", #light orange
-                "Older postings": "E6F2E6" #light green
+                "Postings last 7 days - SCROLL FOR OLDER!!!": "CCE5FF",  # light blue
+                "Last 2 weeks postings:": "FFCCCC",  # light yellow
+                "Last 4 weeks postings": "FFE6CC",  # light orange
+                "Older postings": "E6F2E6",  # light green
             }
             separator_font = Font(bold=True, size=22, color="000000")
-            
+
             #Process separators from bottom to top to maintain row numbers
             for row_num in sorted(separator_rows.keys(), reverse=True):
                 separator_label = separator_rows[row_num]
                 #Insert a new row for the separator
                 sheet.insert_rows(row_num)
                 sep_row = sheet[row_num]
-                
+
                 #Set separator label in first cell and style entire row
                 sep_row[1].value = separator_label
                 sep_row[1].font = separator_font
                 sep_row[1].alignment = Alignment(horizontal="center", vertical="center")
-                
+
                 color = separator_colors.get(separator_label, "CCCCCC")
                 fill = PatternFill(start_color=color, end_color=color, fill_type="solid")
-                
+
                 for cell in sep_row:
                     cell.fill = fill
                     cell.font = separator_font
-                
+
                 sheet.row_dimensions[row_num].height = 32
 
         for row in sheet.iter_rows(min_row=2):
             for cell in row:
                 if cell.column_letter == "F" and cell.value:
                     url = cell.value
-                    if url and not (str(url).startswith("https://") or str(url).startswith("http://")):
+                    if url and not (
+                        str(url).startswith("https://") or str(url).startswith("http://")
+                    ):
                         url = "https://" + str(url)
                     cell.hyperlink = url
                     cell.style = 'Hyperlink'
         workbook.save(excel_file_path)
-    except Exception as e:
+    except Exception as exc:
         if throw_error:
-            raise e
-        else:
-            print(f"Could not create excel report at {excel_file_path}, error: {e}")
+            raise
+        print(f"Could not create excel report at {excel_file_path}, error: {exc}")
     return excel_file_path
 
-def generate_outputs(results, added=None, keywords=None,
-                     excel_cols=EXCEL_COLUMNS, excel_prefix="postings",
-                     path_excel=RELATIVE_EXCELS_PATH, verbose=False,
-                     highlight_first_collected_days=None):
+def generate_outputs(
+    results: dict,
+    added: dict | None = None,
+    keywords: dict | None = None,
+    excel_cols: dict | None = None,
+    excel_prefix: str = "postings",
+    path_excel: str = RELATIVE_EXCELS_PATH,
+    verbose: bool = False,
+    highlight_first_collected_days: int | None = None,
+) -> dict:
+    """Generate outputs and return the Excel file path if created."""
     if not path_excel or results is None:
         return {"excel_file_path": None}
+
+    if excel_cols is None:
+        excel_cols = EXCEL_COLUMNS
 
     df = pd.DataFrame.from_dict(results, orient='index')
     for col, vals in excel_cols.items():
@@ -225,7 +261,7 @@ def generate_outputs(results, added=None, keywords=None,
     return {"excel_file_path": excel_file_path}
 
 
-def log_to_markdown(postings, log_file_path="newly_added_history.md"):
+def log_to_markdown(postings: dict, log_file_path: str = "newly_added_history.md") -> None:
     """
     Prepend (add to top) postings (typically newly added ones) to a markdown log file.
     Newest entries appear at the top.
@@ -243,37 +279,50 @@ def log_to_markdown(postings, log_file_path="newly_added_history.md"):
 
     existing_content = ""
     if os.path.exists(log_file_path):
-        with open(log_file_path, 'r', encoding='utf-8') as f:
-            existing_content = f.read()
-    with open(log_file_path, 'w', encoding='utf-8') as f:
-        f.write(f"### {timestamp}\n")
-        for key, posting in postings.items():
+        with open(log_file_path, 'r', encoding='utf-8') as file_obj:
+            existing_content = file_obj.read()
+    with open(log_file_path, 'w', encoding='utf-8') as file_obj:
+        file_obj.write(f"### {timestamp}\n")
+        for _key, posting in postings.items():
             if "title" in posting and "company" in posting:
-                f.write(f"{posting['title']} - at - {posting['company']}\n")
-        f.write("\n")
+                file_obj.write(f"{posting['title']} - at - {posting['company']}\n")
+        file_obj.write("\n")
         if existing_content:
-            f.write(existing_content)
+            file_obj.write(existing_content)
 
-def send_email(results, to_email, file_path = None, subject="Daily report", from_email=None):
-    import smtplib
+def send_email(
+    results: dict,
+    to_email: str,
+    file_path: str | None = None,
+    subject: str = "Daily report",
+    from_email: str | None = None,
+) -> None:
+    """Send a report email with the Excel file attached."""
+    import smtplib  # pylint: disable=import-outside-toplevel
     #from email import encoders
-    from email.mime.base import MIMEBase
-    from email.mime.text import MIMEText
-    from email.mime.multipart import MIMEMultipart
+    from email.mime.base import MIMEBase  # pylint: disable=import-outside-toplevel
+    from email.mime.text import MIMEText  # pylint: disable=import-outside-toplevel
+    from email.mime.multipart import MIMEMultipart  # pylint: disable=import-outside-toplevel
 
-    new_postings = '\n'.join(result['title'] + '\n\t at ' + result['company'] for id, result in results['added'].items())
-    companies_list = '\n'.join(results['companies'])
-    
-    body = "Dear User, here is your report of the current relevant job postings.\n\n" + \
-            f"New posting not seen before:\n{new_postings}\n\nCurrently relevant companies:\n{companies_list}\n\n" + \
-            "Best regards,\n\tHanicsBot"
+    new_postings = "\n".join(
+        result['title'] + "\n\t at " + result['company']
+        for posting_id, result in results['added'].items()
+    )
+    companies_list = "\n".join(results['companies'])
+
+    body = (
+        "Dear User, here is your report of the current relevant job postings.\n\n"
+        f"New posting not seen before:\n{new_postings}\n\n"
+        f"Currently relevant companies:\n{companies_list}\n\n"
+        "Best regards,\n\tHanicsBot"
+    )
     msg = MIMEMultipart()
     msg.attach(MIMEText(body, 'plain'))
 
-    with open("config.txt", "r") as f:
-        pw = f.readline().split("\n")[0]
+    with open("config.txt", "r", encoding="utf-8") as file_obj:
+        password = file_obj.readline().split("\n")[0]
         if not from_email:
-            from_email = f.readline()
+            from_email = file_obj.readline()
 
     msg['Subject'] = subject
     msg['From'] = from_email
@@ -282,9 +331,12 @@ def send_email(results, to_email, file_path = None, subject="Daily report", from
     with open(file_path, "rb") as attachment:
         part = MIMEBase('application', 'octet-stream')
         part.set_payload(attachment.read())
-        part.add_header('Content-Disposition', f'attachment; filename={os.path.basename(file_path)}')
+        part.add_header(
+            'Content-Disposition',
+            f'attachment; filename={os.path.basename(file_path)}',
+        )
         msg.attach(part)
-    
+
     with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
-        smtp.login(from_email, pw)
+        smtp.login(from_email, password)
         smtp.send_message(msg)
