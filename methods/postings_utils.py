@@ -1,33 +1,41 @@
-from methods.constants import *
+"""Utilities for filtering, comparing, and enriching postings data."""
+
+import datetime
+import os
+import re
+
 from methods.configs import RELATIVE_POSTINGS_PATH, BASE_PHRASES
 from methods.files_io import load_file_if_str, load_list_items
-import re, os, datetime
-#from typing import List, Dict
 from methods.datastruct_utils import sort_dict_by_key, get_nested_dict_keys
 from methods.attributes import (salary_from_text, analyze_postings_language,
                                 rank_postings, find_keywords_in_postings,
                                 merge_matched_titlewords)
-from methods.transformations import apply_filters_transformations
+from methods.transformations import apply_filters_transformations as apply_filters_transformations_func
 
-def filter_postings(postings:dict, banned_words=None, banned_capital_words=None, **kwargs):
+def filter_postings(postings: dict, banned_words=None, banned_capital_words=None, **_kwargs):
+    """Remove postings whose titles contain banned words."""
+    banned_words = banned_words or []
+    banned_capital_words = banned_capital_words or []
     filtered_postings = {}
     for _id, posting in postings.items():
         title = posting["title"]
-        if any([word in title.lower() for word in banned_words]):
+        title_lower = title.lower()
+        if any(word in title_lower for word in banned_words):
             continue
-        if any([word in title for word in banned_capital_words]):
+        if any(word in title for word in banned_capital_words):
             continue
         filtered_postings[_id] = posting
     return filtered_postings
 
 def get_date_of_collection(value=None, filename=None, overwrite=False):
+    """Infer collection date from a posting or filename when possible."""
     if not overwrite and isinstance(value, dict) and ('collected_on' in value) and value['collected_on']:
         return value['collected_on']
     if filename and isinstance(filename, str):
-        match = re.search(r'202\d{1}-\d{2}-\d{2}', filename)
+        match = re.search(r'20\d{2}-\d{2}-\d{2}', filename)
         if match:
             return match.group()
-    if filename and isinstance(filename,str) and os.path.exists(filename):
+    if filename and isinstance(filename, str) and os.path.exists(filename):
         return str(datetime.datetime.fromtimestamp(os.path.getctime(filename)).date())
     return None
 
@@ -61,8 +69,8 @@ def get_added_and_removed(new, previous):
     removed_keys = list(set(previous) - set(new))
     added = {key: new[key] for key in added_keys}
     removed = {key: previous[key] for key in removed_keys}
-    added = sort_dict_by_key(added, key="points", descending = True) if added else {}
-    removed = sort_dict_by_key(removed, key="points", descending = True) if removed else {}
+    added = sort_dict_by_key(added, key="points", descending=True) if added else {}
+    removed = sort_dict_by_key(removed, key="points", descending=True) if removed else {}
     return added, removed
 
 def threshold_postings_by_points(postings, points_threshold = 0.01):
@@ -76,11 +84,22 @@ def threshold_postings_by_points(postings, points_threshold = 0.01):
     Returns:
     filtered_postings (dict): The filtered list of postings.
     """
-    filtered_postings = {key: value for key, value in postings.items() if (points_threshold is None) or value.get("points", 0) >= points_threshold}
+    filtered_postings = {
+        key: value
+        for key, value in postings.items()
+        if (points_threshold is None) or value.get("points", 0) >= points_threshold
+    }
     return filtered_postings
 
-def compare_postings(new = [], previous = [], print_attrs=["title", "company", "points"], printed_text_max_length = 100,
-                     points_threshold = 0.01, added=None, removed=None):
+def compare_postings(
+    new=None,
+    previous=None,
+    print_attrs=("title", "company", "points"),
+    printed_text_max_length=100,
+    points_threshold=0.01,
+    added=None,
+    removed=None,
+):
     """
     Compare two lists of postings and print out the differences.
     If new or previous is a string, the list is read from a file.
@@ -95,12 +114,12 @@ def compare_postings(new = [], previous = [], print_attrs=["title", "company", "
     added (dict): The new postings that were added.
     removed (dict): The old postings that were removed.
     """
-    if not added or not removed:
+    if added is None or removed is None:
         if not (new or previous):
             raise ValueError("If added or removed are not given, new and previous must be given.")
         _added, _removed = get_added_and_removed(new, previous)
-        added = added or threshold_postings_by_points(_added, points_threshold)
-        removed = removed or threshold_postings_by_points(_removed, points_threshold)
+        added = added if added is not None else threshold_postings_by_points(_added, points_threshold)
+        removed = removed if removed is not None else threshold_postings_by_points(_removed, points_threshold)
 
     print_out = print_attrs if print_attrs else "none"
     if print_out=="complete_lists":
@@ -112,27 +131,53 @@ def compare_postings(new = [], previous = [], print_attrs=["title", "company", "
     elif print_out=="only_lengths":
         print("Amount of new items: ", len(added))
         print("Amount of removed items: ", len(removed))
-    elif (type(print_out)==str) & (print_out!="none"):
-        """Interpreted as a key in the dictionaries in the two lists"""
+    elif isinstance(print_out, str) and (print_out!="none"):
+        # Interpreted as a key in the dictionaries in the two lists
         print_out = [print_out]
 
     print_added = added.copy()
     print_removed = removed.copy()
 
     if printed_text_max_length:
-        print_added = {key: {k: v[:printed_text_max_length]+"..." if isinstance(v, str) & (len(str(v))> printed_text_max_length)
-                       else v for k,v in value.items()} for key, value in added.items()}
-        print_removed = {key: {k: v[:printed_text_max_length]+"..." if isinstance(v, str) & (len(str(v))> printed_text_max_length)
-                         else v for k,v in value.items()} for key, value in removed.items()}
+        print_added = {
+            key: {
+                k: v[:printed_text_max_length] + "..."
+                if isinstance(v, str) and (len(str(v)) > printed_text_max_length)
+                else v
+                for k, v in value.items()
+            }
+            for key, value in added.items()
+        }
+        print_removed = {
+            key: {
+                k: v[:printed_text_max_length] + "..."
+                if isinstance(v, str) and (len(str(v)) > printed_text_max_length)
+                else v
+                for k, v in value.items()
+            }
+            for key, value in removed.items()
+        }
 
-    if type(print_out) == list:
+    if isinstance(print_out, (list, tuple, set)):
         print("New items above points threshold: ")
         for posting_key in print_added:
-            text = ",\n\t".join([str(u)+": "+str(v) for u,v in (print_added[posting_key].items()) if u in print_out])     
+            text = ",\n\t".join(
+                [
+                    str(u) + ": " + str(v)
+                    for u, v in (print_added[posting_key].items())
+                    if u in print_out
+                ]
+            )
             print(f"\n{posting_key}: \n\t{text}")
         print("\n\n\nRemoved items above points threshold: ")
         for posting_key in print_removed:
-            text = ",\n\t".join([str(u)+": "+str(v) for u,v in (print_removed[posting_key].items()) if u in print_out])
+            text = ",\n\t".join(
+                [
+                    str(u) + ": " + str(v)
+                    for u, v in (print_removed[posting_key].items())
+                    if u in print_out
+                ]
+            )
             print(f"\n{posting_key}: \n\t{text}")
     return added, removed
 
@@ -156,8 +201,8 @@ def unify_postings(postings=None, folder_path=f"{RELATIVE_POSTINGS_PATH}/tech/",
     files = load_list_items(postings, folder_path=folder_path, type_="dict")
 
     all_postings = {}
-    for postings in files:
-        for key, value in postings.items():
+    for postings_list in files:
+        for key, value in postings_list.items():
             collected_on = value.get('collected_on', None)
             first_collected = value.get('first_collected_on', collected_on)
             first_collected = first_collected if first_collected and first_collected <= collected_on else collected_on
@@ -188,7 +233,10 @@ def unify_postings(postings=None, folder_path=f"{RELATIVE_POSTINGS_PATH}/tech/",
                         if not stored_last or last_collected > stored_last:
                             all_postings[key]['last_collected_on'] = last_collected
                             #Update description to latest version
-                            all_postings[key]["description"] = value.get("description", all_postings[key].get("description", None))
+                            all_postings[key]["description"] = value.get(
+                                "description",
+                                all_postings[key].get("description", None),
+                            )
                     
                 else:  # extend==True
                     if not isinstance(all_postings[key], list):
@@ -199,8 +247,22 @@ def unify_postings(postings=None, folder_path=f"{RELATIVE_POSTINGS_PATH}/tech/",
                     
                     # Update global min/max across all versions
                     if first_collected or last_collected:
-                        global_first = min((v.get('first_collected_on') for v in all_postings[key] if v.get('first_collected_on')), default=None)
-                        global_last = max((v.get('last_collected_on') for v in all_postings[key] if v.get('last_collected_on')), default=None)
+                        global_first = min(
+                            (
+                                v.get('first_collected_on')
+                                for v in all_postings[key]
+                                if v.get('first_collected_on')
+                            ),
+                            default=None,
+                        )
+                        global_last = max(
+                            (
+                                v.get('last_collected_on')
+                                for v in all_postings[key]
+                                if v.get('last_collected_on')
+                            ),
+                            default=None,
+                        )
 
                         # Keep matched_titlewords consistent across versions
                         union_titlewords = []
@@ -220,15 +282,29 @@ def unify_postings(postings=None, folder_path=f"{RELATIVE_POSTINGS_PATH}/tech/",
                             if union_titlewords:
                                 posting_store['matched_titlewords'] = list(union_titlewords)
                             if posting_store.get('last_collected_on') == global_last:
-                                posting_store["description"] = value.get("description", posting_store.get("description", None))
+                                posting_store["description"] = value.get(
+                                    "description",
+                                    posting_store.get("description", None),
+                                )
     
     return all_postings
 
-def process_data(postings: dict, banned_words = None, banned_capital_words = None,
-                 filter_method = filter_postings, language_analysis_method = analyze_postings_language, 
-                 rank_method = rank_postings, keyword_finding_method = find_keywords_in_postings,
-                 apply_filters_transformations = apply_filters_transformations,
-                 description_key="description", transformations = [], **kwargs):
+def process_data(
+    postings: dict,
+    banned_words=None,
+    banned_capital_words=None,
+    filter_method=filter_postings,
+    language_analysis_method=analyze_postings_language,
+    rank_method=rank_postings,
+    keyword_finding_method=find_keywords_in_postings,
+    apply_filters_transformations=apply_filters_transformations_func,
+    description_key="description",
+    transformations=None,
+    **kwargs,
+):
+    """Apply filtering, language analysis, ranking, keywords, and transformations."""
+    if transformations is None:
+        transformations = []
     postings = filter_method(postings, banned_words=banned_words,
                              banned_capital_words=banned_capital_words, **kwargs)
     postings = language_analysis_method(postings, description_key=description_key, **kwargs)
@@ -237,9 +313,22 @@ def process_data(postings: dict, banned_words = None, banned_capital_words = Non
     postings = apply_filters_transformations(postings, transformations=transformations, **kwargs)
     return postings
 
-def enrich_postings(postings:str|dict, filename=None, overwrite=True, keywords = BASE_PHRASES, 
-                    extra_keywords = {}, process_method = process_data, **kwargs): #rankings = BASE_KEYWORD_SCORING, 
-    from methods.sites import BaseScraper
+def enrich_postings(
+    postings: str | dict,
+    filename=None,
+    overwrite=True,
+    keywords=None,
+    extra_keywords=None,
+    process_method=process_data,
+    **kwargs,
+):  # rankings = BASE_KEYWORD_SCORING,
+    """Add salary guesses and reprocess postings as needed."""
+    # Keep import inside function to avoid heavy scraper imports unless used.
+    from methods.sites import BaseScraper  # pylint: disable=import-outside-toplevel
+    if keywords is None:
+        keywords = BASE_PHRASES
+    if extra_keywords is None:
+        extra_keywords = {}
     if not process_method:
         process_method = BaseScraper._process_data
     if isinstance(postings, str):
@@ -247,11 +336,11 @@ def enrich_postings(postings:str|dict, filename=None, overwrite=True, keywords =
 
     postings = load_file_if_str(postings, type_="dict")
     scraper = BaseScraper(driver="skip", keywords=keywords, extra_keywords=extra_keywords)
-    for posting_id, posting in postings.copy().items():
+    for _posting_id, posting in postings.copy().items():
         if 'salary' in posting.keys():
-            salary_read = scraper._salary_from_text(posting['salary'])
+            salary_read = scraper.salary_from_text(posting['salary'])
         else:
-            salary_read = scraper._salary_from_description(posting.get("description",[]), **kwargs)
+            salary_read = scraper.salary_from_description(posting.get("description", []), **kwargs)
         if overwrite or ('salary_guessed' not in posting.keys()) or (not posting['salary_guessed']):
             posting['salary_guessed'] = salary_read
         if overwrite or ('salary_monthly_guessed' not in posting.keys()) or (not posting['salary_monthly_guessed']):
@@ -265,15 +354,23 @@ def enrich_postings(postings:str|dict, filename=None, overwrite=True, keywords =
     postings = process_method(postings, overwrite=overwrite, sort=False, **kwargs)
     return postings
 
-def process_posting_soups(soups, pattern, website = "",
-                  posting_id=False, posting_id_path=None,
-                  posting_id_regex=r'\d+', title_path=None, 
-                   company_path=None, salary_path=None):
+def process_posting_soups(
+    soups,
+    pattern,
+    website="",
+    posting_id=False,
+    posting_id_path=None,
+    posting_id_regex=r'\d+',
+    title_path=None,
+    company_path=None,
+    salary_path=None,
+):
+    """Extract postings from soup elements using selectors and regexes."""
     postings = {}
     for soup in soups:
         selects = soup.select(pattern)
         for select in selects:
-            id = None
+            posting_id_value = None
             title = None
             company = None
             salary = None
@@ -287,22 +384,34 @@ def process_posting_soups(soups, pattern, website = "",
                 salary_versions = salary_from_text(salary)
             if posting_id:
                 if posting_id_path is None:
-                    id = re.search(posting_id_regex, select.text).group()
+                    posting_id_value = re.search(posting_id_regex, select.text).group()
                 else:
-                    id = re.search(posting_id_regex, select[posting_id_path]).group()
-                if (id is not None) and (id in postings.keys()):
+                    posting_id_value = re.search(posting_id_regex, select[posting_id_path]).group()
+                if (posting_id_value is not None) and (posting_id_value in postings):
                     _text = select.text
                     if _text:
                         _text = _text.strip()
-                    postings[id] = {"title": title, "company": company, "id":id,
-                                    "source": website, "salary": salary,
-                                    "salary_versions": salary_versions, "text": _text}
+                    postings[posting_id_value] = {
+                        "title": title,
+                        "company": company,
+                        "id": posting_id_value,
+                        "source": website,
+                        "salary": salary,
+                        "salary_versions": salary_versions,
+                        "text": _text,
+                    }
             else:
                 _text = select.text
                 if _text:
                     _text = _text.strip()
-                if _text and (_text not in postings.keys()):
-                    postings[_text] = {"title": title, "company": company, "id":None,
-                                       "source": website, "salary": salary,
-                                       "salary_versions": salary_versions, "text": _text}
+                if _text and (_text not in postings):
+                    postings[_text] = {
+                        "title": title,
+                        "company": company,
+                        "id": None,
+                        "source": website,
+                        "salary": salary,
+                        "salary_versions": salary_versions,
+                        "text": _text,
+                    }
     return postings
