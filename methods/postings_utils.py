@@ -338,9 +338,9 @@ def enrich_postings(
     scraper = BaseScraper(driver="skip", keywords=keywords, extra_keywords=extra_keywords)
     for _posting_id, posting in postings.copy().items():
         if 'salary' in posting.keys():
-            salary_read = scraper.salary_from_text(posting['salary'])
+            salary_read = scraper._salary_from_text(posting['salary'])
         else:
-            salary_read = scraper.salary_from_description(posting.get("description", []), **kwargs)
+            salary_read = scraper._salary_from_description(posting.get("description", []), **kwargs)
         if overwrite or ('salary_guessed' not in posting.keys()) or (not posting['salary_guessed']):
             posting['salary_guessed'] = salary_read
         if overwrite or ('salary_monthly_guessed' not in posting.keys()) or (not posting['salary_monthly_guessed']):

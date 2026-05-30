@@ -237,18 +237,6 @@ class BaseScraper: #Make abstract?
             method = self._salary_from_text
         return salary_from_description(text, regexes=regexes, method=method, **kwargs)
 
-    def salary_from_text(self, text, **kwargs):
-        """Public wrapper for salary parsing from text."""
-        return self._salary_from_text(text, **kwargs)
-
-    def salary_from_description(self, text, **kwargs):
-        """Public wrapper for salary parsing from description text."""
-        return self._salary_from_description(text, **kwargs)
-
-    def process_data(self, postings: dict, **kwargs):
-        """Public wrapper for processing postings data."""
-        return self._process_data(postings, **kwargs)
-
     def _salary_points(self, salary, salary_bearable=SALARY_BEARABLE, salary_ratio=0.15/100,
                       high_dropoff=True, dropoff_bearable_ratio=1.25):
         return salary_points(salary, root_value=salary_bearable, salary_ratio=salary_ratio,
