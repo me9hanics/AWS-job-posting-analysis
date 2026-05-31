@@ -9,10 +9,12 @@ def url_builder(base_url, slash_list=[]):
         url += '/' + slash
     return url
 
-def urls_builder(base_url, slash_elements_list = [], zipped = True, all_combinations = False,
+def urls_builder(base_url, slash_elements_list = None, zipped = True, all_combinations = False,
                  no_duplicates = True):
     """expecting list of lists"""
     urls = []
+    if slash_elements_list is None:
+        slash_elements_list = []
     if zipped:
         if all_combinations:
             slash_lists = list(set(itertools.product(*slash_elements_list)))
