@@ -1,9 +1,10 @@
-from typing import List, Tuple, Callable
+from typing import List, Tuple, Callable, Sequence
 from collections.abc import Iterable
 from copy import deepcopy
 import re
 
-def apply_filters_transformations(postings, transformations: List[Tuple[Callable, dict]] = [], **kwargs):
+def apply_filters_transformations(postings, transformations: Sequence[Tuple[Callable, dict]] = (),
+                                  **kwargs):
     """
     Apply a series of filter functions to postings.
     Parameters:
@@ -43,6 +44,7 @@ def pattern_match(
         return False
 
     def _matches_one(term: str) -> bool:
+        """Check if a single term matches the text."""
         if use_regex:
             try:
                 return re.search(term, text, flags=flags) is not None
@@ -57,9 +59,11 @@ def pattern_match(
 
     return logic_func(_matches_one(t) for t in terms)
 
-def select_keywords(postings, title_keywords=[], title_capital_keywords=[],
-                    description_keywords=[], description_capital_keywords=[],
+def select_keywords(postings, title_keywords=(), title_capital_keywords=(),
+                    description_keywords=(), description_capital_keywords=(),
                     use_regex: bool = False, regex_flags: int = 0):
+    """Filter postings to include only those that match specified keywords
+            in title or description."""
     title_keywords = title_keywords or []
     title_capital_keywords = title_capital_keywords or []
     description_keywords = description_keywords or []
@@ -83,6 +87,8 @@ def select_keywords(postings, title_keywords=[], title_capital_keywords=[],
 def filter_out_keywords(postings, title_keywords=None, title_capital_keywords=None,
                         description_keywords=None, description_capital_keywords=None,
                         use_regex: bool = False, regex_flags: int = 0):
+    """Filter postings to exclude those that match specified keywords
+            in title or description."""
     title_keywords = title_keywords or []
     title_capital_keywords = title_capital_keywords or []
     description_keywords = description_keywords or []
@@ -104,10 +110,12 @@ def filter_out_keywords(postings, title_keywords=None, title_capital_keywords=No
     return filtered
 
 def filter_on_points(postings, min_points=0.01, default_points=0):
+    """Filter postings based on a minimum points threshold."""
     filtered = {key: value for key, value in postings.items() if value.get('points', default_points) >= min_points}
     return filtered
 
 def filter_on_date(postings, min_date=None, date_key='first_collected_on'):
+    """Filter postings based on a minimum date threshold."""
     if min_date is None:
         return postings
     filtered = {}
@@ -118,7 +126,8 @@ def filter_on_date(postings, min_date=None, date_key='first_collected_on'):
     return filtered
 
 def extra_points_if_missing_keywords(postings, keywords_points: List[Tuple[List[str], float]]):
-    for key, value in postings.items():
+    """Add extra points to postings that do not contain certain keywords."""
+    for _, value in postings.items():
         title = value.get('title', '').lower()
         description = value.get('description', '').lower()
         for keywords, point in keywords_points:
@@ -127,12 +136,13 @@ def extra_points_if_missing_keywords(postings, keywords_points: List[Tuple[List[
     return postings
 
 def add_postings(postings:dict, candidate_postings:dict, select_ids = []):
+    """Add candidate_postings to postings, optionally only for select_ids."""
     if not select_ids:
         #consider no-overwrite as option
         postings.update(candidate_postings)
     else:
         candidate_postings = deepcopy(candidate_postings)
-        for id in select_ids:
-            if id in candidate_postings:
-                postings[id] = candidate_postings[id]
+        for _id in select_ids:
+            if _id in candidate_postings:
+                postings[_id] = candidate_postings[_id]
     return postings

@@ -84,7 +84,7 @@ def press_button_until_gone(
                 button.click()
                 time.sleep(post_click_wait)
                 step_counter += 1
-            
+
             except (
                 NoSuchElementException,
                 ElementClickInterceptedException,
@@ -112,9 +112,7 @@ def close_popup(
     close_driver=True,
     open_page=True,
 ):  # pylint: disable=too-many-arguments
-    """
-    Close cookie popups
-    """
+    """Close cookie popups."""
     _require_selenium()
     if driver is None:
         driver = webdriver.Firefox()
@@ -134,7 +132,11 @@ def close_popup(
             button.click()
             if post_click_scroll:
                 driver.execute_script(SCROLL_DOWN_SCRIPT)
-        except (NoSuchElementException, ElementClickInterceptedException, ElementNotInteractableException):
+        except (
+            NoSuchElementException,
+            ElementClickInterceptedException,
+            ElementNotInteractableException,
+        ):
             pass
         if post_click_wait:
             time.sleep(post_click_wait)
@@ -177,7 +179,7 @@ def scroll_scrape_websites(
                 break
             last_height = new_height
 
-        soup = BeautifulSoup(driver.page_source, 'html.parser')
+        soup = BeautifulSoup(driver.page_source, "html.parser")
         all_soups.append(soup)
     if close_driver:
         driver.quit()
@@ -214,7 +216,7 @@ def scroll_scrape_website(
             break
         last_height = new_height
 
-    soup = BeautifulSoup(driver.page_source, 'html.parser')
+    soup = BeautifulSoup(driver.page_source, "html.parser")
     if close_driver:
         driver.quit()
     return soup
@@ -231,7 +233,7 @@ def requests_responses(
 ):  # pylint: disable=too-many-arguments,too-many-locals,too-many-branches
     """
     Make HTTP requests to a list of URLs with timeout, retry, and backoff logic.
-    
+
     Args:
         urls: List of URLs to request
         return_kind: 'responses' or 'soups'
@@ -240,13 +242,13 @@ def requests_responses(
         wait_time: Time to wait between requests
         timeout: Request timeout in seconds (default: DEFAULT_REQUEST_TIMEOUT)
         verbose: Print status messages
-    
+
     Returns:
         List of responses or BeautifulSoup objects
     """
     if timeout is None:
         timeout = DEFAULT_REQUEST_TIMEOUT
-    
+
     responses = []
     retry_later = []  # (url, index) tuples
     consecutive_failures = 0
@@ -263,7 +265,7 @@ def requests_responses(
                 "AppleWebKit/537.36 (KHTML, like Gecko) "
                 "Chrome/58.0.3029.110 Safari/537.3"
             )
-    
+
     for idx, url in enumerate(urls):
         if wait_time:
             time.sleep(wait_time)
@@ -271,14 +273,14 @@ def requests_responses(
             response = session.get(url, headers=headers, timeout=timeout)
             responses.append(response)
             consecutive_failures = 0
-            
+
         except (Timeout, RequestException) as error:
             if verbose:
                 print(f"Request failed for {url}: {type(error).__name__} - {error}")
             retry_later.append((url, idx))
             responses.append(None)  # placeholder
             consecutive_failures += 1
-            
+
             if consecutive_failures >= CONSECUTIVE_FAILURES_THRESHOLD:
                 # timeout for repetitive failures
                 print(
@@ -288,8 +290,8 @@ def requests_responses(
                 )
                 time.sleep(BACKOFF_DURATION)
                 consecutive_failures = 0
-    
-    #Retry failed requests
+
+    # Retry failed requests
     if retry_later:
         if verbose:
             print(
@@ -308,16 +310,18 @@ def requests_responses(
                 if verbose:
                     print(f"Retry failed for {url}: {type(error).__name__} - {error}")
                 # Keep None placeholder
-    
+
     responses = [r for r in responses if r is not None]
-    
-    if return_kind == 'responses':
+
+    if return_kind == "responses":
         return responses
-    if return_kind == 'soups':
-        soups = [BeautifulSoup(response.content, 'html.parser') for response in responses]
+    if return_kind == "soups":
+        soups = [
+            BeautifulSoup(response.content, "html.parser") for response in responses
+        ]
         return soups
-    
-    raise ValueError(f'Unknown return_kind: {return_kind}')
+
+    raise ValueError(f"Unknown return_kind: {return_kind}")
 
 
 def requests_responses_with_cookies(
@@ -334,7 +338,7 @@ def requests_responses_with_cookies(
 ):  # pylint: disable=too-many-arguments,too-many-locals,too-many-branches,too-many-statements
     """
     Make HTTP requests with cookie persistence, timeout, retry, and backoff logic.
-    
+
     Args:
         base_url: Base URL to append pages to
         pages: List of page identifiers to append to base_url
@@ -346,13 +350,13 @@ def requests_responses_with_cookies(
         headers_more: Additional headers to merge
         timeout: Request timeout in seconds (default: DEFAULT_REQUEST_TIMEOUT)
         verbose: Print status messages
-    
+
     Returns:
         List of responses or BeautifulSoup objects
     """
     if timeout is None:
         timeout = DEFAULT_REQUEST_TIMEOUT
-    
+
     if headers is None:
         headers = {
             "User-Agent": (
@@ -385,7 +389,7 @@ def requests_responses_with_cookies(
     responses = []
     retry_later = []  # (page, index) tuples for failed requests
     consecutive_failures = 0
-    
+
     session = requests.Session()
     for page in pages:
         url = base_url + str(page)
@@ -393,7 +397,7 @@ def requests_responses_with_cookies(
         headers["Path"] = path
         if wait_time:
             time.sleep(wait_time)
-        
+
         try:
             response = session.get(url, headers=headers, timeout=timeout)
             if response.status_code != 200:
@@ -404,7 +408,7 @@ def requests_responses_with_cookies(
             consecutive_failures = 0  # Reset on success
             for cookie in response.cookies:
                 session.cookies.set(cookie.name, cookie.value)
-                
+
         except (Timeout, RequestException) as error:
             if verbose:
                 print(
@@ -413,7 +417,7 @@ def requests_responses_with_cookies(
                 )
             retry_later.append((page, len(responses)))
             consecutive_failures += 1
-            
+
             if consecutive_failures >= CONSECUTIVE_FAILURES_THRESHOLD:
                 print(
                     "WARNING: "
@@ -422,7 +426,7 @@ def requests_responses_with_cookies(
                 )
                 time.sleep(BACKOFF_DURATION)
                 consecutive_failures = 0
-    
+
     # Retry failed requests (insert at correct positions)
     if retry_later:
         if verbose:
@@ -451,34 +455,34 @@ def requests_responses_with_cookies(
             except (Timeout, RequestException) as error:
                 if verbose:
                     print(f"Retry failed for page {page}: {type(error).__name__} - {error}")
-        
+
         # Insert retry responses at correct positions
         for original_idx, response in sorted(
             retry_responses, key=lambda x: x[0], reverse=True
         ):
             responses.insert(original_idx, response)
-    
-    if return_kind == 'responses':
+
+    if return_kind == "responses":
         return responses
-    if return_kind == 'soups':
-        soups = [BeautifulSoup(response.content, 'html.parser') for response in responses]
+    if return_kind == "soups":
+        soups = [
+            BeautifulSoup(response.content, "html.parser") for response in responses
+        ]
         return soups
-    
-    raise ValueError(f'Unknown return_kind: {return_kind}')
+
+    raise ValueError(f"Unknown return_kind: {return_kind}")
 
 
-def process_site_urls(urls, usecase='http', **kwargs):
-    """
-    Note: Can also return responses instead of soups
-    """
+def process_site_urls(urls, usecase="http", **kwargs):
+    """Note: Can also return responses instead of soups."""
     if usecase == "http":
         soups = requests_responses(urls, **kwargs)
         return soups
-    
+
     if usecase == "https":
         soups = requests_responses(urls, https=True, **kwargs)
         return soups
-    
+
     if usecase == "http_cookies":
         soups = requests_responses_with_cookies(urls, **kwargs)
         return soups
@@ -486,15 +490,16 @@ def process_site_urls(urls, usecase='http', **kwargs):
     if usecase == "selenium":
         soups = scroll_scrape_websites(urls, **kwargs)
         return soups
-    
+
     if usecase == "http_selenium":
         # Planned use: first try HTTP(S); on a condition, retry via Selenium.
         raise ValueError(f"Unknown method: {usecase}")
 
     if usecase == "click":
         raise ValueError(f"Unknown method: {usecase}")
-    
-    raise ValueError(f'Unknown method: {usecase}')
+
+    raise ValueError(f"Unknown method: {usecase}")
+
 
 def close_website_popup(
     driver: webdriver.Firefox,
@@ -507,16 +512,16 @@ def close_website_popup(
     close_driver=True,
     open_page=True,
 ):  # pylint: disable=too-many-arguments
-    """
-    Close cookie popups
-    """
+    """Close cookie popups."""
     _require_selenium()
     if url and open_page:
         driver.get(url)
     try:
         driver.execute_script(SCROLL_1000_SCRIPT)
         WebDriverWait(driver, click_wait).until(
-                expected_conditions.element_to_be_clickable((CSS_SELECTOR, button_selector))
+            expected_conditions.element_to_be_clickable(
+                (CSS_SELECTOR, button_selector)
+            )
         )
         try:
             if pre_click_scroll:
@@ -525,17 +530,22 @@ def close_website_popup(
             button.click()
             if post_click_scroll_down:
                 driver.execute_script(SCROLL_DOWN_SCRIPT)
-        except (NoSuchElementException, ElementClickInterceptedException, ElementNotInteractableException):
+        except (
+            NoSuchElementException,
+            ElementClickInterceptedException,
+            ElementNotInteractableException,
+        ):
             pass
         if post_click_wait:
             time.sleep(post_click_wait)
-        soup = BeautifulSoup(driver.page_source, 'html.parser')
+        soup = BeautifulSoup(driver.page_source, "html.parser")
     except TimeoutException:
-        soup = BeautifulSoup(driver.page_source, 'html.parser')
+        soup = BeautifulSoup(driver.page_source, "html.parser")
     finally:
         if close_driver:
             driver.quit()
     return soup
+
 
 def load_page(
     url,
@@ -556,7 +566,7 @@ def load_page(
     close_driver=False,
 ):  # pylint: disable=too-many-arguments,too-many-locals,redefined-outer-name
     """
-    General function for loading all sorts of pages; closing popups, pressing buttons and scrolling if necessary.
+    General function for loading pages and handling popups, buttons, and scrolling.
 
     Parameters:
     url: str
@@ -564,8 +574,8 @@ def load_page(
     close_popup: bool
         If True, close the popup window.
     close_popup_method: Callable
-        The method to use for closing the popup. By default, uses close_website_popup,
-            but can be replaced e.g. in site scraper classes.
+        The method to use for closing the popup. By default, uses
+        close_website_popup but can be replaced in site scraper classes.
     load_more_button: bool
         If True, keep pressing a "Load more" button until it disappears.
     load_by_scrolling: bool
@@ -579,9 +589,9 @@ def load_page(
     post_popup_close_scroll_down: bool
         If True, scroll down after closing the popup.
     action_wait: float
-        Time to wait after either pressing the "Load more" button, or scrolling down.
+        Time to wait after pressing "Load more" or scrolling down.
     first_action_wait: float
-        Time to wait before the first action (pressing the load more button, or scrolling down).
+        Time to wait before the first action.
     post_load_more_wait: float
         Time to wait after pressing the "Load more" button.
     close_driver: bool
@@ -594,15 +604,21 @@ def load_page(
     _require_selenium()
     if driver is None:
         driver = webdriver.Firefox()
-    
+
     driver.get(url)
-    
+
     if close_popup and popup_selector:
-        close_popup_method(driver, popup_selector, url=None, click_wait=popup_wait,
-                           pre_click_scroll=pre_popup_scroll,
-                           post_click_wait=post_popup_close_wait,
-                           post_click_scroll_down=post_popup_close_scroll_down,
-                           close_driver=False, open_page=False)
+        close_popup_method(
+            driver,
+            popup_selector,
+            url=None,
+            click_wait=popup_wait,
+            pre_click_scroll=pre_popup_scroll,
+            post_click_wait=post_popup_close_wait,
+            post_click_scroll_down=post_popup_close_scroll_down,
+            close_driver=False,
+            open_page=False,
+        )
 
     if load_more_button and load_more_selector:
         final_page_soup = press_button_until_gone(
@@ -626,7 +642,7 @@ def load_page(
             open_page=False,
         )
     else:
-        final_page_soup = BeautifulSoup(driver.page_source, 'html.parser')
+        final_page_soup = BeautifulSoup(driver.page_source, "html.parser")
 
     if close_driver:
         driver.quit()

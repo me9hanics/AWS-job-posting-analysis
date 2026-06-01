@@ -1,7 +1,11 @@
+"""
+Utility functions for building URLs.
+"""
 import itertools
 
-def url_builder(base_url, slash_list=[]):
+def url_builder(base_url, slash_list=None):
     """Expected strings in slash list (potentially will be extended to dicts)"""
+    slash_list = slash_list or []
     url = base_url
     if url[-1] == '/':
         url = url[:-1]
@@ -23,7 +27,7 @@ def urls_builder(base_url, slash_elements_list = None, zipped = True, all_combin
     else:
         slash_lists = slash_elements_list
     for slash_list in slash_lists:
-            urls.append(url_builder(base_url, slash_list))
+        urls.append(url_builder(base_url, slash_list))
     if no_duplicates:
         urls = list(set(urls))
     return urls
