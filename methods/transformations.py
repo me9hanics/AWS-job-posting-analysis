@@ -1,3 +1,6 @@
+"""
+Utility functions for transforming and filtering job postings.
+"""
 from typing import List, Tuple, Callable, Sequence
 from collections.abc import Iterable
 from copy import deepcopy
@@ -111,7 +114,8 @@ def filter_out_keywords(postings, title_keywords=None, title_capital_keywords=No
 
 def filter_on_points(postings, min_points=0.01, default_points=0):
     """Filter postings based on a minimum points threshold."""
-    filtered = {key: value for key, value in postings.items() if value.get('points', default_points) >= min_points}
+    filtered = {key: value for key, value in postings.items()
+                if value.get('points', default_points) >= min_points}
     return filtered
 
 def filter_on_date(postings, min_date=None, date_key='first_collected_on'):
@@ -135,7 +139,7 @@ def extra_points_if_missing_keywords(postings, keywords_points: List[Tuple[List[
                 value['points'] = value.get('points', 0) + point
     return postings
 
-def add_postings(postings:dict, candidate_postings:dict, select_ids = []):
+def add_postings(postings:dict, candidate_postings:dict, select_ids: Sequence[str] = ()):
     """Add candidate_postings to postings, optionally only for select_ids."""
     if not select_ids:
         #consider no-overwrite as option
