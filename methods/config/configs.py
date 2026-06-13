@@ -33,7 +33,7 @@ RELATIVE_COMPANIES_PATH = f"{RELATIVE_SAVING_PATH}/companies"
 # ============================================================================
 # These are adjustable preferences and thresholds
 
-SALARY_BEARABLE = 3400 
+SALARY_BEARABLE = 4100
 
 LOCATIONS_DESIRED = ["vienna", "wien", "österreich", "austria", "remote"]
 LOCATIONS_SECONDARY = ["st. pölten", "sankt pölten", "wiener neudorf", "linz", "krems", "nussdorf",

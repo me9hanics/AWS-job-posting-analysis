@@ -1,23 +1,11 @@
 """Output helpers for reports, Excel exports, and email notifications."""
 
 import datetime
-import time
 import os
-from copy import copy
 import pandas as pd
 from methods.constants import EXCEL_COLUMNS
 from methods.configs import RELATIVE_EXCELS_PATH
 from methods.urls import reduce_url
-
-def remove_bad_chars(df: pd.DataFrame) -> pd.DataFrame:
-    """Strip illegal characters before exporting to Excel."""
-    #Imported here to avoid requiring openpyxl unless Excel output is used.
-    from openpyxl.cell.cell import ILLEGAL_CHARACTERS_RE  # pylint: disable=import-outside-toplevel
-    #illegal_chars = re.compile(r'[\x00-\x1F]')
-    #return df.map(lambda x: x.encode('unicode_escape').decode('utf-8') if isinstance(x, str) else x)
-    return df.map(
-        lambda x: ILLEGAL_CHARACTERS_RE.sub(r"", x) if isinstance(x, str) else x
-    )
 
 def categorize_postings_by_date(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -73,125 +61,6 @@ def categorize_postings_by_date(df: pd.DataFrame) -> pd.DataFrame:
 
     return df
 
-def create_excel_report(
-    df: pd.DataFrame,
-    path_excel: str = f"{RELATIVE_EXCELS_PATH}/",
-    prefix: str = "postings",
-    added: dict | None = None,
-    keywords: dict | None = None,
-    throw_error: bool = True,
-    widths: dict | None = None,
-    highlight_titles: list | None = None,
-) -> str:
-    """Create and style an Excel report from a DataFrame."""
-    #Imported here to avoid requiring openpyxl unless Excel output is used.
-    from openpyxl import load_workbook  # pylint: disable=import-outside-toplevel
-    from openpyxl.styles import Font, PatternFill, Alignment  # pylint: disable=import-outside-toplevel
-
-    excel_file_path = f"{path_excel}{prefix}_{datetime.datetime.now().strftime('%Y-%m-%d')}.xlsx"
-    try:
-        df_export = remove_bad_chars(
-            df.drop(columns=['_category', '_points', '_separator'], errors='ignore')
-        )
-        df_export.to_excel(excel_file_path, index=False)
-        time.sleep(1)
-        workbook = load_workbook(excel_file_path)
-        sheet = workbook.active
-        if widths:
-            for column, width in widths.items():
-                sheet.column_dimensions[column].width = width
-
-        #Row bold, and columns bold
-        for cell in sheet[1]:
-            cell.font = cell.font + Font(bold=True)
-
-        #Green text for highlighted postings (explicit list overrides "added")
-        if highlight_titles is None:
-            highlighted_titles = [instance["title"] for instance in added.values()] if added else []
-        else:
-            highlighted_titles = [title for title in highlight_titles if title]
-        highlighted_titles = list(dict.fromkeys(highlighted_titles))
-        separator_rows = {}
-
-        keywords = keywords or {}
-        for idx, row_num in enumerate(range(2, len(df) + 2)):
-            row = sheet[row_num]
-            if idx < len(df) and '_separator' in df.columns:
-                separator_value = df.iloc[idx]['_separator']
-                if separator_value:
-                    separator_rows[row_num] = separator_value
-
-            if row[0].value in highlighted_titles:
-                for cell in row:
-                    if cell.column_letter in ["A", "E"]:
-                        # Consider a small helper if more styles are added later.
-                        font = copy(cell.font)
-                        font.color = "FF229F22"
-                        cell.font = font
-            if row[1].value and any(
-                company_title in str(row[1].value).lower()
-                for company_title in keywords.get("highlighted_company_titles", [])
-                if isinstance(row[1].value, str)
-            ):
-                for cell in row:
-                    if cell.column_letter in ["B"]:
-                        font = copy(cell.font)
-                        font.color = "E30A0A"
-                        cell.font = font
-
-        #Bold columns (hyperlinks will be set later after separator insertion)
-        for row in sheet.iter_rows(min_row=1, max_row=len(df) + 1):
-            for cell in row:
-                if cell.column_letter in ["B", "D", "E"]:
-                    cell.font = cell.font + Font(bold=True)
-
-        #Style separator rows (insert actual separator rows)
-        if separator_rows:
-            separator_colors = {
-                "Postings last 7 days - SCROLL FOR OLDER!!!": "CCE5FF",  # light blue
-                "Last 2 weeks postings:": "FFCCCC",  # light yellow
-                "Last 4 weeks postings": "FFE6CC",  # light orange
-                "Older postings": "E6F2E6",  # light green
-            }
-            separator_font = Font(bold=True, size=22, color="000000")
-
-            #Process separators from bottom to top to maintain row numbers
-            for row_num in sorted(separator_rows.keys(), reverse=True):
-                separator_label = separator_rows[row_num]
-                #Insert a new row for the separator
-                sheet.insert_rows(row_num)
-                sep_row = sheet[row_num]
-
-                #Set separator label in first cell and style entire row
-                sep_row[1].value = separator_label
-                sep_row[1].font = separator_font
-                sep_row[1].alignment = Alignment(horizontal="center", vertical="center")
-
-                color = separator_colors.get(separator_label, "CCCCCC")
-                fill = PatternFill(start_color=color, end_color=color, fill_type="solid")
-
-                for cell in sep_row:
-                    cell.fill = fill
-                    cell.font = separator_font
-
-                sheet.row_dimensions[row_num].height = 32
-
-        for row in sheet.iter_rows(min_row=2):
-            for cell in row:
-                if cell.column_letter == "F" and cell.value:
-                    url = cell.value
-                    if url and not (
-                        str(url).startswith("https://") or str(url).startswith("http://")
-                    ):
-                        url = "https://" + str(url)
-                    cell.hyperlink = url
-                    cell.style = 'Hyperlink'
-        workbook.save(excel_file_path)
-    except Exception as exc:
-        if throw_error:
-            raise
-        print(f"Could not create excel report at {excel_file_path}, error: {exc}")
-    return excel_file_path
 
 def generate_outputs(
     results: dict,
