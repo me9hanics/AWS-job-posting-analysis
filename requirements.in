@@ -3,5 +3,3 @@ requests
 selenium
 numpy
 matplotlib
-boto3
-nltk
