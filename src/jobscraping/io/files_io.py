@@ -4,7 +4,7 @@ import json
 import os
 import time
 from datetime import datetime
-from methods.configs import RELATIVE_POSTINGS_PATH
+from jobscraping.config.configs import RELATIVE_POSTINGS_PATH
 from typing import Any
 
 def save_list(list_: list, filename: str) -> None:

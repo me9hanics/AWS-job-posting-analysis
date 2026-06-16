@@ -5,8 +5,9 @@ from __future__ import annotations
 
 from typing import Iterable
 
-from methods import outputs, postings_utils
-from methods.pipelines import collecting
+from jobscraping.io import outputs
+from jobscraping.pipelines import collecting
+from jobscraping.processing import postings_utils
 
 PIPELINE_STEPS = ("scrape", "filter", "store", "output")
 

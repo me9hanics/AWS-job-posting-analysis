@@ -3,9 +3,12 @@
 This module is intentionally not wired into the current runtime yet.
 
 Future replacement scope:
-- Path creation logic from ``methods.datacollect.ensure_output_paths``.
-- Current/history/newly-added storage logic from ``methods.datacollect.get_postings``.
-- History merge behavior currently supported by ``methods.postings_utils.unify_postings``.
+- Path creation logic from
+  ``jobscraping.pipelines.collecting.ensure_output_paths``.
+- Current/history/newly-added storage logic from
+  ``jobscraping.pipelines.collecting.get_postings``.
+- History merge behavior currently supported by
+  ``jobscraping.processing.postings_utils.unify_postings``.
 
 Not kept here from the old flow:
 - Scraping.

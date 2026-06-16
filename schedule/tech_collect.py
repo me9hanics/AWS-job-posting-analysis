@@ -1,16 +1,18 @@
-import sys
 import os
+import sys
 import time
-schedule_path = os.path.dirname(os.path.abspath(__file__))
-parent_path = os.path.join(schedule_path, "..")
-sys.path.append(parent_path)
-try:
-    from datacollect import get_postings
-except:
-    from .datacollect import get_postings
-from methods.outputs import generate_outputs, log_to_markdown
-from methods.constants import *
-from methods.configs import *
+
+from jobscraping.config.configs import (
+    BASE_KEYWORD_SCORING,
+    BASE_PHRASES,
+    EXCELS_PATH,
+    MAIN_DESCRIPTION_KEYWORDS,
+    POSTINGS_PATH,
+    SALARY_BEARABLE,
+)
+from jobscraping.io.outputs import generate_outputs, log_to_markdown
+from jobscraping.pipelines.collecting import get_postings
+
 
 def get_tech_postings(keywords=BASE_PHRASES, rankings=BASE_KEYWORD_SCORING, salary_bearable=SALARY_BEARABLE,
                       path=f"{POSTINGS_PATH}/tech/", path_excel=f"{EXCELS_PATH}/excel_tech/",
@@ -68,13 +70,13 @@ def main():
     results = data["results"]
     print(f"\nFound {len(results)} postings above threshold in {elapsed_time:.2f}s.")
     added = [instance["title"] + " - at - " + instance["company"] for key, instance in data["added"].items() if "title" in instance]
-    removed = [instance["title"] + " - at - " + instance["company"] for key, instance in data["removed"].items() if "title" in instance]
+    _removed = [instance["title"] + " - at - " + instance["company"] for key, instance in data["removed"].items() if "title" in instance]
     keyword_counts = {keyword: sum(keyword in instance["keywords"]
                                    for instance in results.values()) for keyword in MAIN_DESCRIPTION_KEYWORDS}
-    print(f"\nKeywords in number of descriptions:\n")
+    print("\nKeywords in number of descriptions:\n")
     for keyword, count in keyword_counts.items():
         print(f"{keyword}: {count}")
-    print(f"\nNew postings above threshold:\n")
+    print("\nNew postings above threshold:\n")
     for title in added:
         print(title)
     log_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "save", "postings", "tech", "newly_added_history.md")

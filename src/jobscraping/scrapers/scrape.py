@@ -6,19 +6,15 @@ import time
 from typing import Callable
 
 import requests
-from requests.exceptions import RequestException, Timeout
 from bs4 import BeautifulSoup
+from requests.exceptions import RequestException, Timeout
 
-try:
-    from methods.constants import (
-        DEFAULT_REQUEST_TIMEOUT, RETRY_TIMEOUT,
-        BACKOFF_DURATION, CONSECUTIVE_FAILURES_THRESHOLD
-    )
-except ModuleNotFoundError:
-    from constants import (
-        DEFAULT_REQUEST_TIMEOUT, RETRY_TIMEOUT,
-        BACKOFF_DURATION, CONSECUTIVE_FAILURES_THRESHOLD
-    )
+from jobscraping.config.constants import (
+    BACKOFF_DURATION,
+    CONSECUTIVE_FAILURES_THRESHOLD,
+    DEFAULT_REQUEST_TIMEOUT,
+    RETRY_TIMEOUT,
+)
 
 try:
     from selenium import webdriver  # pylint: disable=import-error
@@ -28,8 +24,12 @@ try:
         NoSuchElementException,
         TimeoutException,
     )
-    from selenium.webdriver.support import expected_conditions  # pylint: disable=import-error
-    from selenium.webdriver.support.ui import WebDriverWait  # pylint: disable=import-error
+    from selenium.webdriver.support import (
+        expected_conditions,  # pylint: disable=import-error
+    )
+    from selenium.webdriver.support.ui import (
+        WebDriverWait,  # pylint: disable=import-error
+    )
 except ModuleNotFoundError:
     # pylint: disable=invalid-name
     webdriver = None
@@ -49,7 +49,7 @@ CSS_SELECTOR = "css selector"
 
 def _require_selenium():
     if webdriver is None:
-        raise ModuleNotFoundError("selenium is required for this operation")
+        raise ModuleNotFoundError("Selenium package is required for this operation")
 
 
 def press_button_until_gone(
@@ -121,9 +121,7 @@ def close_popup(
     try:
         driver.execute_script(SCROLL_1000_SCRIPT)
         WebDriverWait(driver, click_wait).until(
-            expected_conditions.element_to_be_clickable(
-                (CSS_SELECTOR, button_selector)
-            )
+            expected_conditions.element_to_be_clickable((CSS_SELECTOR, button_selector))
         )
         try:
             if pre_click_scroll:
@@ -224,7 +222,7 @@ def scroll_scrape_website(
 
 def requests_responses(
     urls,
-    return_kind='responses',
+    return_kind="responses",
     https=False,
     headers=None,
     wait_time=0.3,
@@ -295,8 +293,7 @@ def requests_responses(
     if retry_later:
         if verbose:
             print(
-                f"Retrying {len(retry_later)} failed requests "
-                "with extended timeout..."
+                f"Retrying {len(retry_later)} failed requests with extended timeout..."
             )
         for url, idx in retry_later:
             if wait_time:
@@ -329,7 +326,7 @@ def requests_responses_with_cookies(
     pages,
     base_path,
     referer=None,
-    return_kind='responses',
+    return_kind="responses",
     wait_time=0.3,
     headers=None,
     headers_more=None,
@@ -431,8 +428,7 @@ def requests_responses_with_cookies(
     if retry_later:
         if verbose:
             print(
-                f"Retrying {len(retry_later)} failed requests "
-                "with extended timeout..."
+                f"Retrying {len(retry_later)} failed requests with extended timeout..."
             )
         retry_responses = []
         for page, original_idx in retry_later:
@@ -451,10 +447,14 @@ def requests_responses_with_cookies(
                         session.cookies.set(cookie.name, cookie.value)
                 else:
                     if verbose:
-                        print(f"Retry got status {response.status_code} for page {page}")
+                        print(
+                            f"Retry got status {response.status_code} for page {page}"
+                        )
             except (Timeout, RequestException) as error:
                 if verbose:
-                    print(f"Retry failed for page {page}: {type(error).__name__} - {error}")
+                    print(
+                        f"Retry failed for page {page}: {type(error).__name__} - {error}"
+                    )
 
         # Insert retry responses at correct positions
         for original_idx, response in sorted(
@@ -519,9 +519,7 @@ def close_website_popup(
     try:
         driver.execute_script(SCROLL_1000_SCRIPT)
         WebDriverWait(driver, click_wait).until(
-            expected_conditions.element_to_be_clickable(
-                (CSS_SELECTOR, button_selector)
-            )
+            expected_conditions.element_to_be_clickable((CSS_SELECTOR, button_selector))
         )
         try:
             if pre_click_scroll:
@@ -647,6 +645,7 @@ def load_page(
     if close_driver:
         driver.quit()
     return final_page_soup
+
 
 def load_pages(
     urls,

@@ -1,7 +1,7 @@
 {
     "[python]": {
         "editor.defaultFormatter": "charliermarsh.ruff",
-        "editor.formatOnSave": true,
+        "editor.formatOnSave": false,
         "editor.codeActionsOnSave": {
           "source.fixAll": "explicit",
           "source.organizeImports": "explicit"
@@ -19,7 +19,7 @@
         "compounds": []
     },
     //"python.defaultInterpreterPath": "C:\\Users\\hanic\\miniforge3\\envs\\jobposts\\python.exe",
-    "python.defaultInterpreterPath": ".venv\\Scripts\\python.exe",
+    "python.defaultInterpreterPath": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
     "python.terminal.activateEnvironment": true,
     "python.terminal.activateEnvInCurrentTerminal": true
 }

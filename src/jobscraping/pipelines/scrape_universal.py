@@ -3,7 +3,7 @@
 This module is intentionally not wired into the current runtime yet.
 
 Future replacement scope:
-- Some responsibilities from ``methods.datacollect.scrape_sites``.
+- Some responsibilities from ``jobscraping.pipelines.collecting.scrape_sites``.
 - Some orchestration currently embedded in profile scripts under ``schedule/``.
 
 Not kept here from the old flow:

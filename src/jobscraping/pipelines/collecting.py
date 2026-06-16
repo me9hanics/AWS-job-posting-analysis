@@ -7,15 +7,19 @@ from typing import List, Type
 
 import pandas as pd
 
-from methods import configs, datastruct_utils, files_io, postings_utils, sites
-from methods.constants import (
+from jobscraping.config import configs
+from jobscraping.config.constants import (
     BASE_RULES,
     COLUMN_ORDER,
     CURRENT_POSTINGS_FILENAME,
     NEWLY_ADDED_POSTINGS_FILENAME,
     POSTINGS_HISTORY_FILENAME,
 )
-from methods.configs import RELATIVE_POSTINGS_PATH #EXCELS_PATH, POSTINGS_PATH, 
+from jobscraping.config.configs import RELATIVE_POSTINGS_PATH #EXCELS_PATH, POSTINGS_PATH, 
+from jobscraping.io import files_io
+from jobscraping.processing import postings_utils
+from jobscraping.scrapers import sites
+from jobscraping.utils import datastruct_utils
 
 KEYWORDS = configs.BASE_PHRASES.copy()
 RANKINGS = configs.BASE_KEYWORD_SCORING.copy()

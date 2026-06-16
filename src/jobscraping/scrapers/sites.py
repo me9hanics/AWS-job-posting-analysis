@@ -12,58 +12,31 @@ try:
     from selenium import webdriver
 except ModuleNotFoundError:
     webdriver = None
-try:
-    from methods import scrape
-    from methods import urls
-    from methods.constants import BASE_RULES
-    from methods.configs import (
-        SALARY_BEARABLE,
-        BASE_PHRASES,
-        BASE_KEYWORD_SCORING,
-        RELATIVE_POSTINGS_PATH,
-        LOCATIONS_DESIRED,
-        LOCATIONS_SECONDARY,
-    )
-    from methods.attributes import (
-        analyze_postings_language,
-        check_locations,
-        find_keywords,
-        find_keywords_in_postings,
-        rank_postings,
-        salary_from_description,
-        salary_from_text,
-        salary_points,
-    )
-    from methods.postings_utils import filter_postings, process_posting_soups, process_data
-    from methods.transformations import apply_filters_transformations
-    from methods.files_io import save_data
-    from methods.scrape import next_page_logic_by_length
-except ModuleNotFoundError:
-    import scrape
-    import urls
-    from constants import BASE_RULES
-    from configs import (
-        SALARY_BEARABLE,
-        BASE_PHRASES,
-        BASE_KEYWORD_SCORING,
-        RELATIVE_POSTINGS_PATH,
-        LOCATIONS_DESIRED,
-        LOCATIONS_SECONDARY,
-    )
-    from attributes import (
-        analyze_postings_language,
-        check_locations,
-        find_keywords,
-        find_keywords_in_postings,
-        rank_postings,
-        salary_from_description,
-        salary_from_text,
-        salary_points,
-    )
-    from postings_utils import filter_postings, process_posting_soups, process_data
-    from transformations import apply_filters_transformations
-    from files_io import save_data
-    from scrape import next_page_logic_by_length
+from jobscraping.config.configs import (
+    BASE_KEYWORD_SCORING,
+    BASE_PHRASES,
+    LOCATIONS_DESIRED,
+    LOCATIONS_SECONDARY,
+    RELATIVE_POSTINGS_PATH,
+    SALARY_BEARABLE,
+)
+from jobscraping.config.constants import BASE_RULES
+from jobscraping.io.files_io import save_data
+from jobscraping.processing.attributes import (
+    analyze_postings_language,
+    check_locations,
+    find_keywords,
+    find_keywords_in_postings,
+    rank_postings,
+    salary_from_description,
+    salary_from_text,
+    salary_points,
+)
+from jobscraping.processing.postings_utils import filter_postings, process_data, process_posting_soups
+from jobscraping.processing.transformations import apply_filters_transformations
+from jobscraping.scrapers import scrape
+from jobscraping.scrapers.scrape import next_page_logic_by_length
+from jobscraping.utils import urls
 
 GET_HEIGHT_SCRIPT = "return document.body.scrollHeight"
 SCROLL_DOWN_SCRIPT = "window.scrollTo(0, document.body.scrollHeight);" #scroll to height value of the bottom of the page

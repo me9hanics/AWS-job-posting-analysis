@@ -3,11 +3,13 @@
 This module is intentionally not wired into the current runtime yet.
 
 Future replacement scope:
-- High-level output orchestration from ``methods.outputs.generate_outputs``.
+- High-level output orchestration from
+  ``jobscraping.io.outputs.generate_outputs``.
 - Markdown logging calls currently made directly in ``schedule/*_collect.py``.
 
 Not kept here from the old flow:
-- Excel rendering internals, which belong in ``methods.outputs_excel``.
+- Excel rendering internals, which belong in
+  ``jobscraping.io.outputs_excel``.
 - Scraping, storage, scoring, or filtering.
 """
 
@@ -19,7 +21,7 @@ def generate_excel_output_for_profile():
 
     Planned responsibilities:
     - Prepare profile-selected postings for Excel.
-    - Call Excel-specific helpers in ``methods.outputs_excel``.
+    - Call Excel-specific helpers in ``jobscraping.io.outputs_excel``.
 
     Placeholder only.
     """

@@ -1,18 +1,19 @@
-import sys
-import os
-schedule_path = os.path.dirname(os.path.abspath(__file__))
-parent_path = os.path.join(schedule_path, "..")
-sys.path.append(parent_path)
-
-from methods.configs import POSTINGS_PATH
 import json
+import os
 from datetime import datetime, timedelta
-from methods.transformations import (apply_filters_transformations, select_keywords, filter_out_keywords,
-                                     filter_on_points, filter_on_date)
+
+from jobscraping.config.configs import POSTINGS_PATH
+from jobscraping.processing.transformations import (
+    apply_filters_transformations,
+    filter_on_date,
+    filter_on_points,
+    filter_out_keywords,
+    select_keywords,
+)
 
 NEWLY_ADDED_FILE_PATH = f"{POSTINGS_PATH}/tech/newly_added_postings.json"
 CURRENT_FILE_PATH = f"{POSTINGS_PATH}/tech/current_postings.json"
-OUTPUT = f"C:/GitHubRepo/cv-automation/src/cvscripts/generation/"
+OUTPUT = "C:/GitHubRepo/cv-automation/src/cvscripts/generation/"
 
 title_keywords = [
     "data", "research", "python", "software", "developer", "graph", "network", "time",
@@ -31,7 +32,7 @@ description_keywords = [
 ]
 desctiption_capital_keywords = ["AI", "ML", "NLP", "GNN", "R&D", "Master", "GIS"]
 
-filter_out_title_keywords = [
+FILTER_OUT_TITLE_KEYWORDS = [
     "java", "angular", "react", "plsql", "oracle", "salesforce",
     "cloudera", "apache flink", "servicenow",
     "sap", "human resources", #"marketing",
@@ -70,7 +71,7 @@ def main(postings:dict=None, output_path:str=None, min_date:datetime=None,
                 'description_capital_keywords': desctiption_capital_keywords
                 },),
             (filter_out_keywords, {
-                'title_keywords': filter_out_title_keywords,
+                'title_keywords': FILTER_OUT_TITLE_KEYWORDS,
                 'title_capital_keywords': filter_out_title_capital_keywords
                 },),
             (filter_out_keywords, {

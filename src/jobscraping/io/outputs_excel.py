@@ -6,7 +6,7 @@ from copy import copy
 
 import pandas as pd
 
-from methods.configs import RELATIVE_EXCELS_PATH
+from jobscraping.config.configs import RELATIVE_EXCELS_PATH
 
 
 def remove_bad_chars(df: pd.DataFrame) -> pd.DataFrame:

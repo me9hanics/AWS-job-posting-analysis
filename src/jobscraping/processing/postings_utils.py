@@ -4,13 +4,17 @@ import datetime
 import os
 import re
 
-from methods.configs import RELATIVE_POSTINGS_PATH, BASE_PHRASES
-from methods.files_io import load_file_if_str, load_list_items
-from methods.datastruct_utils import sort_dict_by_key, get_nested_dict_keys
-from methods.attributes import (salary_from_text, analyze_postings_language,
-                                rank_postings, find_keywords_in_postings,
-                                merge_matched_titlewords)
-from methods.transformations import apply_filters_transformations as apply_filters_transformations_func
+from jobscraping.config.configs import RELATIVE_POSTINGS_PATH, BASE_PHRASES
+from jobscraping.io.files_io import load_file_if_str, load_list_items
+from jobscraping.processing.attributes import (
+    analyze_postings_language,
+    find_keywords_in_postings,
+    merge_matched_titlewords,
+    rank_postings,
+    salary_from_text,
+)
+from jobscraping.processing.transformations import apply_filters_transformations as apply_filters_transformations_func
+from jobscraping.utils.datastruct_utils import sort_dict_by_key, get_nested_dict_keys
 
 def filter_postings(postings: dict, banned_words=None, banned_capital_words=None, **_kwargs):
     """Remove postings whose titles contain banned words."""
@@ -324,7 +328,7 @@ def enrich_postings(
 ):  # rankings = BASE_KEYWORD_SCORING,
     """Add salary guesses and reprocess postings as needed."""
     # Keep import inside function to avoid heavy scraper imports unless used.
-    from methods.sites import BaseScraper  # pylint: disable=import-outside-toplevel
+    from jobscraping.scrapers.sites import BaseScraper  # pylint: disable=import-outside-toplevel
     if keywords is None:
         keywords = BASE_PHRASES
     if extra_keywords is None:

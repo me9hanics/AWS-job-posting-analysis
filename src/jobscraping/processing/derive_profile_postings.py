@@ -3,9 +3,9 @@
 This module is intentionally not wired into the current runtime yet.
 
 Future replacement scope:
-- Profile-specific parts of ``methods.datacollect.get_postings``.
+- Profile-specific parts of ``jobscraping.pipelines.collecting.get_postings``.
 - Filtering currently split between profile collect scripts and
-  ``methods.transformations``.
+  ``jobscraping.processing.transformations``.
 - Profile history/current/newly-added storage behavior.
 
 Not kept here from the old flow:

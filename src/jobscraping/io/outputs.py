@@ -3,9 +3,10 @@
 import datetime
 import os
 import pandas as pd
-from methods.constants import EXCEL_COLUMNS
-from methods.configs import RELATIVE_EXCELS_PATH
-from methods.urls import reduce_url
+from jobscraping.config.constants import EXCEL_COLUMNS
+from jobscraping.config.configs import RELATIVE_EXCELS_PATH
+from jobscraping.io.outputs_excel import create_excel_report
+from jobscraping.utils.urls import reduce_url
 
 def categorize_postings_by_date(df: pd.DataFrame) -> pd.DataFrame:
     """
