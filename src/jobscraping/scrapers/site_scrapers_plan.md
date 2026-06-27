@@ -11,7 +11,7 @@ one large file. The target direction is a folder with one module per scraper.
 
 ## Target Files
 
-- `base.py`
+- `base.py` or `basescraper.py`
   - Future home of `BaseScraper`.
   - Shared loading, salary parsing, ranking helper adapters, and common scrape
     utilities.
