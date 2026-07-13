@@ -58,8 +58,8 @@ Here is an image representing various steps of the process:
 
 The CSS selectors for the popup closing (`.onetrust-close-btn-handler`), the "load more" button (`.m-loadMoreJobsButton__button`), and the job posting elements (`div.m-jobsListItem__container div.m-jobsListItem__dataContainer h2.m-jobsListItem__title a.m-jobsListItem__titleLink`) were found via the Edge browser's (Chrome) developer tools, among other things. The URL IDs contain the job posting IDs, which are also stored in this jobs-list-item element, alongside the title (but not the description).
 
-A gist is available [here](https://gist.github.com/me9hanics/65175381063f7fe2e27d6a1dca53e6cb), containing the important methods. The repository containing the full code can be found on [GitHub](https://github.com/me9hanics/AWS-job-posting-analysis) - note that this includes a notebook instead of the `karriereat.py` file.<br>
-The most specific / high level methods are in the `karriereat.py` file (see gist), the methods used inside these functions can be found in the [`methods` modules folder](https://github.com/me9hanics/AWS-job-posting-analysis/tree/main/methods).<br>
+A historical gist is available [here](https://gist.github.com/me9hanics/65175381063f7fe2e27d6a1dca53e6cb). The current implementation is under [`src/jobscraping`](src/jobscraping) as a package. Currently [`src/jobscraping/scrapers/sites.py`](src/jobscraping/scrapers/sites.py) is used for the scraping process, but redesign is in progress.<br>
+High-level collection helpers currently live in [`src/jobscraping/pipelines`](src/jobscraping/pipelines), with profile entry points still under [`schedule`](schedule).<br>
 As said before, the pipeline is designed to be extendable to other websites with desirably low effort, hence options in the methods such as pre-load and post-load waiting times, keeping or closing driver instances, and so on.
 
 After running the pipeline and saving the job postings with descriptions to a JSON file, we can proceed to the key phrase extraction process. Here are some statistics, that we will later rely on for the extraction, and the cost calculations:
