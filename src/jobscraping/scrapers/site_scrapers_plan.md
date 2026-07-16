@@ -1,40 +1,43 @@
 # Site Scraper Split Plan
 
-Status: planning skeleton, not wired into runtime.
+Status: the split files exist, but they are not yet wired into the active
+collection runtime.
 
-`methods/sites.py` currently mixes the base scraper and concrete site scrapers in
-one large file. The target direction is a folder with one module per scraper.
+`src/jobscraping/scrapers/sites.py` still combines the base scraper and concrete
+site scrapers for compatibility with the current pipeline. The target direction
+is one concrete site module per scraper.
 
 ## Target Folder
 
-`methods/site_scrapers/`
+`src/jobscraping/scrapers/websites/`
 
-## Target Files
+## Current and Target Files
 
-- `base.py` or `basescraper.py`
-  - Future home of `BaseScraper`.
-  - Shared loading, salary parsing, ranking helper adapters, and common scrape
+- `basescraper.py`
+  - Current home of `BaseScraper`.
+  - Shared loading, salary parsing, processing adapters, and common scrape
     utilities.
 
-- `karriere_at.py`
-  - Future home of `KarriereAT`.
+- `websites/karriere_at.py`
+  - Exists as the future home of `KarriereAT`.
   - Karriere-specific HTTP/JSON scraping, cookies, CSRF headers, result parsing,
-    and detail description parsing.
+    and detail-description parsing.
 
-- `raiffeisen.py`
-  - Future home of `Raiffeisen`.
-  - Raiffeisen-specific HTML listing scraping, pagination, detail page parsing,
+- `websites/raiffeisen.py`
+  - Exists as the future home of `Raiffeisen`.
+  - Raiffeisen-specific HTML listing scraping, pagination, detail-page parsing,
     and description extraction.
 
-- `__init__.py`
-  - Public exports for scraper classes.
-  - Lets callers import scraper classes from one stable package path.
+- `websites/__init__.py`
+  - Future public exports for per-site scraper classes.
+  - Should let callers import scraper classes from one stable package path.
 
 ## Migration Rule
 
-Do not move scraper code until the modular pipeline boundaries are clearer.
-When moved, keep compatibility aliases if old code still imports from
-`methods.sites`.
+Keep `sites.py` as a compatibility module until `collecting.py` and the active
+schedule scripts import the split modules. Switch the public exports only after
+the modular pipeline boundaries are clear and the collection flow has been
+verified.
 
 ## Future Function-Level Needs
 
