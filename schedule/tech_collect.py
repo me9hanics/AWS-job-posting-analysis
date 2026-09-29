@@ -16,7 +16,8 @@ from jobscraping.pipelines.collecting import get_postings
 
 def get_tech_postings(keywords=BASE_PHRASES, rankings=BASE_KEYWORD_SCORING, salary_bearable=SALARY_BEARABLE,
                       path=f"{POSTINGS_PATH}/tech/", path_excel=f"{EXCELS_PATH}/excel_tech/",
-                      excel_prefix ="postings", highlight_first_collected_days=None, **kwargs):
+                      excel_prefix ="postings", highlight_first_collected_days=None,
+                      cache_mode=None, cache_hit_predicate=None, **kwargs):
     """
     Collect legal job postings from various websites.
     
@@ -34,6 +35,8 @@ def get_tech_postings(keywords=BASE_PHRASES, rankings=BASE_KEYWORD_SCORING, sala
         rankings=rankings, 
         salary_bearable=salary_bearable,
         path=path,
+        cache_mode=cache_mode,
+        cache_hit_predicate=cache_hit_predicate,
         **kwargs
     )
     outputs = generate_outputs(

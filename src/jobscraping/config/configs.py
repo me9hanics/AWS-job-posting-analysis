@@ -13,12 +13,13 @@ Configs include:
 """
 
 import re
+
 # ============================================================================
 # FILE PATHS AND DIRECTORIES
 # ============================================================================
 # These are environment-specific paths that may change per deployment
 
-REPO_ROOT_PATH = "C:/GitHubRepo/AWS-job-posting-analysis"
+REPO_ROOT_PATH = "C:/GitHubRepo/REPOS/AWS-job-posting-analysis"
 SAVING_PATH = f"{REPO_ROOT_PATH}/data/save"
 RELATIVE_SAVING_PATH = "data/save"
 POSTINGS_PATH = f"{SAVING_PATH}/postings"

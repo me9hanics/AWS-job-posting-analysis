@@ -332,6 +332,7 @@ def requests_responses_with_cookies(
     headers_more=None,
     timeout=None,
     verbose=False,
+    stop_condition=None,
 ):  # pylint: disable=too-many-arguments,too-many-locals,too-many-branches,too-many-statements
     """
     Make HTTP requests with cookie persistence, timeout, retry, and backoff logic.
@@ -347,6 +348,7 @@ def requests_responses_with_cookies(
         headers_more: Additional headers to merge
         timeout: Request timeout in seconds (default: DEFAULT_REQUEST_TIMEOUT)
         verbose: Print status messages
+        stop_condition: Optional callable that stops pagination after a successful response
 
     Returns:
         List of responses or BeautifulSoup objects
@@ -405,6 +407,8 @@ def requests_responses_with_cookies(
             consecutive_failures = 0  # Reset on success
             for cookie in response.cookies:
                 session.cookies.set(cookie.name, cookie.value)
+            if stop_condition is not None and stop_condition(response):
+                break
 
         except (Timeout, RequestException) as error:
             if verbose:

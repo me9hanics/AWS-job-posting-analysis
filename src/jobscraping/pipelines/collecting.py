@@ -62,6 +62,9 @@ def scrape_sites(
     salary_bearable=SALARY_BEARABLE,
     verbose=False,
     verbose_data_gathering=False,
+    cached_postings=None,
+    cache_mode=None,
+    cache_hit_predicate=None,
     **kwargs,
 ):
     """Scrape postings from the configured scraper classes."""
@@ -79,7 +82,17 @@ def scrape_sites(
             transformations=kwargs.get(f"{scraper_class.__name__.lower()}_transformations", kwargs.get("transformations", [])),
         )
         scrape_start = time.time()
-        run_results = scraper.gather_data(descriptions=True, verbose=verbose_data_gathering)
+        gather_kwargs = {
+            "descriptions": True,
+            "verbose": verbose_data_gathering,
+        }
+        if cache_mode is not None:
+            gather_kwargs.update(
+                cached_postings=cached_postings,
+                cache_mode=cache_mode,
+                cache_hit_predicate=cache_hit_predicate,
+            )
+        run_results = scraper.gather_data(**gather_kwargs)
         scrape_elapsed = time.time() - scrape_start
         if verbose:
             print(f"Found {len(run_results)} postings on {scraper_class.__name__} in {scrape_elapsed:.2f}s")
@@ -102,6 +115,8 @@ def get_postings(
     current_postings_filename=CURRENT_POSTINGS_FILENAME,
     newly_added_postings_filename=NEWLY_ADDED_POSTINGS_FILENAME,
     postings_history_filename=POSTINGS_HISTORY_FILENAME,
+    cache_mode=None,
+    cache_hit_predicate=None,
     **kwargs,
 ):
     """Collect, store, and return postings artifacts."""
@@ -111,6 +126,15 @@ def get_postings(
         newly_added_postings_filename,
         postings_history_filename,
     )
+    postings_utils.validate_cache_mode(cache_mode)
+    cached_postings = {}
+    if cache_mode is not None:
+        if not postings_history_filename:
+            raise ValueError("postings_history_filename is required when caching is enabled")
+        history_path = f"{path}{postings_history_filename}"
+        if os.path.exists(history_path):
+            cached_postings = files_io.load_file_if_str(history_path, "dict")
+
     keywords["titlewords"] = list(set(keywords["titlewords"]))
     results = scrape_sites(
         scrapers=scrapers,
@@ -119,6 +143,9 @@ def get_postings(
         salary_bearable=salary_bearable,
         verbose=verbose,
         verbose_data_gathering=verbose_data_gathering,
+        cached_postings=cached_postings,
+        cache_mode=cache_mode,
+        cache_hit_predicate=cache_hit_predicate,
         **kwargs,
     )
     results = datastruct_utils.reorder_dict(results, col_order, nested=True)
@@ -126,8 +153,8 @@ def get_postings(
     if verbose:
         print(f"Found {len(results)} results in total")
 
-    previous_file_name = "postings_history.json"
-    if not os.path.exists(f"{path}{previous_file_name}"):
+    previous_file_name = postings_history_filename
+    if not previous_file_name or not os.path.exists(f"{path}{previous_file_name}"):
         previous_file_name = files_io.get_filename_from_dir(path, index=-1)
     added, removed = postings_utils.get_added_and_removed(results, f"{path}{previous_file_name}" if previous_file_name else [])
 
@@ -141,7 +168,12 @@ def get_postings(
     if not efficient_storing or not previous_file_name:
         files_io.save_data(results, name=postings_history_filename if efficient_storing else "", path=path, with_timestamp=False if efficient_storing else True)
     else:
-        history = postings_utils.unify_postings(folder_path=path)
+        history = postings_utils.unify_postings(
+            postings=results,
+            folder_path=path,
+            merge_with_history=True,
+            history_filename=postings_history_filename,
+        )
         for key in history.keys():
             try:
                 dt_last = datetime.datetime.strptime(history[key].get("last_collected_on", ""), "%Y-%m-%d")
