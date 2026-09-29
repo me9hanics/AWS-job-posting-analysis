@@ -1,5 +1,7 @@
 # Own files
 *test*
+!tests/
+!tests/**
 data/*
 config.txt
 outdated*

@@ -2,14 +2,15 @@ import numpy as np
 import time
 import json
 import requests
-from methods import sites
-from methods.configs import RELATIVE_POSTINGS_PATH
+from jobscraping.config.configs import RELATIVE_POSTINGS_PATH
+from jobscraping.scrapers import sites
 
 websites = {
     "karriereat": sites.KarriereAT(),
 }
 
 def __main__():
+    #TODO - fix (i.e. update)
     postings = {}
     for website, scraper in websites.items():
         try:

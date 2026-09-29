@@ -13,7 +13,7 @@ from jobscraping.processing.transformations import (
 
 NEWLY_ADDED_FILE_PATH = f"{POSTINGS_PATH}/tech/newly_added_postings.json"
 CURRENT_FILE_PATH = f"{POSTINGS_PATH}/tech/current_postings.json"
-OUTPUT = "C:/GitHubRepo/cv-automation/src/cvscripts/generation/"
+OUTPUT = "C:/GitHubRepo/REPOS/cv-automation/src/cvscripts/generation/"
 
 title_keywords = [
     "data", "research", "python", "software", "developer", "graph", "network", "time",
