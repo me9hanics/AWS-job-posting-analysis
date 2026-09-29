@@ -32,7 +32,12 @@ from jobscraping.processing.attributes import (
     salary_from_text,
     salary_points,
 )
-from jobscraping.processing.postings_utils import filter_postings, process_data, process_posting_soups
+from jobscraping.processing.postings_utils import (
+    filter_postings,
+    process_data,
+    process_posting_soups,
+    split_cached_postings,
+)
 from jobscraping.processing.transformations import apply_filters_transformations
 from jobscraping.scrapers import scrape
 from jobscraping.scrapers.scrape import next_page_logic_by_length
@@ -547,8 +552,17 @@ class KarriereAT(BaseScraper):
         return super()._salary_from_text(text, keywords=keywords, clarity_comma_char=clarity_comma_char,
                                         decimal_separator=decimal_separator, conversion_rate=conversion_rate)
         
-    def gather_data(self, descriptions=False, save_data=False, verbose=False,
-                    transformations = None, description_key="description"):
+    def gather_data(
+        self,
+        descriptions=False,
+        save_data=False,
+        verbose=False,
+        transformations=None,
+        description_key="description",
+        cached_postings=None,
+        cache_mode=None,
+        cache_hit_predicate=None,
+    ):
         website = self.rules["website"]
         locations = self.keywords["locations"]
         titlewords = self.keywords["titlewords"] #expected not to have dashes, but spaces
@@ -557,6 +571,11 @@ class KarriereAT(BaseScraper):
             transformations = []
         pairs = [(title, location) for title in titlewords for location in locations]
         postings = {}
+        def _search_page_has_no_postings(response):
+            content = json.loads(response.text)
+            items = content['data']['jobsSearchList']['activeItems']['items']
+            return not any('jobsItem' in item for item in items)
+
         def _add_matched_titleword(posting_data, titleword):
             if not titleword:
                 return
@@ -580,6 +599,7 @@ class KarriereAT(BaseScraper):
                                            "X-Requested-With": "XMLHttpRequest",
                                        },
                                        return_kind='responses',
+                                       stop_condition=_search_page_has_no_postings,
                                        verbose=verbose)
             if responses:
                 for response in responses:
@@ -619,6 +639,12 @@ class KarriereAT(BaseScraper):
                             continue
 
         postings = self._filter_postings(postings)
+        cached_hits, postings = split_cached_postings(
+            postings,
+            cached_postings=cached_postings,
+            cache_mode=cache_mode,
+            cache_hit_predicate=cache_hit_predicate,
+        )
 
         if descriptions:
             jobs_url = [posting["url"] for posting in postings.values()]
@@ -648,9 +674,9 @@ class KarriereAT(BaseScraper):
                     else:
                         if verbose:
                             print(f"Could not find id {_id} in saved postings - likely programming error")
-                postings = self._find_keywords_in_postings(postings)
 
         postings = self._process_data(postings, transformations=transformations, description_key=description_key)
+        postings = {**cached_hits, **postings}
         if save_data:
             self._save_data(postings, name="karriere_at", with_timestamp=True)
         return postings
@@ -844,8 +870,17 @@ class Raiffeisen(BaseScraper):
         return super()._salary_from_text(text, keywords=keywords, clarity_comma_char=clarity_comma_char,
                                         decimal_separator=decimal_separator, conversion_rate=conversion_rate)
 
-    def gather_data(self, url_links=None, descriptions=False, verbose=False,
-                    transformations = None, description_key ="description"):
+    def gather_data(
+        self,
+        url_links=None,
+        descriptions=False,
+        verbose=False,
+        transformations=None,
+        description_key="description",
+        cached_postings=None,
+        cache_mode=None,
+        cache_hit_predicate=None,
+    ):
         titles_pattern = self.rules["gather_data_selector"]
         website = self.rules["website"]
         usecase = self.rules["usecase"]
@@ -891,6 +926,7 @@ class Raiffeisen(BaseScraper):
                         "source": website,
                         "id": posting_id,
                         "matched_titlewords": [matched_titleword] if matched_titleword else [],
+                        "collected_on": self.business_day,
                     }
                 else:
                     _add_matched_titleword(postings[posting_id], matched_titleword)
@@ -925,6 +961,12 @@ class Raiffeisen(BaseScraper):
                 row += 25
 
         postings = self._filter_postings(postings)
+        cached_hits, postings = split_cached_postings(
+            postings,
+            cached_postings=cached_postings,
+            cache_mode=cache_mode,
+            cache_hit_predicate=cache_hit_predicate,
+        )
 
         if descriptions:
             url_list = [posting["url"] for posting in postings.values()]
@@ -944,4 +986,5 @@ class Raiffeisen(BaseScraper):
                                 }
         
         postings = self._process_data(postings, transformations=transformations, description_key=description_key)
+        postings = {**cached_hits, **postings}
         return postings

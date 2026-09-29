@@ -3,6 +3,7 @@
 import datetime
 import os
 import re
+from copy import deepcopy
 
 from jobscraping.config.configs import RELATIVE_POSTINGS_PATH, BASE_PHRASES
 from jobscraping.io.files_io import load_file_if_str, load_list_items
@@ -15,6 +16,51 @@ from jobscraping.processing.attributes import (
 )
 from jobscraping.processing.transformations import apply_filters_transformations as apply_filters_transformations_func
 from jobscraping.utils.datastruct_utils import sort_dict_by_key, get_nested_dict_keys
+
+
+def validate_cache_mode(cache_mode):
+    """Validate the currently supported posting cache modes."""
+    if cache_mode not in (None, "id-only"):
+        raise NotImplementedError(f"Cache mode is not implemented: {cache_mode}")
+
+
+def split_cached_postings(
+    postings,
+    cached_postings=None,
+    cache_mode=None,
+    cache_hit_predicate=None,
+):
+    """Split discovered postings into reusable cache hits and processing misses.
+
+    Freshly discovered fields override cached fields on hits. A custom predicate
+    receives ``(posting_id, fresh_posting, cached_posting)`` and can refine the
+    built-in ID-only policy, for example by allowing only selected sources.
+    """
+    validate_cache_mode(cache_mode)
+    if cache_mode is None:
+        return {}, postings
+
+    cached_postings = cached_postings or {}
+    hits = {}
+    misses = {}
+    for posting_id, posting in postings.items():
+        cached_posting = cached_postings.get(posting_id)
+        is_hit = cached_posting is not None
+        if cache_hit_predicate is not None:
+            is_hit = cache_hit_predicate(posting_id, posting, cached_posting)
+
+        if is_hit:
+            if cached_posting is None:
+                raise ValueError(
+                    "cache_hit_predicate returned True without a cached posting "
+                    f"for {posting_id}"
+                )
+            reused = deepcopy(cached_posting)
+            reused.update(deepcopy(posting))
+            hits[posting_id] = reused
+        else:
+            misses[posting_id] = posting
+    return hits, misses
 
 def filter_postings(postings: dict, banned_words=None, banned_capital_words=None, **_kwargs):
     """Remove postings whose titles contain banned words."""
@@ -185,7 +231,13 @@ def compare_postings(
             print(f"\n{posting_key}: \n\t{text}")
     return added, removed
 
-def unify_postings(postings=None, folder_path=f"{RELATIVE_POSTINGS_PATH}/tech/", extend = False):
+def unify_postings(
+    postings=None,
+    folder_path=f"{RELATIVE_POSTINGS_PATH}/tech/",
+    extend=False,
+    merge_with_history=False,
+    history_filename="postings_history.json",
+):
     """
     Compress multiple lists of postings into one list.
     If postings is a string, the list is read from a file.
@@ -194,15 +246,35 @@ def unify_postings(postings=None, folder_path=f"{RELATIVE_POSTINGS_PATH}/tech/",
     are filled in from newer entries. If extend=True, all versions are kept as a list
     per posting key, and global min/max dates are propagated to each version.
 
+    By default every JSON file in ``folder_path`` is unified. If
+    ``merge_with_history`` is True, only ``history_filename`` and the explicitly
+    supplied ``postings`` dictionary are merged.
+
     Parameters:
     postings (list | *): The list of postings to combine - or overwritten if not a list.
     folder_path (str): The directory path to load the files from.
     extend (bool): Whether to extend the values of duplicate keys.
+    merge_with_history (bool): Whether to merge only history plus ``postings``.
+    history_filename (str): History file to use in targeted merge mode.
 
     Returns:
     all_postings (dict): The combined list of postings.
     """
-    files = load_list_items(postings, folder_path=folder_path, type_="dict")
+    if merge_with_history:
+        if not history_filename:
+            raise ValueError("history_filename is required in targeted merge mode")
+        files = []
+        history_path = os.path.join(folder_path, history_filename)
+        if os.path.exists(history_path):
+            files.append(load_file_if_str(history_path, "dict"))
+        if postings is not None:
+            if isinstance(postings, str):
+                postings = load_file_if_str(postings, "dict")
+            if not isinstance(postings, dict):
+                raise TypeError("postings must be a dictionary or JSON file path")
+            files.append(postings)
+    else:
+        files = load_list_items(postings, folder_path=folder_path, type_="dict")
 
     all_postings = {}
     for postings_list in files:
