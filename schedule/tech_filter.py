@@ -13,7 +13,7 @@ from jobscraping.processing.transformations import (
 
 NEWLY_ADDED_FILE_PATH = f"{POSTINGS_PATH}/tech/newly_added_postings.json"
 CURRENT_FILE_PATH = f"{POSTINGS_PATH}/tech/current_postings.json"
-OUTPUT = "C:/GitHubRepo/REPOS/cv-automation/src/cvscripts/generation/"
+OUTPUT = "C:/GitHubRepo/REPOS/cv-automation/data/raw/postings/tech_filter/"
 
 title_keywords = [
     "data", "research", "python", "software", "developer", "graph", "network", "time",
@@ -87,6 +87,7 @@ def main(postings:dict=None, output_path:str=None, min_date:datetime=None,
         if not output_path.endswith('.json'):
             output_path = output_path + '/' if not output_path.endswith('/') else output_path
             output_path = os.path.join(output_path, f'filtered_postings_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json')
+        os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
         with open(output_path, 'w', encoding='utf-8') as f:
             json.dump(filtered_results, f, indent=4, ensure_ascii=False)
     return filtered_results

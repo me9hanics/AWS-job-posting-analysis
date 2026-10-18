@@ -48,6 +48,8 @@ SCROLL_DOWN_SCRIPT = "window.scrollTo(0, document.body.scrollHeight);" #scroll t
 SCROLL_1000_SCRIPT = "window.scrollTo(0, 1000);"
 CSS_SELECTOR = "css selector" #can use instead: from selenium.webdriver.common.by import By, then By.CSS_SELECTOR
 
+BUSINESS_DAY_SHIFT = 8 * 60 * 60  # 8 hours; converted to seconds
+
 def get_all_keywords(keywords=None):  # rankings = BASE_KEYWORD_SCORING
     """
     Returns union of keywords (as lists), non capitalized and capitalized.
@@ -98,7 +100,8 @@ class BaseScraper: #Make abstract?
         _time = time.time()
         self.time = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime(_time))
         self.day = self.time[:10]
-        self.business_day = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime(_time - 8*(60*60)))[:10] #8hrs shift
+        self.business_day = time.strftime("%Y-%m-%d-%H-%M-%S",
+                                               time.localtime(_time - BUSINESS_DAY_SHIFT))[:10] #time shift
 
         if rules is None:
             rules = deepcopy(BASE_RULES)
