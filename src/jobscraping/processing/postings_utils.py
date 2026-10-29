@@ -18,6 +18,20 @@ from jobscraping.processing.transformations import apply_filters_transformations
 from jobscraping.utils.datastruct_utils import sort_dict_by_key, get_nested_dict_keys
 
 
+CACHE_ALWAYS_FRESH_FIELDS = {"collected_on", "date", "isActive", "url"}
+INCOMPLETE_HISTORY_REPAIR_FIELDS = {
+    "company",
+    "description",
+    "keywords",
+    "language",
+    "points",
+}
+
+
+def _has_value(value):
+    return value is not None and value != "" and value != [] and value != {}
+
+
 def validate_cache_mode(cache_mode):
     """Validate the currently supported posting cache modes."""
     if cache_mode not in (None, "id-only"):
@@ -32,9 +46,12 @@ def split_cached_postings(
 ):
     """Split discovered postings into reusable cache hits and processing misses.
 
-    Freshly discovered fields override cached fields on hits. A custom predicate
-    receives ``(posting_id, fresh_posting, cached_posting)`` and can refine the
-    built-in ID-only policy, for example by allowing only selected sources.
+    Non-empty freshly discovered fields override cached fields on hits. Collection
+    metadata always comes from the fresh listing, while matched title words are
+    merged. A custom predicate receives
+    ``(posting_id, fresh_posting, cached_posting)`` and can refine the built-in
+    ID-only policy, for example by allowing only complete records from selected
+    sources.
     """
     validate_cache_mode(cache_mode)
     if cache_mode is None:
@@ -56,7 +73,12 @@ def split_cached_postings(
                     f"for {posting_id}"
                 )
             reused = deepcopy(cached_posting)
-            reused.update(deepcopy(posting))
+            for field, value in posting.items():
+                if field == "matched_titlewords":
+                    continue
+                if field in CACHE_ALWAYS_FRESH_FIELDS or _has_value(value):
+                    reused[field] = deepcopy(value)
+            merge_matched_titlewords(reused, posting)
             hits[posting_id] = reused
         else:
             misses[posting_id] = posting
@@ -291,20 +313,43 @@ def unify_postings(
                 all_postings[key]['last_collected_on'] = last_collected
             else:
                 if not extend:
+                    stored_posting = all_postings[key]
+                    stored_last = stored_posting.get('last_collected_on')
+                    incoming_is_not_older = (
+                        not stored_last
+                        or not last_collected
+                        or last_collected >= stored_last
+                    )
+                    repair_incomplete_history = (
+                        not stored_posting.get("description")
+                        and bool(value.get("description"))
+                        and incoming_is_not_older
+                    )
+
                     #Update missing fields
                     for col, row in value.items():
-                        if (col not in all_postings[key].keys()) or (not all_postings[key][col]):
-                            all_postings[key][col] = row
+                        if (col not in stored_posting.keys()) or (not stored_posting[col]):
+                            stored_posting[col] = row
+
+                    # A previously incomplete record may contain non-empty but
+                    # invalid derived values, such as a title-only score. Replace
+                    # those fields when a complete newer version is collected.
+                    if repair_incomplete_history:
+                        for col in INCOMPLETE_HISTORY_REPAIR_FIELDS:
+                            if col in value and (
+                                col != "company" or _has_value(value[col])
+                            ):
+                                stored_posting[col] = deepcopy(value[col])
 
                     #Merge matched_titlewords so duplicates keep all titleword hits
                     merge_matched_titlewords(all_postings[key], value)
                     
-                    stored_first = all_postings[key].get('first_collected_on')
+                    stored_first = stored_posting.get('first_collected_on')
                     if first_collected:
                         if not stored_first or first_collected < stored_first:
                             all_postings[key]['first_collected_on'] = first_collected
                     
-                    stored_last = all_postings[key].get('last_collected_on')
+                    stored_last = stored_posting.get('last_collected_on')
                     if last_collected:
                         if not stored_last or last_collected > stored_last:
                             all_postings[key]['last_collected_on'] = last_collected
