@@ -55,6 +55,65 @@ def reorder_locations(locations, primary=configs.LOCATIONS_DESIRED):
     return first_locs + other_locs
 
 
+def validate_postings_quality(
+    postings,
+    previous_postings=None,
+    required_fields_by_source=None,
+    minimum_source_retention=None,
+    verbose=False,
+):
+    """Raise before saving when configured source-level quality checks fail."""
+    previous_postings = previous_postings or {}
+    required_fields_by_source = required_fields_by_source or {}
+    minimum_source_retention = minimum_source_retention or {}
+    sources = set(required_fields_by_source) | set(minimum_source_retention)
+    reports = []
+    failures = []
+
+    for source in sorted(sources):
+        source_postings = [
+            posting
+            for posting in postings.values()
+            if posting.get("source") == source
+        ]
+        field_counts = {
+            field: sum(not posting.get(field) for posting in source_postings)
+            for field in required_fields_by_source.get(source, ())
+        }
+        field_report = ", ".join(
+            f"{field}={count}" for field, count in field_counts.items()
+        )
+        if field_report:
+            reports.append(f"{source}: {field_report}")
+        if any(field_counts.values()):
+            failures.append(f"{source}: {field_report}")
+
+        minimum_retention = minimum_source_retention.get(source)
+        if minimum_retention is not None:
+            previous_count = sum(
+                posting.get("source") == source
+                for posting in previous_postings.values()
+            )
+            current_count = len(source_postings)
+            if previous_count:
+                retention = current_count / previous_count
+                retention_report = (
+                    f"{source}: retained {current_count}/{previous_count} "
+                    f"({retention:.1%})"
+                )
+                reports.append(retention_report)
+                if retention < minimum_retention:
+                    failures.append(retention_report)
+
+    if verbose and reports:
+        print("Posting quality: " + "; ".join(reports))
+    if failures:
+        raise ValueError(
+            "Posting quality gate failed; no output files were written: "
+            + "; ".join(failures)
+        )
+
+
 def scrape_sites(
     scrapers: List[Type[sites.BaseScraper]] = SCRAPERS,
     keywords=KEYWORDS,
@@ -117,6 +176,8 @@ def get_postings(
     postings_history_filename=POSTINGS_HISTORY_FILENAME,
     cache_mode=None,
     cache_hit_predicate=None,
+    required_fields_by_source=None,
+    minimum_source_retention=None,
     **kwargs,
 ):
     """Collect, store, and return postings artifacts."""
@@ -125,6 +186,12 @@ def get_postings(
         current_postings_filename,
         newly_added_postings_filename,
         postings_history_filename,
+    )
+    current_path = f"{path}{current_postings_filename}"
+    previous_current_postings = (
+        files_io.load_file_if_str(current_path, "dict")
+        if current_postings_filename and os.path.exists(current_path)
+        else {}
     )
     postings_utils.validate_cache_mode(cache_mode)
     cached_postings = {}
@@ -147,6 +214,13 @@ def get_postings(
         cache_mode=cache_mode,
         cache_hit_predicate=cache_hit_predicate,
         **kwargs,
+    )
+    validate_postings_quality(
+        results,
+        previous_postings=previous_current_postings,
+        required_fields_by_source=required_fields_by_source,
+        minimum_source_retention=minimum_source_retention,
+        verbose=verbose,
     )
     results = datastruct_utils.reorder_dict(results, col_order, nested=True)
     results = {k: v for k, v in sorted(results.items(), key=lambda item: item[1]["points"], reverse=True)}

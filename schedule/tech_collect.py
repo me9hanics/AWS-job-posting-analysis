@@ -30,6 +30,14 @@ def get_tech_postings(keywords=BASE_PHRASES, rankings=BASE_KEYWORD_SCORING, sala
     dict: A dictionary containing the results, added and removed postings, and companies.
     """
     kwargs['raiffeisen_extra_titlewords'] = kwargs.get('raiffeisen_extra_titlewords', ["machine", "engineer", "developer", "scientist", "quantitative"])
+    kwargs["required_fields_by_source"] = kwargs.get(
+        "required_fields_by_source",
+        {"karriere.at": ("description", "company")},
+    )
+    kwargs["minimum_source_retention"] = kwargs.get(
+        "minimum_source_retention",
+        {"karriere.at": 0.5},
+    )
     data = get_postings(
         keywords=keywords, 
         rankings=rankings, 

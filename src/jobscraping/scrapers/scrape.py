@@ -333,6 +333,9 @@ def requests_responses_with_cookies(
     timeout=None,
     verbose=False,
     stop_condition=None,
+    continue_on_http_error=False,
+    retry_http_statuses=(429, 500, 502, 503, 504),
+    raise_on_retry_failure=False,
 ):  # pylint: disable=too-many-arguments,too-many-locals,too-many-branches,too-many-statements
     """
     Make HTTP requests with cookie persistence, timeout, retry, and backoff logic.
@@ -349,6 +352,9 @@ def requests_responses_with_cookies(
         timeout: Request timeout in seconds (default: DEFAULT_REQUEST_TIMEOUT)
         verbose: Print status messages
         stop_condition: Optional callable that stops pagination after a successful response
+        continue_on_http_error: Continue with later pages after a non-retryable error
+        retry_http_statuses: HTTP statuses to retry once with an extended timeout
+        raise_on_retry_failure: Raise instead of returning partial data after a failed retry
 
     Returns:
         List of responses or BeautifulSoup objects
@@ -400,8 +406,19 @@ def requests_responses_with_cookies(
         try:
             response = session.get(url, headers=headers, timeout=timeout)
             if response.status_code != 200:
+                if response.status_code in retry_http_statuses:
+                    retry_later.append((page, len(responses)))
+                    if verbose:
+                        print(
+                            f"Will retry page {page}, error: {response.status_code}"
+                        )
+                    if continue_on_http_error:
+                        continue
+                    break
                 if verbose:
                     print(f"Stopped at page {page}, error: {response.status_code}")
+                if continue_on_http_error:
+                    continue
                 break
             responses.append(response)
             consecutive_failures = 0  # Reset on success
@@ -435,6 +452,7 @@ def requests_responses_with_cookies(
                 f"Retrying {len(retry_later)} failed requests with extended timeout..."
             )
         retry_responses = []
+        retry_failures = []
         for page, original_idx in retry_later:
             url = base_url + str(page)
             path = base_path + str(page)
@@ -450,11 +468,13 @@ def requests_responses_with_cookies(
                     for cookie in response.cookies:
                         session.cookies.set(cookie.name, cookie.value)
                 else:
+                    retry_failures.append((page, response.status_code))
                     if verbose:
                         print(
                             f"Retry got status {response.status_code} for page {page}"
                         )
             except (Timeout, RequestException) as error:
+                retry_failures.append((page, type(error).__name__))
                 if verbose:
                     print(
                         f"Retry failed for page {page}: {type(error).__name__} - {error}"
@@ -465,6 +485,12 @@ def requests_responses_with_cookies(
             retry_responses, key=lambda x: x[0], reverse=True
         ):
             responses.insert(original_idx, response)
+
+        if retry_failures and raise_on_retry_failure:
+            failures = ", ".join(
+                f"{page} ({reason})" for page, reason in retry_failures
+            )
+            raise RuntimeError(f"HTTP retries failed for: {failures}")
 
     if return_kind == "responses":
         return responses

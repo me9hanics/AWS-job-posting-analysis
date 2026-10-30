@@ -10,7 +10,7 @@ from jobscraping.processing.postings_utils import split_cached_postings, unify_p
 from jobscraping.scrapers import scrape
 from jobscraping.scrapers.sites import KarriereAT
 from schedule.dani_collect import dani_cache_hit_by_id
-from schedule import legal_collect, tech_collect, tn_collect
+from schedule import dani_collect, legal_collect, tech_collect, tn_collect
 
 
 class _FakeResponse:
@@ -48,10 +48,90 @@ class IncrementalCollectionTests(unittest.TestCase):
         self.assertEqual(len(calls), 2)
         self.assertEqual(collected, responses[:2])
 
+    def test_requests_with_cookies_retries_transient_http_status(self):
+        responses = [
+            _FakeResponse({}, status_code=504),
+            _FakeResponse({"items": [1]}),
+        ]
+        calls = []
+
+        class _Session:
+            cookies = SimpleNamespace(set=lambda *_args: None)
+
+            def get(self, url, headers, timeout):
+                calls.append((url, timeout))
+                return responses[len(calls) - 1]
+
+        with patch.object(scrape.requests, "Session", _Session):
+            collected = scrape.requests_responses_with_cookies(
+                base_url="https://example.test/jobs",
+                pages=["?page=1"],
+                base_path="/jobs",
+                wait_time=0,
+            )
+
+        self.assertEqual(len(calls), 2)
+        self.assertEqual(collected, responses[1:])
+
+    def test_requests_with_cookies_can_continue_after_non_retryable_error(self):
+        responses = [
+            _FakeResponse({}, status_code=404),
+            _FakeResponse({"items": [2]}),
+        ]
+        calls = []
+
+        class _Session:
+            cookies = SimpleNamespace(set=lambda *_args: None)
+
+            def get(self, url, headers, timeout):
+                calls.append(url)
+                return responses[len(calls) - 1]
+
+        with patch.object(scrape.requests, "Session", _Session):
+            collected = scrape.requests_responses_with_cookies(
+                base_url="https://example.test/jobs",
+                pages=["/1", "/2"],
+                base_path="/jobs",
+                wait_time=0,
+                continue_on_http_error=True,
+            )
+
+        self.assertEqual(len(calls), 2)
+        self.assertEqual(collected, responses[1:])
+
+    def test_requests_with_cookies_raises_after_transient_retry_fails(self):
+        responses = [
+            _FakeResponse({}, status_code=504),
+            _FakeResponse({}, status_code=504),
+        ]
+        calls = []
+
+        class _Session:
+            cookies = SimpleNamespace(set=lambda *_args: None)
+
+            def get(self, url, headers, timeout):
+                calls.append(url)
+                return responses[len(calls) - 1]
+
+        with (
+            patch.object(scrape.requests, "Session", _Session),
+            self.assertRaisesRegex(RuntimeError, "504"),
+        ):
+            scrape.requests_responses_with_cookies(
+                base_url="https://example.test/jobs",
+                pages=["?page=1"],
+                base_path="/jobs",
+                wait_time=0,
+                raise_on_retry_failure=True,
+            )
+
+        self.assertEqual(len(calls), 2)
+
     def test_id_only_cache_uses_fresh_listing_fields_and_cached_processed_fields(self):
         discovered = {
             "site-1": {
                 "title": "Fresh title",
+                "company": "",
                 "locations": ["Vienna"],
                 "collected_on": "2026-09-29",
             },
@@ -60,6 +140,7 @@ class IncrementalCollectionTests(unittest.TestCase):
         cached = {
             "site-1": {
                 "title": "Old title",
+                "company": "Cached company",
                 "locations": ["Old location"],
                 "description": "Cached description",
                 "keywords": ["cached"],
@@ -75,6 +156,7 @@ class IncrementalCollectionTests(unittest.TestCase):
 
         self.assertEqual(misses, {"site-2": {"title": "New posting"}})
         self.assertEqual(hits["site-1"]["title"], "Fresh title")
+        self.assertEqual(hits["site-1"]["company"], "Cached company")
         self.assertEqual(hits["site-1"]["locations"], ["Vienna"])
         self.assertEqual(hits["site-1"]["description"], "Cached description")
         self.assertEqual(hits["site-1"]["keywords"], ["cached"])
@@ -100,7 +182,22 @@ class IncrementalCollectionTests(unittest.TestCase):
             dani_cache_hit_by_id(
                 "karriere.at1",
                 {"source": "karriere.at"},
-                {"description": "Cached"},
+                {
+                    "title": "Cached title",
+                    "company": "Cached company",
+                    "description": "Cached description",
+                },
+            )
+        )
+        self.assertFalse(
+            dani_cache_hit_by_id(
+                "karriere.at1",
+                {"source": "karriere.at"},
+                {
+                    "title": "Cached title",
+                    "company": "Cached company",
+                    "description": "",
+                },
             )
         )
         self.assertFalse(
@@ -113,6 +210,7 @@ class IncrementalCollectionTests(unittest.TestCase):
 
     def test_profile_entrypoints_forward_their_cache_policy(self):
         policies = [
+            (dani_collect, dani_collect.get_dani_postings, "id-only"),
             (tn_collect, tn_collect.get_tn_postings, "id-only"),
             (legal_collect, legal_collect.get_legal_postings, None),
             (tech_collect, tech_collect.get_tech_postings, None),
@@ -138,13 +236,25 @@ class IncrementalCollectionTests(unittest.TestCase):
 
                 self.assertIn("cache_mode", received)
                 self.assertEqual(received["cache_mode"], expected_mode)
+                self.assertEqual(
+                    received["required_fields_by_source"],
+                    {"karriere.at": ("description", "company")},
+                )
+                self.assertEqual(
+                    received["minimum_source_retention"],
+                    {"karriere.at": 0.5},
+                )
 
     def test_tn_id_cache_is_limited_to_karriere(self):
         self.assertTrue(
             tn_collect.tn_cache_hit_by_id(
                 "karriere.at1",
                 {"source": "karriere.at"},
-                {"description": "Cached"},
+                {
+                    "title": "Cached title",
+                    "company": "Cached company",
+                    "description": "Cached description",
+                },
             )
         )
         self.assertFalse(
@@ -256,6 +366,62 @@ class IncrementalCollectionTests(unittest.TestCase):
         self.assertEqual(results["karriere.at2"]["description"], "New description")
         self.assertEqual(results["karriere.at2"]["points"], 1)
 
+    def test_karriere_does_not_process_listing_when_detail_is_missing(self):
+        search_payload = {
+            "data": {
+                "jobsSearchList": {
+                    "activeItems": {
+                        "items": [
+                            {
+                                "jobsItem": {
+                                    "id": 1,
+                                    "title": "Incomplete posting",
+                                    "company": {"name": "Company"},
+                                    "locations": [{"name": "Vienna"}],
+                                    "salary": "",
+                                    "isActive": True,
+                                    "isHomeOffice": False,
+                                    "employmentTypes": [],
+                                    "link": "https://www.karriere.at/jobs/1",
+                                    "snippet": "Snippet",
+                                    "date": "2026-10-21",
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+        request_count = 0
+
+        def _requests_with_cookies(*_args, **_kwargs):
+            nonlocal request_count
+            request_count += 1
+            return [_FakeResponse(search_payload)] if request_count == 1 else []
+
+        scraper = KarriereAT(
+            driver="",
+            keywords={
+                "titlewords": ["sales"],
+                "locations": ["vienna"],
+                "banned_words": [],
+                "banned_capital_words": [],
+                "description_keywords_order": [],
+            },
+            rankings={},
+        )
+
+        with (
+            patch.object(scrape, "requests_responses_with_cookies", _requests_with_cookies),
+            patch.object(scraper, "_process_data", return_value={}) as process_data,
+        ):
+            results = scraper.gather_data(descriptions=True)
+
+        self.assertEqual(results, {})
+        process_data.assert_called_once_with(
+            {}, transformations=[], description_key="description"
+        )
+
     def test_unify_postings_can_target_history_and_current_only(self):
         history = {
             "old": {
@@ -275,7 +441,7 @@ class IncrementalCollectionTests(unittest.TestCase):
                 "collected_on": "2026-09-29",
             }
         }
-        with tempfile.TemporaryDirectory() as temp_dir:
+        with tempfile.TemporaryDirectory(dir=Path(__file__).parent) as temp_dir:
             temp_path = Path(temp_dir)
             (temp_path / "postings_history.json").write_text(
                 json.dumps(history), encoding="utf-8"
@@ -293,6 +459,51 @@ class IncrementalCollectionTests(unittest.TestCase):
 
         self.assertEqual(set(all_files), {"old", "unrelated"})
         self.assertEqual(set(targeted), {"old", "new"})
+
+    def test_unify_postings_repairs_derived_fields_of_incomplete_history(self):
+        history = {
+            "karriere.at1": {
+                "title": "Posting",
+                "company": "Company",
+                "description": "",
+                "keywords": [],
+                "language": None,
+                "points": 0.5,
+                "collected_on": "2026-10-20",
+                "first_collected_on": "2026-10-20",
+                "last_collected_on": "2026-10-20",
+            }
+        }
+        repaired = {
+            "karriere.at1": {
+                "title": "Posting",
+                "company": "Company",
+                "description": "Complete description",
+                "keywords": ["sales"],
+                "language": "en",
+                "points": 4.5,
+                "collected_on": "2026-10-21",
+            }
+        }
+
+        with tempfile.TemporaryDirectory(dir=Path(__file__).parent) as temp_dir:
+            temp_path = Path(temp_dir)
+            (temp_path / "postings_history.json").write_text(
+                json.dumps(history), encoding="utf-8"
+            )
+            merged = unify_postings(
+                postings=repaired,
+                folder_path=str(temp_path),
+                merge_with_history=True,
+            )
+
+        posting = merged["karriere.at1"]
+        self.assertEqual(posting["description"], "Complete description")
+        self.assertEqual(posting["keywords"], ["sales"])
+        self.assertEqual(posting["language"], "en")
+        self.assertEqual(posting["points"], 4.5)
+        self.assertEqual(posting["first_collected_on"], "2026-10-20")
+        self.assertEqual(posting["last_collected_on"], "2026-10-21")
 
     def test_get_postings_loads_history_before_scraping_when_cache_is_enabled(self):
         cached = {
@@ -317,7 +528,7 @@ class IncrementalCollectionTests(unittest.TestCase):
             received.update(kwargs)
             return current
 
-        with tempfile.TemporaryDirectory() as temp_dir:
+        with tempfile.TemporaryDirectory(dir=Path(__file__).parent) as temp_dir:
             temp_path = Path(temp_dir)
             (temp_path / "postings_history.json").write_text(
                 json.dumps(cached), encoding="utf-8"
@@ -333,6 +544,62 @@ class IncrementalCollectionTests(unittest.TestCase):
 
         self.assertEqual(received["cached_postings"], cached)
         self.assertEqual(received["cache_mode"], "id-only")
+
+    def test_quality_gate_prevents_any_output_overwrite(self):
+        incomplete = {
+            "karriere.at1": {
+                "title": "Posting",
+                "company": "Company",
+                "description": "",
+                "locations": ["Vienna"],
+                "source": "karriere.at",
+                "points": 1,
+                "collected_on": "2026-10-21",
+            }
+        }
+
+        with tempfile.TemporaryDirectory(dir=Path(__file__).parent) as temp_dir:
+            temp_path = Path(temp_dir)
+            for filename in (
+                "current_postings.json",
+                "newly_added_postings.json",
+                "postings_history.json",
+            ):
+                (temp_path / filename).write_text("{}", encoding="utf-8")
+
+            with (
+                patch.object(collecting, "scrape_sites", return_value=incomplete),
+                patch.object(collecting.files_io, "save_data") as save_data,
+                self.assertRaisesRegex(ValueError, "description=1"),
+            ):
+                collecting.get_postings(
+                    keywords={"titlewords": []},
+                    rankings={},
+                    path=f"{temp_path}/",
+                    threshold=None,
+                    required_fields_by_source={
+                        "karriere.at": ("description", "company")
+                    },
+                )
+
+        save_data.assert_not_called()
+
+    def test_quality_gate_rejects_large_source_count_drop(self):
+        previous = {
+            f"karriere.at{index}": {"source": "karriere.at"}
+            for index in range(10)
+        }
+        current = {
+            f"karriere.at{index}": {"source": "karriere.at"}
+            for index in range(4)
+        }
+
+        with self.assertRaisesRegex(ValueError, "retained 4/10"):
+            collecting.validate_postings_quality(
+                current,
+                previous_postings=previous,
+                minimum_source_retention={"karriere.at": 0.5},
+            )
 
 
 if __name__ == "__main__":

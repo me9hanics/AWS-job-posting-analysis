@@ -48,6 +48,8 @@ SCROLL_DOWN_SCRIPT = "window.scrollTo(0, document.body.scrollHeight);" #scroll t
 SCROLL_1000_SCRIPT = "window.scrollTo(0, 1000);"
 CSS_SELECTOR = "css selector" #can use instead: from selenium.webdriver.common.by import By, then By.CSS_SELECTOR
 
+BUSINESS_DAY_SHIFT = 8 * 60 * 60  # 8 hours; converted to seconds
+
 def get_all_keywords(keywords=None):  # rankings = BASE_KEYWORD_SCORING
     """
     Returns union of keywords (as lists), non capitalized and capitalized.
@@ -98,7 +100,8 @@ class BaseScraper: #Make abstract?
         _time = time.time()
         self.time = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime(_time))
         self.day = self.time[:10]
-        self.business_day = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime(_time - 8*(60*60)))[:10] #8hrs shift
+        self.business_day = time.strftime("%Y-%m-%d-%H-%M-%S",
+                                               time.localtime(_time - BUSINESS_DAY_SHIFT))[:10] #time shift
 
         if rules is None:
             rules = deepcopy(BASE_RULES)
@@ -600,6 +603,7 @@ class KarriereAT(BaseScraper):
                                        },
                                        return_kind='responses',
                                        stop_condition=_search_page_has_no_postings,
+                                       raise_on_retry_failure=True,
                                        verbose=verbose)
             if responses:
                 for response in responses:
@@ -660,6 +664,8 @@ class KarriereAT(BaseScraper):
                                            "X-Requested-With": "XMLHttpRequest",
                                        },
                                        return_kind='responses',
+                                       continue_on_http_error=True,
+                                       raise_on_retry_failure=True,
                                        verbose=verbose)
             if responses:
                 for response in responses:
@@ -674,6 +680,22 @@ class KarriereAT(BaseScraper):
                     else:
                         if verbose:
                             print(f"Could not find id {_id} in saved postings - likely programming error")
+
+            incomplete_ids = [
+                posting_id
+                for posting_id, posting in postings.items()
+                if not posting.get("description")
+            ]
+            if incomplete_ids and verbose:
+                print(
+                    "Skipped "
+                    f"{len(incomplete_ids)} Karriere postings without descriptions"
+                )
+            postings = {
+                posting_id: posting
+                for posting_id, posting in postings.items()
+                if posting_id not in incomplete_ids
+            }
 
         postings = self._process_data(postings, transformations=transformations, description_key=description_key)
         postings = {**cached_hits, **postings}
