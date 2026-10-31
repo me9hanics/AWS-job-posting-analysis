@@ -1,5 +1,4 @@
 import os
-import sys
 import time
 
 from jobscraping.config.configs import (
@@ -11,6 +10,7 @@ from jobscraping.config.configs import (
     SALARY_BEARABLE,
 )
 from jobscraping.io.outputs import generate_outputs, log_to_markdown
+from jobscraping.pipelines.cli import parse_collection_args
 from jobscraping.pipelines.collecting import get_postings
 
 
@@ -63,18 +63,15 @@ def get_tech_postings(keywords=BASE_PHRASES, rankings=BASE_KEYWORD_SCORING, sala
     return data
 
 def main():
+    args = parse_collection_args()
     print("Collecting tech job postings...")
     start_time = time.time()
-    highlight_days = None
-    if len(sys.argv) > 1:
-        arg = sys.argv[1].strip()
-        if arg.lstrip("-").isdigit():
-            highlight_days = abs(int(arg))
     data = get_tech_postings(
         keywords=BASE_PHRASES, 
         rankings=BASE_KEYWORD_SCORING,
         salary_bearable=SALARY_BEARABLE,
-        highlight_first_collected_days=highlight_days,
+        highlight_first_collected_days=args.excel_days,
+        date_day=args.date_day,
         verbose=True,
     )
     elapsed_time = time.time() - start_time

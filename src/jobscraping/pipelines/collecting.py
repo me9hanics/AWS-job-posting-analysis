@@ -124,12 +124,14 @@ def scrape_sites(
     cached_postings=None,
     cache_mode=None,
     cache_hit_predicate=None,
+    date_day=None,
     **kwargs,
 ):
-    """Scrape postings from the configured scraper classes."""
+    """Scrape postings, optionally overriding their collection date with date_day (YYYY-MM-DD)."""
     results = {}
     for scraper_class in scrapers:
         scraper = scraper_class(
+            date_day=date_day,
             keywords=keywords,
             rankings=rankings,
             salary_bearable=salary_bearable,
