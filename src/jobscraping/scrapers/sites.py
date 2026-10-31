@@ -4,6 +4,7 @@ import json
 import re
 import time
 from copy import deepcopy
+from datetime import date
 from typing import Callable, List, Tuple
 
 from bs4 import BeautifulSoup
@@ -89,6 +90,7 @@ class BaseScraper: #Make abstract?
         locations_desired=None,
         locations_secondary=None,
         transformations=None,
+        date_day=None,
     ):
         if driver is None:
             if webdriver is None:
@@ -100,8 +102,11 @@ class BaseScraper: #Make abstract?
         _time = time.time()
         self.time = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime(_time))
         self.day = self.time[:10]
-        self.business_day = time.strftime("%Y-%m-%d-%H-%M-%S",
-                                               time.localtime(_time - BUSINESS_DAY_SHIFT))[:10] #time shift
+        self.business_day = (
+            date.fromisoformat(date_day).isoformat()
+            if date_day is not None
+            else time.strftime("%Y-%m-%d", time.localtime(_time - BUSINESS_DAY_SHIFT))
+        )
 
         if rules is None:
             rules = deepcopy(BASE_RULES)
@@ -483,6 +488,7 @@ class KarriereAT(BaseScraper):
         locations_desired=None,
         locations_secondary=None,
         transformations=None,
+        date_day=None,
     ):
         """
         If Selenium is used, the driver argument should be None or a previously opened driver
@@ -534,7 +540,7 @@ class KarriereAT(BaseScraper):
                  extra_locations=extra_locations, salary_bearable=salary_bearable,
                  locations=locations, locations_desired=locations_desired,
                  locations_secondary=locations_secondary,
-                 transformations = transformations)
+                 transformations = transformations, date_day=date_day)
 
     def _salary_from_text(self, text, keywords=None, clarity_comma_char=".",
                           decimal_separator=",", conversion_rate=14):
@@ -719,6 +725,7 @@ class Raiffeisen(BaseScraper):
         locations_desired=None,
         locations_secondary=None,
         transformations=None,
+        date_day=None,
     ):
         if rules is None:
             rules = deepcopy(BASE_RULES)
@@ -761,7 +768,7 @@ class Raiffeisen(BaseScraper):
                          extra_keywords = extra_keywords, extra_titlewords=extra_titlewords,
                          extra_locations=extra_locations, salary_bearable=salary_bearable, locations=locations,
                          locations_desired=locations_desired, locations_secondary=locations_secondary, 
-                         transformations = transformations)
+                         transformations = transformations, date_day=date_day)
 
     def _construct_page_urls(self, base_url = None, titlewords = None):
         if base_url is None:
