@@ -5,6 +5,11 @@
 data/*
 config.txt
 outdated*
+schedule/*
+!schedule/regexes.py
+!schedule/tech_collect.py
+!schedule/tech_filter.py
+notes/raw/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
