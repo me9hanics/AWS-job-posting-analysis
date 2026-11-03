@@ -234,9 +234,11 @@ def score_text_nested(text: str, rules: dict) -> float:
         if isinstance(value, dict):
             if "patterns" in value:
                 flags = value.get("flags", 0)
+                matches = []
                 for pattern, pts in value["patterns"].items():
                     if re.search(pattern, text, flags=flags):
-                        score += pts
+                        matches.append(pts)
+                score += max(matches, default=0) if value.get("aggregation") == "max" else sum(matches)
             else:
                 #Check nested dict
                 score += score_text_nested(text, value)

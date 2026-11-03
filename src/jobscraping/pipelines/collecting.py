@@ -125,6 +125,7 @@ def scrape_sites(
     cache_mode=None,
     cache_hit_predicate=None,
     date_day=None,
+    process=True,
     **kwargs,
 ):
     """Scrape postings, optionally overriding their collection date with date_day (YYYY-MM-DD)."""
@@ -147,6 +148,8 @@ def scrape_sites(
             "descriptions": True,
             "verbose": verbose_data_gathering,
         }
+        if not process:
+            gather_kwargs["process"] = False
         if cache_mode is not None:
             gather_kwargs.update(
                 cached_postings=cached_postings,
