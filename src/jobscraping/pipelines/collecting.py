@@ -60,13 +60,16 @@ def validate_postings_quality(
     previous_postings=None,
     required_fields_by_source=None,
     minimum_source_retention=None,
+    minimum_field_completeness_by_source=None,
     verbose=False,
 ):
     """Raise before saving when configured source-level quality checks fail."""
     previous_postings = previous_postings or {}
     required_fields_by_source = required_fields_by_source or {}
     minimum_source_retention = minimum_source_retention or {}
-    sources = set(required_fields_by_source) | set(minimum_source_retention)
+    minimum_field_completeness_by_source = minimum_field_completeness_by_source or {}
+    sources = (set(required_fields_by_source) | set(minimum_source_retention)
+               | set(minimum_field_completeness_by_source))
     reports = []
     failures = []
 
@@ -85,7 +88,16 @@ def validate_postings_quality(
         )
         if field_report:
             reports.append(f"{source}: {field_report}")
-        if any(field_counts.values()):
+        failed_fields = {
+            field: count
+            for field, count in field_counts.items()
+            if count and (
+                field not in minimum_field_completeness_by_source.get(source, {})
+                or (len(source_postings) - count) / len(source_postings)
+                < minimum_field_completeness_by_source[source][field]
+            )
+        }
+        if failed_fields:
             failures.append(f"{source}: {field_report}")
 
         minimum_retention = minimum_source_retention.get(source)
