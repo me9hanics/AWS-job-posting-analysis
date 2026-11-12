@@ -14,6 +14,7 @@ from jobscraping.processing.attributes import (
     rank_postings,
     salary_from_text,
 )
+from jobscraping.processing.language_requirements import guess_required_languages
 from jobscraping.processing.transformations import apply_filters_transformations as apply_filters_transformations_func
 from jobscraping.utils.datastruct_utils import sort_dict_by_key, get_nested_dict_keys
 
@@ -444,6 +445,10 @@ def process_data(
     postings = filter_method(postings, banned_words=banned_words,
                              banned_capital_words=banned_capital_words, **kwargs)
     postings = language_analysis_method(postings, description_key=description_key, **kwargs)
+    for posting in postings.values():
+        posting["guessed_required_languages"] = guess_required_languages(
+            f"{posting.get('title', '')}\n{posting.get(description_key, '')}"
+        )
     postings = rank_method(postings, **kwargs)
     postings = keyword_finding_method(postings, description_key=description_key, **kwargs)
     postings = apply_filters_transformations(postings, transformations=transformations, **kwargs)

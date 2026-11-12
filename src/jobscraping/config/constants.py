@@ -15,7 +15,7 @@ CONSECUTIVE_FAILURES_THRESHOLD = 2  # number of consecutive failures before back
 
 COLUMN_ORDER = ["title", "company",  "salary_monthly_guessed",
                 "locations", "keywords", "matched_titlewords",
-                "points", "url", "language",
+                "points", "url", "language", "guessed_required_languages",
                 "snippet", "description", "salary",
                 "employmentTypes", "salary_guessed",
                 "collected_on", "date", "id", "isHomeOffice", "isActive", "source"]
@@ -29,7 +29,9 @@ EXCEL_COLUMNS = {
     'isHomeOffice': {'as': 'HomeOffice', 'column': 'G', 'width': 6},
     'points': {'as': 'Points', 'column': 'H', 'width': 6},
     'first_collected_on': {'as': 'First date', 'column': 'I', 'width': 12},
-    'description': {'as': 'Description', 'column': 'J', 'width': 114}
+    'language': {'as': 'Language', 'column': 'J', 'width': 6},
+    'guessed_required_languages': {'as': 'Guessed required languages', 'column': 'K', 'width': 28},
+    'description': {'as': 'Description', 'column': 'L', 'width': 114}
 }
 CURRENT_POSTINGS_FILENAME = "current_postings.json"
 NEWLY_ADDED_POSTINGS_FILENAME = "newly_added_postings.json"

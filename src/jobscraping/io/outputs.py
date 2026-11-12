@@ -81,6 +81,13 @@ def generate_outputs(
         excel_cols = EXCEL_COLUMNS
 
     df = pd.DataFrame.from_dict(results, orient='index')
+    if 'guessed_required_languages' in df.columns:
+        df['guessed_required_languages'] = df['guessed_required_languages'].apply(
+            lambda languages: '; '.join(
+                f"{language}: {requirement}"
+                for language, requirement in languages.items()
+            ) if isinstance(languages, dict) else languages
+        )
     for col, vals in excel_cols.items():
         if col not in df.columns:
             df[col] = ""

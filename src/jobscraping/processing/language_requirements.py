@@ -26,6 +26,8 @@ PROFICIENCIES = (
     ("very_good", r"\b(?:very good|excellent|proficient|sehr gut\w*|ausgezeichnet\w*|hervorragend\w*)\b"),
     ("good", r"\b(?:good|gut\w*)\b"),
 )
+LANGUAGE_NAMES = {"de": "German", "en": "English"}
+LEVEL_ORDER = ("A1", "A2", "B1", "B2", "C1", "C2")
 OPTIONAL = re.compile(r"\b(?:optional|desirable|preferred|advantage\w*|plus|nice[- ]to[- ]have|von vorteil|wünschenswert|erwünscht|idealerweise)\b", re.I)
 UNNECESSARY = re.compile(r"\b(?:no|not|kein\w*|nicht)\b.{0,45}\b(?:required|necessary|requirement|erforderlich|notwendig|vorausgesetzt)\b", re.I)
 REQUIRED = re.compile(r"\b(?:required|requirement\w*|must|essential|mandatory|erforderlich\w*|voraussetz\w*|notwendig|benötig\w*|bring\w*|verfüg\w*)\b", re.I)
@@ -86,3 +88,26 @@ def extract_language_requirements(text: str) -> list[LanguageEvidence]:
                     status = "unknown"
                 evidence.append(LanguageEvidence(language, clause, status, levels, proficiency))
     return evidence
+
+
+def guess_required_languages(text: str) -> dict[str, str]:
+    """Return the strongest stated German/English requirement, German first."""
+    guesses = {}
+    for language in ("de", "en"):
+        required = [
+            evidence for evidence in extract_language_requirements(text)
+            if evidence.language == language and evidence.status == "required"
+        ]
+        if not required:
+            continue
+        levels = [level for evidence in required for level in evidence.levels]
+        if levels:
+            guesses[LANGUAGE_NAMES[language]] = max(levels, key=LEVEL_ORDER.index)
+            continue
+        proficiency = next(
+            (name for name in ("native", "fluent", "very_good", "good")
+             if any(evidence.proficiency == name for evidence in required)),
+            None,
+        )
+        guesses[LANGUAGE_NAMES[language]] = proficiency or "required"
+    return guesses
