@@ -16,12 +16,14 @@ messages and notes. Tick a task only when its "Done when" line is true.
 - Do not start a task whose "Depends on" task is not done.
 - When a task changes a design assumption, update the corresponding document in
   the same change; do not leave the backlog as the only source of truth.
+- The per-task ticket set is in [tickets/README.md](tickets/README.md), grouped
+  by milestone. A task is closed in both places in the same change.
 
 ## Order at a glance
 
 | Phase | Tasks | Theme |
 | --- | --- | --- |
-| 0 | B01–B05 | Baseline, portability, characterization tests |
+| 0 | B01–B05 (incl. B02a) | Baseline, portability, characterization tests |
 | 1 | B06–B10 | Data specs and the step contract |
 | 2 | B11–B15 | Collapse duplicate scrapers |
 | 3 | B16–B18 | Split HTTP and browser mechanics |
@@ -48,7 +50,7 @@ in parallel with B03–B05 once B02 is done.
 
 | Milestone | Tasks | Outcome |
 | --- | --- | --- |
-| M1 — Safe baseline | B01–B05 | Tests lock current data rules; paths are portable; site parsing has fixtures |
+| M1 — Safe baseline | B01–B05 (incl. B02a) | Tests lock current data rules; paths are portable; site parsing has fixtures; records say when material last changed |
 | M2 — Contracts | B06–B10 | Specs and the step shape exist, with no runtime change |
 | M3 — One scraper per site | B11–B18 | No duplicate classes; HTTP and browser mechanics separated |
 | M4 — Collector | B19–B25 | Multi-step adapters run through `run_collection`, with chunks and a report |
@@ -121,6 +123,32 @@ rg "class BaseScraper|class KarriereAT|class Raiffeisen" src
   - the command passes from a clean `uv run` without manual `PYTHONPATH`;
   - the baseline names the command and the pass count.
 - Note: at review time, 54 tests passed with this command.
+
+### B02a — Add a real `last_modified_on` field
+
+- Depends on: B04
+- Size: M
+- Files: `processing/postings_utils.py`, `pipelines/store_universal.py`,
+  `config/constants.py`, `tests/test_data_rules.py`, `design/artifacts.md`
+- Do:
+  1. Add one derived field, `last_modified_on` (`YYYY-MM-DD`): the observation
+     date on which any persisted fact of the posting last changed.
+     Re-observing an unchanged posting does not move it.
+  2. Define "changed" in `design/artifacts.md` first: compare against the stored
+     record, ignoring `CACHE_ALWAYS_FRESH_FIELDS`, `last_modified_on` and the
+     merge bookkeeping (`first_collected_on`, `last_collected_on`,
+     `timespan_days`). Decide explicitly where `isActive` and `date` belong.
+  3. Set it on first observation to that observation's `collected_on`.
+  4. Compute it only in the merge; add it to `RAW_POSTING_FIELDS` and to one
+     `EXCEL_COLUMNS`/`COLUMN_ORDER` position.
+- Done when:
+  - the four acceptance cases hold: first observation equals `collected_on`;
+    an unchanged observation leaves it; a changed description moves it; a
+    repeated merge does not move it;
+  - every new universal record carries it and no adapter sets it;
+  - removing it from the merge fails at least one test.
+- Note: added 2026-11-19; it was missing from the first backlog. The ID `B02a`
+  keeps existing IDs stable. No backfill of old history (Q27).
 
 ### B03 — Remove the absolute repository root
 
@@ -870,5 +898,7 @@ adding the site.
 ## Status notes
 
 - B01/B02 are mostly satisfied by the 2026-11-16 review; confirm and tick.
+- B02a was added 2026-11-19 to cover the missing "when did the material last
+  change" field. It sits in M1 on purpose, before the data layer moves.
 - If a task reveals that a design decision is wrong, stop and change the
   decision first. The backlog follows the design, not the other way around.

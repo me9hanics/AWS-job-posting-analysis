@@ -1,0 +1,177 @@
+# Tickets
+
+Status: operational view of the [backlog](../backlog.md), 2026-11-19. The backlog
+stays the source of truth; these files are one ticket per task and exist so each
+task can be picked up, tracked and closed on its own.
+
+`B01`–`B46` are the backlog tasks. `B02a` is one task that was missing from the
+backlog and was added early, by decision on 2026-11-19; it inserts without
+renumbering anything else.
+
+## Layout
+
+```text
+tickets/
+  README.md              # this file: index, order, status
+  m1-safe-baseline/      # B01, B02, B02a, B03, B04, B05
+  m2-contracts/          # B06–B10
+  m3-one-scraper-per-site/   # B11–B18
+  m4-collector/          # B19–B25
+  m5-data-layer/         # B26–B31
+  m6-profiles/           # B32–B35
+  m7-stages/             # B36–B39
+  m8-kedro/              # B40–B43
+  m9-done/               # B44–B46
+```
+
+Folders follow the backlog milestones, because a milestone is what "done" means
+for a reviewable batch; the backlog's phases are mapped to them by the table
+below.
+
+## Status
+
+Status values: `todo` / `doing` / `done` / `blocked`. Update a row and the
+ticket's status line in the same change.
+
+### M1 — Safe baseline (phase 0)
+
+| ID | Ticket | Depends on | Status |
+| --- | --- | --- | --- |
+| B01 | [Record the baseline](m1-safe-baseline/B01-record-the-baseline.md) | — | todo |
+| B02 | [Confirm the test command and baseline result](m1-safe-baseline/B02-confirm-test-command.md) | B01 | todo |
+| B03 | [Remove the absolute repository root](m1-safe-baseline/B03-remove-absolute-root.md) | B02 | todo |
+| B04 | [Characterization tests for data rules](m1-safe-baseline/B04-characterization-tests.md) | B02 | todo |
+| B02a | [Add a real `last_modified_on` field](m1-safe-baseline/B02a-last-modified-on-field.md) | B04 | todo |
+| B05 | [Fixture pages and parser parity](m1-safe-baseline/B05-fixture-pages.md) | B02, B03 | todo |
+
+Execution order inside M1: B01 → B02 → B03 → B04 → B02a → B05. B02a is placed
+early on purpose (see its ticket) and needs B04's merge fixtures to prove itself.
+
+### M2 — Contracts (phase 1)
+
+| ID | Ticket | Depends on | Status |
+| --- | --- | --- | --- |
+| B06 | [Create the `specs` package](m2-contracts/B06-create-specs-package.md) | B02 | todo |
+| B07 | [Define the five posting specs](m2-contracts/B07-posting-specs.md) | B06 | todo |
+| B08 | [Test the spec contract](m2-contracts/B08-spec-contract-tests.md) | B06, B07 | todo |
+| B09 | [Define the adapter step contract](m2-contracts/B09-step-contract.md) | B06 | todo |
+| B10 | [Prove the step contract with a fake adapter](m2-contracts/B10-fake-adapter.md) | B09 | todo |
+
+B06–B10 may run in parallel with B03–B05 once B02 is done.
+
+### M3 — One scraper per site (phases 2–3)
+
+| ID | Ticket | Depends on | Status |
+| --- | --- | --- | --- |
+| B11 | [Choose the canonical scraper implementations](m3-one-scraper-per-site/B11-canonical-scrapers.md) | B05 | todo |
+| B12 | [Move `KarriereAT` to its site module](m3-one-scraper-per-site/B12-move-karriere-at.md) | B11 | todo |
+| B13 | [Move `Raiffeisen` to its site module](m3-one-scraper-per-site/B13-move-raiffeisen.md) | B12 | todo |
+| B14 | [Make `BaseScraper` single-source and shrink `sites.py`](m3-one-scraper-per-site/B14-single-base-scraper.md) | B13 | todo |
+| B15 | [Update every importer](m3-one-scraper-per-site/B15-update-importers.md) | B14 | todo |
+| B16 | [Extract the HTTP path](m3-one-scraper-per-site/B16-extract-http.md) | B15 | todo |
+| B17 | [Extract the headless-browser path](m3-one-scraper-per-site/B17-extract-browser.md) | B16 | todo |
+| B18 | [Extract pagination and retire the facade](m3-one-scraper-per-site/B18-extract-pagination.md) | B17 | todo |
+
+### M4 — Collector (phase 4)
+
+| ID | Ticket | Depends on | Status |
+| --- | --- | --- | --- |
+| B19 | [Give `KarriereAT` declared steps](m4-collector/B19-karriere-steps.md) | B12, B16, B17, B18 | todo |
+| B20 | [Give `Raiffeisen` declared steps](m4-collector/B20-raiffeisen-steps.md) | B13, B19 | todo |
+| B21 | [Extract the quality gate](m4-collector/B21-quality-gate.md) | B15 | todo |
+| B22 | [Create the universal collector](m4-collector/B22-universal-collector.md) | B09, B10, B19, B20, B21 | todo |
+| B23 | [Add chunk artifacts and the JSON run report](m4-collector/B23-chunks-and-report.md) | B22 | todo |
+| B24 | [Wire the universal pipeline to the collector](m4-collector/B24-wire-universal-pipeline.md) | B22, B23 | todo |
+| B25 | [Collector integration tests](m4-collector/B25-collector-integration-tests.md) | B24 | todo |
+
+### M5 — Data layer (phase 5)
+
+| ID | Ticket | Depends on | Status |
+| --- | --- | --- | --- |
+| B26 | [Create `data/load.py`](m5-data-layer/B26-data-load.md) | B03 | todo |
+| B27 | [Move merge and history rebuild](m5-data-layer/B27-data-merge.md) | B26, B04, B02a | todo |
+| B28 | [Make the diff neutral](m5-data-layer/B28-neutral-diff.md) | B27 | todo |
+| B29 | [Move generic enrichment and remove the scraper import](m5-data-layer/B29-data-enrich.md) | B27, B28 | todo |
+| B30 | [Atomic writes, UTC and `schema_version`](m5-data-layer/B30-atomic-writes.md) | B26 | todo |
+| B31 | [Store every posting in universal](m5-data-layer/B31-store-every-posting.md) | B22, B24, B27 | todo |
+
+### M6 — Profiles (phase 6)
+
+| ID | Ticket | Depends on | Status |
+| --- | --- | --- | --- |
+| B32 | [Add `ProfileConfig`](m6-profiles/B32-profile-config.md) | B07 | todo |
+| B33 | [Make derivation generic](m6-profiles/B33-generic-derivation.md) | B27, B28, B32 | todo |
+| B34 | [Move profile rules and delete the empty modules](m6-profiles/B34-profile-rules.md) | B33 | todo |
+| B35 | [Make profile current selected-only](m6-profiles/B35-selected-only-current.md) | B33, B34 | todo |
+
+### M7 — Stages (phase 7)
+
+| ID | Ticket | Depends on | Status |
+| --- | --- | --- | --- |
+| B36 | [Extract stage functions](m7-stages/B36-stage-functions.md) | B24, B33 | todo |
+| B37 | [Add spec checks at stage boundaries](m7-stages/B37-stage-spec-checks.md) | B36 | todo |
+| B38 | [Resume, partial failure and incomplete-run artifact](m7-stages/B38-resume-and-failure.md) | B23, B36 | todo |
+| B39 | [Backfill dry run](m7-stages/B39-backfill-dry-run.md) | B30, B31 | todo (optional) |
+
+### M8 — Kedro (phase 8, user-owned)
+
+| ID | Ticket | Depends on | Status |
+| --- | --- | --- | --- |
+| B40 | [Add the Kedro skeleton](m8-kedro/B40-kedro-skeleton.md) | B36 | todo |
+| B41 | [Add `conf/` parameters and a relative catalog](m8-kedro/B41-conf-and-catalog.md) | B40, B32 | todo |
+| B42 | [Build the collection pipeline](m8-kedro/B42-collection-pipeline.md) | B41, B24 | todo |
+| B43 | [Build derivation and outputs; parity check](m8-kedro/B43-derivation-pipeline.md) | B42, B36 | todo |
+
+### M9 — Done (phase 9)
+
+| ID | Ticket | Depends on | Status |
+| --- | --- | --- | --- |
+| B44 | [Remove compatibility code and stale modules](m9-done/B44-remove-compatibility.md) | B43 | todo |
+| B45 | [Update documentation and ADRs](m9-done/B45-update-docs.md) | B44 | todo |
+| B46 | [Final gates](m9-done/B46-final-gates.md) | B44, B45 | todo |
+
+## Working agreement
+
+Repeated in every ticket so each ticket can be read alone.
+
+- One ticket per reviewable change. Put the `Bxx` ID in the commit message.
+- Tick a ticket only when its **Done when** line is true, then update the status
+  row here.
+- If a ticket outgrows one change, split it into `Bxxa`/`Bxxb` in the backlog and
+  here rather than hiding the size.
+- Respect **Depends on**. Leave the suite green after every ticket.
+- If implementation shows a design decision is wrong, fix the design document
+  first, then the backlog, then the ticket.
+- The tree contains the user's in-progress work. Never revert, clean, restore or
+  commit unrelated changes.
+
+## Verification commands
+
+Run from the repository root:
+
+```powershell
+uv run python -m unittest discover -s tests
+```
+
+PowerShell can report exit code 1 because unittest writes to stderr even when
+tests pass; read the `OK`/failure output. Baseline at handoff: 54 tests pass.
+
+A ticket that claims "no absolute path" is verified with:
+
+```powershell
+rg "[A-Za-z]:[\\/]|/home/|/Users/" src tests
+```
+
+A ticket that claims "no duplicate scraper" is verified with:
+
+```powershell
+rg "class BaseScraper|class KarriereAT|class Raiffeisen" src
+```
+
+## Still open
+
+- **Q16** — the compatibility layer for `scrapers.sites` and
+  `collecting.get_postings`. Decide when the first caller moves (B11/B19). See
+  [design/open-questions.md](../design/open-questions.md#still-open).
+- **B02a** — the field name and output placement are proposed in the ticket;
+  confirm them there before writing code.

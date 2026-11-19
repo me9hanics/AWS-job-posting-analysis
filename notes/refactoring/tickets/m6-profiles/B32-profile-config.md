@@ -1,0 +1,19 @@
+# B32 — Add `ProfileConfig`
+
+Status: todo · Milestone: M6 Profiles · Phase 6 · Size: M
+
+- Depends on: B07
+- Files: `src/jobscraping/config/models.py`, `src/jobscraping/profiles/dani.py`
+
+## Do
+
+1. Add the frozen `ProfileConfig` from [design/specs.md](../../design/specs.md).
+2. Move Dani threshold, salary, locations, scoring and language values into the
+   Dani config/defaults.
+3. Keep code behaviour unchanged.
+
+## Done when
+
+- `derive_profile_postings` can receive a `ProfileConfig`.
+- Dani values are no longer scattered defaults in the pipeline signature.
+- Tests pass.

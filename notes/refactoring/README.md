@@ -14,6 +14,7 @@ descend only as far as the question requires.
 | 1 | [Plan](plan.md) | Goals, principles, phases, risks, success criteria. |
 | 2 | [Breakdown](breakdown/README.md) | One document per workstream: current state, target, changes, dependencies. |
 | 2.5 | [Backlog](backlog.md) | Ordered tasks B01–B46 with dependencies, files and done criteria. |
+| 2.6 | [Tickets](tickets/README.md) | The same tasks as one ticket per file, grouped by milestone, with status. |
 | 3 | [Design](design/README.md) | Concrete module maps, data specs, Kedro layout, artifact contracts. |
 | — | [Process map](process_map.md) | The detailed 2026-11-02 work-and-dependency map. Still the long-form sequencing reference. |
 | raw | [Raw archive](raw/restructuring-2026-11-02/README.md) | Historical plans and sketches. Local only, Git-ignored. |
@@ -25,7 +26,8 @@ descend only as far as the question requires.
   the dependency order changes, [process_map.md](process_map.md). The executable
   order is [backlog.md](backlog.md).
 - **Starting a work session** → pick the first unchecked task in
-  [backlog.md](backlog.md) whose dependencies are done.
+  [backlog.md](backlog.md) whose dependencies are done, and work it from its
+  ticket in [tickets/](tickets/README.md).
 - **Deciding a concrete interface** → edit the design document and remove or
   update the matching entry in
   [design/open-questions.md](design/open-questions.md).
