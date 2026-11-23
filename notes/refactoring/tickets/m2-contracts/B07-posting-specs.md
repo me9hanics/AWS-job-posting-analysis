@@ -1,6 +1,6 @@
 # B07 — Define the five posting specs
 
-Status: todo · Milestone: M2 Contracts · Phase 1 · Size: S
+Status: done · Milestone: M2 Contracts · Phase 1 · Size: S
 
 - Depends on: B06
 - Files: `src/jobscraping/specs/postings.py`
