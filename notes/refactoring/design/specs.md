@@ -107,12 +107,13 @@ export exists. They are exports or BI views, not pipeline datasets (Q18).
 
 ### Passing data and spec
 
-A step receives the records, its input spec and the config, and returns new
-records that satisfy its output spec:
+A step receives the records and the collection config, and returns new records
+that satisfy its output spec. The caller binds the input spec and checks the
+data against it; the step itself does not take the spec for its own data:
 
 ```python
-def details(records: dict, spec: DataSpec, config: CollectionConfig) -> dict:
-    problems = spec.check(records)   # input contract
+def details(records: dict, config: CollectionConfig) -> dict:
+    # the caller has already checked records against DISCOVERED_POSTINGS
     ...
     enriched = {key: {**record, "description": ...} for key, record in records.items()}
     return enriched                  # validated against COLLECTED_POSTINGS

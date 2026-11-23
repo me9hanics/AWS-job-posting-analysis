@@ -59,7 +59,7 @@ def run_steps(adapter, records, config=None, only=None):
     report = {"source": adapter.source, "steps": [], "failed": False}
     for declared in adapter.steps:
         name, run = (declared.name, declared.run) if isinstance(declared, Step) else declared
-        if only is not None and name not in only:
+        if only and name not in only:
             report["steps"].append({"name": name, "status": "skipped"})
             continue
         try:
@@ -97,6 +97,11 @@ class StepContractTest(unittest.TestCase):
         report = run_steps(ListingThenDetails, {}, only=("listings",))
         self.assertEqual([step["status"] for step in report["steps"]], ["ok", "skipped"])
         self.assertNotIn("description", report["records"]["two.test1"])
+
+    def test_empty_selection_runs_every_step(self):
+        report = run_steps(ListingThenDetails, {}, only=())
+        self.assertEqual([step["status"] for step in report["steps"]], ["ok", "ok"])
+        self.assertFalse(report["failed"])
 
     def test_raising_step_is_recorded_and_later_steps_still_run(self):
         report = run_steps(FailingDetails, {})

@@ -12,7 +12,7 @@ from jobscraping.specs.postings import (
     UNIVERSAL_POSTINGS,
 )
 
-RECORD = {"source": "karriere.at", "id": 1, "url": "https://example.test/1"}
+RECORD = {"source": "karriere.at", "id": "1", "url": "https://example.test/1"}
 
 
 class DataSpecTest(unittest.TestCase):

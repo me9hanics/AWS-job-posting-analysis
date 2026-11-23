@@ -21,6 +21,8 @@ class DataSpec:
     name: str
     key: tuple[str, ...]
     fields: tuple[FieldSpec, ...]
+    # ``key`` names the identity fields; the record dict key itself is chosen
+    # by the caller and is not checked.
 
     def extend(self, *fields: FieldSpec) -> "DataSpec":
         """Return a spec with extra fields; the original is untouched."""

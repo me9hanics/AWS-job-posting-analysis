@@ -154,7 +154,7 @@ Repeated in every ticket so each ticket can be read alone.
 
 - One ticket per reviewable change. Put the `Bxx` ID in the commit message.
 - Tick a ticket only when its **Done when** line is true, then update the status
-  row here.
+  row here in the same commit.
 - If a ticket outgrows one change, split it into `Bxxa`/`Bxxb` in the backlog and
   here rather than hiding the size.
 - Respect **Depends on**. Leave the suite green after every ticket.
@@ -172,9 +172,9 @@ uv run python -m unittest discover -s tests
 ```
 
 PowerShell can report exit code 1 because unittest writes to stderr even when
-tests pass; read the `OK`/failure output. M1 started at 55 tests and completed
-at 89; the M1 code-review fix set adds 4 cases, so HEAD reports 93, with the
-same command.
+tests pass; read the `OK`/failure output. M1 started at 55 tests, closed at 89,
+and the M1 code-review fix set brought it to 93; M2 adds 14 contract tests, so
+HEAD reports 107, with the same command.
 
 A ticket that claims "no absolute path" is verified with:
 
