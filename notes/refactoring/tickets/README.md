@@ -42,7 +42,7 @@ ticket's status line in the same change.
 | B03 | [Remove the absolute repository root](m1-safe-baseline/B03-remove-absolute-root.md) | B02 | done |
 | B04 | [Characterization tests for data rules](m1-safe-baseline/B04-characterization-tests.md) | B02 | done |
 | B02a | [Add a real `last_modified_on` field](m1-safe-baseline/B02a-last-modified-on-field.md) | B04 | done |
-| B05 | [Fixture pages and parser parity](m1-safe-baseline/B05-fixture-pages.md) | B02, B03 | todo |
+| B05 | [Fixture pages and parser parity](m1-safe-baseline/B05-fixture-pages.md) | B02, B03 | done |
 
 Execution order inside M1: B01 → B02 → B03 → B04 → B02a → B05. B02a is placed
 early on purpose (see its ticket) and needs B04's merge fixtures to prove itself.

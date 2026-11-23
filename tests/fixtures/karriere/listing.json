@@ -1,0 +1,56 @@
+{
+  "data": {
+    "jobsSearchList": {
+      "activeItems": {
+        "items": [
+          {
+            "jobsItem": {
+              "id": "10035272",
+              "title": "Key Account Manager Amazon & Marktplätze (m/w/d)",
+              "company": {
+                "slug": "windhager-handelsgesmbh",
+                "name": "Windhager Home & Garden"
+              },
+              "locations": [
+                {
+                  "name": "Thalgau",
+                  "slug": "thalgau"
+                }
+              ],
+              "salary": "ab 50.000 € jährlich",
+              "isActive": true,
+              "isHomeOffice": false,
+              "employmentTypes": "Vollzeit",
+              "link": "https://www.karriere.at/jobs/10035272",
+              "snippet": "",
+              "date": "Gestern veröffentlicht"
+            }
+          },
+          {
+            "jobsItem": {
+              "id": "10029573",
+              "title": "Vertriebsinnendienst (m/w/d)",
+              "company": {
+                "slug": "moderne-verpackung-hoffmann",
+                "name": "Moderne Verpackung"
+              },
+              "locations": [
+                {
+                  "name": "Jeging",
+                  "slug": "jeging"
+                }
+              ],
+              "salary": "ab 39.200 € jährlich",
+              "isActive": true,
+              "isHomeOffice": false,
+              "employmentTypes": "Vollzeit",
+              "link": "https://www.karriere.at/jobs/10029573",
+              "snippet": "",
+              "date": "vor 4 Tagen veröffentlicht"
+            }
+          }
+        ]
+      }
+    }
+  }
+}
