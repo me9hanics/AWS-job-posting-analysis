@@ -1,0 +1,172 @@
+"""Characterization tests for the posting data rules (B04).
+
+These tests lock the behaviour of the code as it is today, not the behaviour
+the design document asks for. Fixtures in ``tests/fixtures`` are shared with
+B02a and B27 as a parity gate.
+"""
+
+import copy
+import json
+import unittest
+from pathlib import Path
+
+from jobscraping.pipelines.store_universal import merge_observations
+from jobscraping.processing.postings_utils import factual_postings, get_added_and_removed
+
+
+FIXTURES = Path(__file__).with_name("fixtures")
+
+# Profile-only fields: they belong to derivation and must never be stored.
+PROFILE_FIELDS = {"points", "keywords", "score", "profile_excluded", "language_excluded"}
+
+# Independent copy of the persisted raw record shape.
+EXPECTED_RAW_FIELDS = {
+    "title", "company", "description", "source", "salary", "salary_guessed",
+    "salary_monthly_guessed", "locations", "first_collected_on", "last_collected_on",
+    "collected_on", "timespan_days", "matched_titlewords", "date", "id", "url",
+    "isActive", "isHomeOffice", "employmentTypes", "snippet", "role",
+    "requirements", "nice_to_have", "benefits",
+}
+
+
+def load_fixture(name):
+    with open(FIXTURES / name, encoding="utf-8") as file:
+        return json.load(file)
+
+
+class FactualPostingsTests(unittest.TestCase):
+    def setUp(self):
+        self.postings = load_fixture("postings_projection.json")
+        self.factual = factual_postings(self.postings)
+
+    def test_profile_fields_are_dropped(self):
+        for key, posting in self.factual.items():
+            with self.subTest(posting=key):
+                self.assertTrue(PROFILE_FIELDS.isdisjoint(posting))
+
+    def test_every_raw_posting_field_survives(self):
+        posting = {"id": "1", "source": "test"}
+        for field in EXPECTED_RAW_FIELDS:
+            posting[field] = f"value-of-{field}"
+
+        projected = factual_postings({"test1": posting})["test1"]
+
+        self.assertEqual(projected, posting)
+        self.assertEqual(set(projected), EXPECTED_RAW_FIELDS)
+
+    def test_unknown_keys_are_dropped(self):
+        # The ticket originally claimed unknown keys survive; they do not:
+        # factual_postings keeps only RAW_POSTING_FIELDS. Ticket wording was
+        # corrected to match this behaviour.
+        key = "karriere.at7818416"
+        self.assertIn("unknown_field", self.postings[key])
+        self.assertNotIn("unknown_field", self.factual[key])
+
+    def test_projection_keeps_raw_values(self):
+        key = "karriere.at7818416"
+        expected = {
+            field: value
+            for field, value in self.postings[key].items()
+            if field in EXPECTED_RAW_FIELDS
+        }
+        self.assertEqual(self.factual[key], expected)
+
+
+class MergeObservationsTests(unittest.TestCase):
+    def setUp(self):
+        self.previous = load_fixture("merge_previous.json")
+        self.current = load_fixture("merge_current.json")
+        self.history = merge_observations(copy.deepcopy(self.current), copy.deepcopy(self.previous))
+
+    def test_first_collected_on_is_the_earliest_known(self):
+        self.assertEqual(self.history["karriere.at7818416"]["first_collected_on"], "2025-01-10")
+
+    def test_last_collected_on_is_the_latest_known(self):
+        self.assertEqual(self.history["karriere.at7818416"]["last_collected_on"], "2025-02-20")
+
+    def test_timespan_days_is_recomputed(self):
+        self.assertEqual(self.history["karriere.at7818416"]["timespan_days"], 41)
+
+    def test_new_posting_becomes_its_own_range(self):
+        posting = self.history["karriere.at7818418"]
+        self.assertEqual(posting["first_collected_on"], "2025-02-20")
+        self.assertEqual(posting["last_collected_on"], "2025-02-20")
+        self.assertEqual(posting["timespan_days"], 0)
+
+    def test_untouched_posting_is_preserved(self):
+        self.assertEqual(self.history["karriere.at7820001"], self.previous["karriere.at7820001"])
+
+    def test_latest_description_wins(self):
+        self.assertEqual(
+            self.history["karriere.at7818416"]["description"],
+            "Build and operate the data platform.",
+        )
+
+    def test_empty_later_description_replaces_the_previous_one(self):
+        # Current behaviour, not the design rule: a later observation with an
+        # empty description still replaces the stored non-empty value. The
+        # design says "latest non-empty observation wins"; today there is no
+        # non-empty guard, so this pins the mechanical result.
+        self.assertEqual(self.history["karriere.at7818419"]["description"], "")
+
+    def test_previous_scalar_survives_when_current_omits_it(self):
+        self.assertEqual(self.history["karriere.at7818416"]["snippet"], "Python and SQL.")
+
+    def test_matched_titlewords_is_an_ordered_union(self):
+        self.assertEqual(
+            self.history["karriere.at7818416"]["matched_titlewords"],
+            ["data", "platform", "engineer"],
+        )
+
+    def test_history_matches_the_expected_fixture(self):
+        self.assertEqual(self.history, load_fixture("merge_expected.json"))
+
+    def test_second_merge_is_idempotent(self):
+        current = copy.deepcopy(self.current)
+        history = merge_observations(current, copy.deepcopy(self.previous))
+        again = merge_observations(current, history)
+        self.assertEqual(again, history)
+
+
+class GetAddedAndRemovedTests(unittest.TestCase):
+    def setUp(self):
+        self.current = load_fixture("diff_current.json")
+        self.previous = load_fixture("diff_previous.json")
+        self.added, self.removed = get_added_and_removed(
+            copy.deepcopy(self.current), copy.deepcopy(self.previous)
+        )
+
+    def test_added_identities(self):
+        self.assertEqual(
+            set(self.added),
+            {"karriere.at7818418", "karriere.at7818419", "karriere.at7820000"},
+        )
+
+    def test_removed_identities(self):
+        self.assertEqual(
+            set(self.removed),
+            {"karriere.at7818417", "karriere.at7820001"},
+        )
+
+    def test_unchanged_identity_is_neither_added_nor_removed(self):
+        self.assertNotIn("karriere.at7818416", self.added)
+        self.assertNotIn("karriere.at7818416", self.removed)
+
+    def test_distinct_points_are_ordered_descending(self):
+        self.assertEqual(list(self.added)[0], "karriere.at7818418")
+        self.assertEqual(list(self.removed)[0], "karriere.at7818417")
+        self.assertEqual([p["points"] for p in self.added.values()], [70, 55, 30])
+        self.assertEqual([p["points"] for p in self.removed.values()], [40, 10])
+
+    def test_equal_points_are_not_ordered(self):
+        # Ties fall back to the iteration order of a set difference, which
+        # changes between interpreter runs (observed with different hash
+        # seeds), so only membership is asserted here.
+        current = {f"karriere.at{number}": {"id": str(number)} for number in range(5)}
+        added, _ = get_added_and_removed(current, {})
+
+        self.assertEqual(set(added), set(current))
+
+
+if __name__ == "__main__":
+    unittest.main()

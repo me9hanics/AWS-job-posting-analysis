@@ -1,0 +1,39 @@
+{
+  "karriere.at7818416": {
+    "id": "7818416",
+    "source": "karriere.at",
+    "title": "Senior Data Engineer",
+    "company": "Acme Data GmbH",
+    "description": "Build the first data platform.",
+    "locations": ["Wien"],
+    "matched_titlewords": ["data", "engineer"],
+    "collected_on": "2025-01-10",
+    "first_collected_on": "2025-01-10",
+    "last_collected_on": "2025-01-10",
+    "timespan_days": 0,
+    "snippet": "Python and SQL.",
+    "url": "https://example.test/karriere/7818416",
+    "isActive": true,
+    "date": "2025-01-05"
+  },
+  "karriere.at7818419": {
+    "id": "7818419",
+    "source": "karriere.at",
+    "title": "Support Analyst",
+    "description": "Keep the reports running.",
+    "collected_on": "2025-01-10",
+    "first_collected_on": "2025-01-10",
+    "last_collected_on": "2025-01-10",
+    "timespan_days": 0
+  },
+  "karriere.at7820001": {
+    "id": "7820001",
+    "source": "karriere.at",
+    "title": "BI Developer",
+    "description": "Own the dashboards.",
+    "collected_on": "2025-01-10",
+    "first_collected_on": "2025-01-10",
+    "last_collected_on": "2025-01-10",
+    "timespan_days": 0
+  }
+}

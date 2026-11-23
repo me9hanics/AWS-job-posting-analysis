@@ -1,0 +1,32 @@
+{
+  "karriere.at7818416": {
+    "id": "7818416",
+    "source": "karriere.at",
+    "title": "Senior Data Engineer",
+    "company": "Acme Data GmbH",
+    "description": "Build and operate the data platform.",
+    "locations": ["Wien", "Graz"],
+    "matched_titlewords": ["data", "platform"],
+    "collected_on": "2025-02-20",
+    "url": "https://example.test/karriere/7818416",
+    "isActive": true,
+    "date": "2025-02-15"
+  },
+  "karriere.at7818418": {
+    "id": "7818418",
+    "source": "karriere.at",
+    "title": "Analytics Engineer",
+    "company": "Gamma Labs",
+    "description": "Model the warehouse.",
+    "locations": ["Linz"],
+    "matched_titlewords": ["data"],
+    "collected_on": "2025-02-20"
+  },
+  "karriere.at7818419": {
+    "id": "7818419",
+    "source": "karriere.at",
+    "title": "Support Analyst",
+    "description": "",
+    "collected_on": "2025-02-20"
+  }
+}

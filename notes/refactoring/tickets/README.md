@@ -40,7 +40,7 @@ ticket's status line in the same change.
 | B01 | [Record the baseline](m1-safe-baseline/B01-record-the-baseline.md) | — | done |
 | B02 | [Confirm the test command and baseline result](m1-safe-baseline/B02-confirm-test-command.md) | B01 | done |
 | B03 | [Remove the absolute repository root](m1-safe-baseline/B03-remove-absolute-root.md) | B02 | done |
-| B04 | [Characterization tests for data rules](m1-safe-baseline/B04-characterization-tests.md) | B02 | todo |
+| B04 | [Characterization tests for data rules](m1-safe-baseline/B04-characterization-tests.md) | B02 | done |
 | B02a | [Add a real `last_modified_on` field](m1-safe-baseline/B02a-last-modified-on-field.md) | B04 | todo |
 | B05 | [Fixture pages and parser parity](m1-safe-baseline/B05-fixture-pages.md) | B02, B03 | todo |
 
