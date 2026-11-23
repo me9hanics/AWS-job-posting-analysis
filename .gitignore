@@ -1,15 +1,71 @@
 # Own files
-*test*
-!tests/
-!tests/**
-data/*
-config.txt
 outdated*
 schedule/*
 !schedule/regexes.py
 !schedule/tech_collect.py
 !schedule/tech_filter.py
 notes/raw/*
+notes/refactoring/raw/
+
+##########################
+# KEDRO PROJECT
+
+# ignore all local configuration
+conf/local/**
+!conf/local/.gitkeep
+.telemetry
+
+# ignore potentially sensitive credentials files
+conf/**/*credentials*
+
+# ignore everything in the following folders
+data/**
+
+# except their sub-folders
+!data/**/
+
+# also keep all .gitkeep files
+!.gitkeep
+
+# ignore kedro-viz metadata
+.viz
+
+# ignore file based logs
+*.log
+
+##########################
+# Common files
+
+# IntelliJ
+.idea/
+*.iml
+out/
+.idea_modules/
+
+### macOS
+*.DS_Store
+.AppleDouble
+.LSOverride
+.Trashes
+
+# Vim
+*~
+.*.swo
+.*.swp
+
+# emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+
+# JIRA plugin
+atlassian-ide-plugin.xml
+
+# C extensions
+*.so
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
