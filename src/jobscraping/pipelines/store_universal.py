@@ -25,7 +25,8 @@ def _last_modified_on(old, posting):
     """Date of the observation that last changed the posting's material."""
     if not old or _material_changed(old, posting):
         return posting.get("collected_on")
-    return old.get("last_modified_on") or old.get("last_collected_on") or old.get("collected_on")
+    return (old.get("last_modified_on") or old.get("last_collected_on")
+            or old.get("collected_on") or posting.get("collected_on"))
 
 
 def load_postings(path, filename):

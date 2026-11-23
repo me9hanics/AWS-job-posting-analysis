@@ -45,5 +45,15 @@ Raiffeisen already exposes separable helpers (`_process_posting_soups`,
 `_get_descriptions_from_soups`); Karriere does not. No `src/` change in this
 ticket.
 
+`tests/test_scraper_fixtures.py` drives those two Raiffeisen helpers directly
+with the fixture soups, without HTTP or a browser. Karriere stays on the
+`gather_data` path until B12 splits it.
+
+- **Flow assertion.** The exact request sequence in the Karriere test is
+  deliberate: it pins the listing page walk before the detail fetch and is
+  checked by a session that raises on any unexpected URL, so a reordering or an
+  extra network hop fails loudly. `salary_guessed is None` pins that the detail
+  fixture carries no salary text, not a broader salary rule.
+
 Observed, not fixed: Karriere's `date` is the site's localised relative string
 ("Gestern veröffentlicht"), copied verbatim into the posting.

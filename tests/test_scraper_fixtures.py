@@ -12,6 +12,8 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
+from bs4 import BeautifulSoup
+
 from jobscraping.scrapers import scrape
 from jobscraping.scrapers.sites import KarriereAT, Raiffeisen
 
@@ -163,6 +165,62 @@ class RaiffeisenFixtureParsingTests(unittest.TestCase):
         self.assertIn("Erfahrung im Wertpapier-", posting["nice_to_have"])
         self.assertIn("Ein hohes Maß an Eigenverantwortung", posting["benefits"])
         self.assertIsNone(posting["salary_guessed"])
+
+
+class RaiffeisenHelperParsingTests(unittest.TestCase):
+    """Drive Raiffeisen's separable parse helpers without HTTP or a browser."""
+
+    def setUp(self):
+        self.scraper = Raiffeisen(
+            driver="",
+            keywords={"titlewords": ["sales"], "locations": []},
+            date_day="2026-11-23",
+        )
+
+    def soup(self, path):
+        return BeautifulSoup(path.read_text(encoding="utf-8"), "html.parser")
+
+    def test_process_posting_soups_parses_the_listing_fixture(self):
+        postings = self.scraper._process_posting_soups(
+            [self.soup(RAIFFEISEN_LISTING)],
+            self.scraper.rules["gather_data_selector"],
+        )
+
+        self.assertEqual(
+            sorted(postings),
+            [
+                "raiffeisen_international1364426457",
+                "raiffeisen_international1373093957",
+            ],
+        )
+        posting = postings["raiffeisen_international1364426457"]
+        self.assertEqual(
+            posting["title"],
+            "Operations Manager - Digital Investment Platform (w/m/x) - Savity",
+        )
+        self.assertEqual(
+            posting["url"],
+            "https://jobs.rbinternational.com/raiffeisencapitalmgmt/job/"
+            "Wien-Operations-Manager-Digital-Investment-Platform-%28wmx%29-Savity-1190/1364426457/",
+        )
+        self.assertEqual(posting["company"], "Raiffeisen International")
+        self.assertEqual(posting["source"], "raiffeisen_international")
+        self.assertNotIn("collected_on", posting)
+
+    def test_get_descriptions_from_soups_parses_the_detail_fixture(self):
+        descriptions = self.scraper._get_descriptions_from_soups(
+            {"raiffeisen_international1373093957": self.soup(RAIFFEISEN_DETAIL)}
+        )
+
+        details = descriptions["raiffeisen_international1373093957"]
+        self.assertIn(
+            "Eigenständige Bearbeitung und Koordination operativer Aufgaben",
+            details["description"],
+        )
+        self.assertIn("Abgeschlossenes wirtschaftliches, IT-nahes", details["requirements"])
+        self.assertIn("Erfahrung im Wertpapier-", details["nice_to_have"])
+        self.assertIn("Ein hohes Maß an Eigenverantwortung", details["benefits"])
+        self.assertIsNone(details["salary_guessed"])
 
 
 if __name__ == "__main__":

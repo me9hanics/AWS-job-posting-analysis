@@ -47,6 +47,11 @@ ticket's status line in the same change.
 Execution order inside M1: B01 → B02 → B03 → B04 → B02a → B05. B02a is placed
 early on purpose (see its ticket) and needs B04's merge fixtures to prove itself.
 
+Confirmed during M1:
+
+- **B02a** — confirmed 2026-11-23: `last_modified_on` is computed only in the
+  merge, appears in `COLUMN_ORDER` right after `date`, and gets no Excel column.
+
 ### M2 — Contracts (phase 1)
 
 | ID | Ticket | Depends on | Status |
@@ -167,7 +172,9 @@ uv run python -m unittest discover -s tests
 ```
 
 PowerShell can report exit code 1 because unittest writes to stderr even when
-tests pass; read the `OK`/failure output. Baseline: 55 tests pass.
+tests pass; read the `OK`/failure output. M1 started at 55 tests and completed
+at 89; the M1 code-review fix set adds 4 cases, so HEAD reports 93, with the
+same command.
 
 A ticket that claims "no absolute path" is verified with:
 
@@ -186,8 +193,6 @@ rg "class BaseScraper|class KarriereAT|class Raiffeisen" src
 - **Q16** — the compatibility layer for `scrapers.sites` and
   `collecting.get_postings`. Decide when the first caller moves (B11/B19). See
   [design/open-questions.md](../design/open-questions.md#still-open).
-- **B02a** — confirmed 2026-11-23: `last_modified_on` is computed only in the
-  merge, appears in `COLUMN_ORDER` right after `date`, and gets no Excel column.
 - **Q28** — the universal history is expected but not guaranteed. Derived from
   the user's clarification on 2026-11-22; it constrains B32, B33, B36 and the
   derivation tests, not the folder layout. See

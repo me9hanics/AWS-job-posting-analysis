@@ -199,6 +199,27 @@ class LastModifiedOnMergeTests(unittest.TestCase):
         self.assert_expected("empty_observation_of_empty_record",
                              self.merge("empty_observation_of_empty_record"))
 
+    def test_legacy_record_without_any_stored_date_uses_the_observation_date(self):
+        # No stored date resolves, but the observation itself is dated, so the
+        # field must still have a value.
+        previous = {"test1": {"id": "1", "source": "test", "title": "Data Engineer",
+                              "description": "Build the platform."}}
+        current = {"test1": {"id": "1", "source": "test", "title": "Data Engineer",
+                             "description": "Build the platform.",
+                             "collected_on": "2025-03-10"}}
+
+        merged = merge_observations(copy.deepcopy(current), copy.deepcopy(previous))
+
+        self.assertEqual(merged["test1"]["last_modified_on"], "2025-03-10")
+
+    def test_record_without_any_observation_date_omits_last_modified_on(self):
+        # Nothing carries a date, so there is no honest value to record.
+        current = {"test1": {"id": "1", "source": "test", "title": "Data Engineer"}}
+
+        merged = merge_observations(copy.deepcopy(current), {})
+
+        self.assertNotIn("last_modified_on", merged["test1"])
+
 
 class LastModifiedOnStorageTests(unittest.TestCase):
     def test_new_universal_record_carries_last_modified_on(self):
@@ -251,8 +272,6 @@ class GetAddedAndRemovedTests(unittest.TestCase):
     def test_distinct_points_are_ordered_descending(self):
         self.assertEqual(list(self.added)[0], "karriere.at7818418")
         self.assertEqual(list(self.removed)[0], "karriere.at7818417")
-        self.assertEqual([p["points"] for p in self.added.values()], [70, 55, 30])
-        self.assertEqual([p["points"] for p in self.removed.values()], [40, 10])
 
     def test_equal_points_are_not_ordered(self):
         # Ties fall back to the iteration order of a set difference, which

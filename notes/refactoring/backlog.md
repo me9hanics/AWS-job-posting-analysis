@@ -133,8 +133,9 @@ rg "class BaseScraper|class KarriereAT|class Raiffeisen" src
   `config/constants.py`, `tests/test_data_rules.py`, `design/artifacts.md`
 - Do:
   1. Add one derived field, `last_modified_on` (`YYYY-MM-DD`): the observation
-     date on which any persisted fact of the posting last changed.
-     Re-observing an unchanged posting does not move it.
+     date on which the posting's material last changed. Only `title` and
+     `description` count (item 2). Re-observing an unchanged posting does not
+     move it.
   2. Define "changed" first: only `title` and `description` decide a change,
      compared as raw incoming values. `isActive`, the site `date`,
      `CACHE_ALWAYS_FRESH_FIELDS`, `last_modified_on` itself and the merge
@@ -178,10 +179,11 @@ rg "class BaseScraper|class KarriereAT|class Raiffeisen" src
 - Files: `tests/test_data_rules.py` (new), `tests/fixtures/`
 - Do:
   1. Lock current behaviour for `factual_postings`: profile keys are dropped,
-     raw keys and unknown keys survive.
+     raw keys survive, and unknown keys are dropped.
   2. Lock `merge_observations`: earliest `first_collected_on`, latest
-     `last_collected_on`, recomputed `timespan_days`, latest non-empty
-     description, idempotent second merge.
+     `last_collected_on`, recomputed `timespan_days`, and the latest
+     description winning even when it is empty (no non-empty guard yet; B27
+     owns that rule). Include an idempotent second merge.
   3. Lock `get_added_and_removed` on identity sets and ordering; do not test the
      `points` side effect here, because B28 removes it.
   4. Add a deliberately broken-merge check locally to prove the tests fail.

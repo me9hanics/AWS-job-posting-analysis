@@ -109,11 +109,17 @@ fixtures before the data layer moves.
   `last_modified_on = collected_on` of that observation, so the field is never
   `None` on a new record. A stored record that predates the field and whose
   material is unchanged takes its `last_collected_on` (falling back to
-  `collected_on`) as the last known change date.
+  `collected_on`) as the last known change date. A record whose observations
+  carry no date at all has no value to resolve: the merge omits the field
+  rather than inventing one. Any record with at least one dated observation
+  carries the field.
 - **One owner, no backfill.** Only the merge computes `last_modified_on`;
   adapters, enrichment and derivation never set it. Existing history is not
   backfilled (Q27): old records gain the field on their next observation.
-- **Description.** Latest non-empty observation wins.
+- **Description.** Latest non-empty observation wins. The non-empty guard is
+  not implemented today: a later empty description currently replaces a stored
+  non-empty one. B27 owns making this rule true; B04 pins the current
+  behaviour meanwhile.
 - **Scalars.** An existing non-empty value is preserved; a new non-empty value
   fills a missing one. Conflicts are resolved by an explicit rule, not by dict
   order.

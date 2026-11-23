@@ -20,15 +20,18 @@ edited are indistinguishable: `last_collected_on` moves for both.
 ## Do
 
 1. Add one derived field, `last_modified_on` (`YYYY-MM-DD`), defined as the
-   observation date on which any persisted fact of the posting last changed.
-   Re-observing an unchanged posting does not move it.
+   observation date on which the posting's material last changed. Only `title`
+   and `description` count (item 2). Re-observing an unchanged posting does not
+   move it.
 2. Define "changed" explicitly in `design/artifacts.md` before coding: only
    `title` and `description` decide a change, compared as the raw incoming
    values. `isActive`, the site `date`, `CACHE_ALWAYS_FRESH_FIELDS`,
    `last_modified_on` itself and the merge bookkeeping (`first_collected_on`,
    `last_collected_on`, `timespan_days`) never do.
 3. Set it on first observation to that observation's `collected_on`, so every
-   record has a value and the field is never `None`.
+   record with a dated observation has a value. A record whose observations
+   carry no date at all cannot resolve a value; the merge omits the field
+   rather than inventing one.
 4. Compute it in exactly one place: the merge (`merge_observations` now, the
    `data/merge.py` function after B27). Do not compute it in adapters, enrichment
    or derivation.
@@ -54,6 +57,18 @@ edited are indistinguishable: `last_collected_on` moves for both.
 - Every new universal record carries `last_modified_on`, and no adapter sets it.
 - Removing the field from the merge fails at least one test.
 - `design/artifacts.md` documents the field and the "changed" definition.
+
+## Implementation notes
+
+- Beyond the four acceptance cases, `tests/test_data_rules.py` adds
+  defensible cases: a changed `title` moves the date; a legacy record without
+  the field keeps its last known change date; an empty observation of an empty
+  record is not a change; a legacy record with no stored date but a dated
+  observation takes that observation's date; and a record with no observation
+  date at all omits the field. The last two pin the "never `None` when a date
+  exists" rule.
+- A record with no observation date cannot carry the field. The merge pops it
+  instead of fabricating `date.today()`, and the test pins that omission.
 
 ## Deliberately out of scope
 

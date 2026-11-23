@@ -151,11 +151,16 @@ Dani run passes `collections/dani` (Q28).
 
 ### Absolute paths
 
-`rg "[A-Za-z]:[\\/]|/home/|/Users/" src tests` matches only one real path:
+The original baseline was captured before B03, when
+`rg "[A-Za-z]:[\\/]|/home/|/Users/" src tests` matched one real path:
 
 | File:line | Value | Source |
 | --- | --- | --- |
-| `src/jobscraping/config/configs.py:22` | `REPO_ROOT_PATH = "C:/GitHubRepo/REPOS/AWS-job-posting-analysis"` | Hand-written machine path. `SAVING_PATH`, `POSTINGS_PATH`, `EXCELS_PATH`, `COMPANIES_PATH` and every schedule path derive from it. It must become a root derived from `__file__`, not a `conf/local/` value (D16). |
+| `src/jobscraping/config/configs.py:22` (before B03) | `REPO_ROOT_PATH = "C:/GitHubRepo/REPOS/AWS-job-posting-analysis"` | Hand-written machine path. `SAVING_PATH`, `POSTINGS_PATH`, `EXCELS_PATH`, `COMPANIES_PATH` and every schedule path derived from it. |
+
+B03 replaced it: at HEAD, `configs.py:23` derives the root as
+`REPO_ROOT_PATH = str(Path(__file__).resolve().parents[3])`, and the pattern
+finds zero real paths in `src tests`.
 
 The same pattern also matches URLs (`https://…`), the `\n` in f-strings, and
 `r'\b…'` regexes in `src` and `tests`; those are false positives, not paths. No
