@@ -634,7 +634,9 @@ it.
 - Size: M
 - Files: `src/jobscraping/config/models.py`, `src/jobscraping/profiles/dani.py`
 - Do:
-  1. Add the frozen `ProfileConfig` from [design/specs.md](design/specs.md).
+  1. Add the frozen `ProfileConfig` from [design/specs.md](design/specs.md). Add
+     no input-source path: the caller passes records, never "the" universal
+     history (Q28).
   2. Move Dani threshold, salary, locations, scoring and language values into
      the Dani config/defaults.
   3. Keep code behaviour unchanged.
@@ -657,7 +659,9 @@ it.
 - Done when:
   - `processing/derive.py` imports no profile module;
   - Dani's selected output matches the baseline;
-  - a second config can call the same function.
+  - a second config can call the same function;
+  - derivation receives its input records as an argument and does not load a
+    universal history by name (Q28).
 
 ### B34 — Move profile rules and delete the empty modules
 
@@ -699,7 +703,9 @@ it.
 - Files: `src/jobscraping/pipelines/collection.py`,
   `derivation.py`, `outputs.py`
 - Do:
-  1. Give each stage a named input, named output and explicit config.
+  1. Give each stage a named input, named output and explicit config. Inputs
+     are supplied by the pipeline; a stage does not discover or require a
+     universal history (Q28).
   2. Keep the existing composite functions as thin sequences during migration.
   3. Remove file-format and profile details from pipeline modules.
 - Done when:

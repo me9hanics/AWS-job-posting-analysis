@@ -129,6 +129,10 @@ This is what makes a step startable from the middle of the pipeline:
 4. Run the step.
 5. Check the result against the output spec; write.
 
+The input is supplied by the caller (a pipeline node, a catalog dataset, a test),
+not discovered by the step. No stage assumes that one universal history exists or
+is current (Q28).
+
 A missing required field is a failed start, not a silent empty result. A missing
 expected field lowers completeness and may fail the quality gate; a missing
 optional field is allowed.

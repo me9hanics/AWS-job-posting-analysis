@@ -15,7 +15,7 @@ descend only as far as the question requires.
 | 2 | [Breakdown](breakdown/README.md) | One document per workstream: current state, target, changes, dependencies. |
 | 2.5 | [Backlog](backlog.md) | Ordered tasks B01–B46 with dependencies, files and done criteria. |
 | 2.6 | [Tickets](tickets/README.md) | The same tasks as one ticket per file, grouped by milestone, with status. |
-| 3 | [Design](design/README.md) | Concrete module maps, data specs, Kedro layout, artifact contracts. |
+| 3 | [Design](design/README.md) | Concrete module maps, data specs, artifact contracts, and implementation-flow sketches where a design needs them. |
 | — | [Process map](process_map.md) | The detailed 2026-11-02 work-and-dependency map. Still the long-form sequencing reference. |
 | raw | [Raw archive](raw/restructuring-2026-11-02/README.md) | Historical plans and sketches. Local only, Git-ignored. |
 
@@ -31,6 +31,9 @@ descend only as far as the question requires.
 - **Deciding a concrete interface** → edit the design document and remove or
   update the matching entry in
   [design/open-questions.md](design/open-questions.md).
+- **Planning a cross-block implementation flow** → add or update its
+  implementation-flow sketch in the relevant design document before relying on
+  it in tickets.
 - **Quoting history** → link the raw file; never treat it as the current
   specification.
 
@@ -101,6 +104,7 @@ Confirmed decisions are binding. Only Q16 remains open; the full decision log is
 | D20 | Kedro starts with collection plus storing and other nodes, not a universal pipeline; more nodes are expected and may replace `_collect` scripts. | Confirmed 2026-11-16 |
 | D21 | No `ProfilePolicy` wrapper and no scoring class; delete the three empty processing modules. | Confirmed 2026-11-16 |
 | D22 | No per-spec digest or old-data compatibility requirement; a vault `schema_version` is enough. | Confirmed 2026-11-16 |
+| D23 | The universal history is expected but not guaranteed. Collection may be planned per pipeline; profiles and stages take their input records as arguments and never assume one universal history exists. | Confirmed 2026-11-22 — Q28 |
 
 ## The three mandated directions
 

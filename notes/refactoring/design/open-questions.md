@@ -58,6 +58,7 @@ and the affected document in the same change.
 | Q25 | JSON run report now; revisit the shape with Kedro. | [artifacts.md](artifacts.md#stage-interface). |
 | Q26 | Collector at `acquisition/collector.py`, entry point `run_collection`. | [module-seams.md](module-seams.md#target-package-map). |
 | Q27 | No spec version or digest, and no compatibility requirement for old data. `schema_version` on the vault is enough. | [artifacts.md](artifacts.md#resume-and-failure). |
+| Q28 | The universal history is expected but not guaranteed. Collection may be planned per pipeline and run as today; a profile's input is whatever records it is given, not "the universal vault". Interfaces that read or write universal data take records or paths as arguments; nothing may depend on one universal history existing. | [artifacts.md](artifacts.md#stage-interface), [open-questions.md](#universal-history-is-not-guaranteed). |
 
 ## Still open
 
@@ -103,6 +104,23 @@ The universal vault keeps every posting the configured queries returned,
 including roles a profile will later reject. Profile filters run only after the
 universal record exists. This is a change from the legacy profile pipeline,
 which filters before storing.
+
+### Universal history is not guaranteed
+
+The universal history is the expected default, not a requirement. Collection may
+be planned per pipeline and run the way it is today, so there may be one history,
+several, or a pipeline that only produces chunks. Nothing in the implementation
+may assume that "the universal vault" exists or is current:
+
+- a profile filter receives records; it must not read a universal file, import a
+  universal loader, or know where the input came from;
+- stages that read universal artifacts take a path (or records) from the
+  pipeline/catalog, never a module-level constant;
+- a missing universal history is an ordinary input, not an error to work around.
+
+In practice the universal history will exist and be used; making it a
+convention rather than a dependency keeps a second collection layout possible
+without a code change (Q28).
 
 ## How to change a decision
 

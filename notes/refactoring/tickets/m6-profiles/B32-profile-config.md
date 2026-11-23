@@ -8,6 +8,8 @@ Status: todo · Milestone: M6 Profiles · Phase 6 · Size: M
 ## Do
 
 1. Add the frozen `ProfileConfig` from [design/specs.md](../../design/specs.md).
+   Add no input-source path: the caller passes records, never "the" universal
+   history (Q28).
 2. Move Dani threshold, salary, locations, scoring and language values into the
    Dani config/defaults.
 3. Keep code behaviour unchanged.

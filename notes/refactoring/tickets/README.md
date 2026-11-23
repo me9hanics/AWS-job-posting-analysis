@@ -130,6 +130,19 @@ B06–B10 may run in parallel with B03–B05 once B02 is done.
 | B45 | [Update documentation and ADRs](m9-done/B45-update-docs.md) | B44 | todo |
 | B46 | [Final gates](m9-done/B46-final-gates.md) | B44, B45 | todo |
 
+## Ticket implementation notes
+
+Tickets do not get companion prototype files or placeholders. When a ticket
+changes a boundary or has a non-obvious local flow, add a short
+`## Implementation notes` section to that ticket. State what changes and, only
+where it clarifies the work, use `In → Does → Out → Next` to describe the local
+handoff. Keep it smaller than the design's implementation-flow sketch and link
+to that sketch when the ticket implements part of a wider flow.
+
+Mock signatures in a ticket are illustrative only. The design documents remain
+the source for cross-block interfaces and data flow; the ticket remains the
+source for the scoped change and its completion checks.
+
 ## Working agreement
 
 Repeated in every ticket so each ticket can be read alone.
@@ -175,3 +188,7 @@ rg "class BaseScraper|class KarriereAT|class Raiffeisen" src
   [design/open-questions.md](../design/open-questions.md#still-open).
 - **B02a** — the field name and output placement are proposed in the ticket;
   confirm them there before writing code.
+- **Q28** — the universal history is expected but not guaranteed. Derived from
+  the user's clarification on 2026-11-22; it constrains B32, B33, B36 and the
+  derivation tests, not the folder layout. See
+  [design/open-questions.md](../design/open-questions.md#universal-history-is-not-guaranteed).

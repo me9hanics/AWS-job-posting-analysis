@@ -186,7 +186,8 @@ the profile module. A profile `current_postings.json` holds selected postings
 only. Dani is the reference migration; other profiles stay on the legacy path
 until deliberately converted.
 
-**Verify:** Dani derives from saved universal facts without scraping; its
+**Verify:** Dani derives from saved facts without scraping (the facts are passed
+in; a universal history is the expected source, not a required one, Q28); its
 current/newly-added behaviour matches the agreed delta rules; the derivation
 module contains no profile constants.
 

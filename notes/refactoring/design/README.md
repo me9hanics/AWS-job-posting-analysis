@@ -31,3 +31,26 @@ interfaces, module maps and layout; the workstreams in
 - When a question is decided, update the document and the corresponding row in
   [open-questions.md](open-questions.md) in the same change.
 - Cross-references use relative links so the folder can move as a unit.
+
+## Implementation-flow sketches
+
+Add an implementation-flow sketch to the relevant design document when a
+design decision needs to show how data moves through several logical blocks.
+Do not create one automatically for every milestone, folder, or ticket, and do
+not create placeholders. The agent planning or starting the work writes it when
+the flow is useful.
+
+The sketch follows the data in execution order: pipeline context before the
+change, then each logical block, then the downstream artifact or stage. Each
+block states:
+
+- **In:** the data, config, or artifact it receives and its producer;
+- **Does:** the short transformation or decision it makes;
+- **Out:** the named result and its shape;
+- **Next:** the named consumer of that result and why it consumes it.
+
+Where a block contains smaller relevant blocks, list them in their execution
+order with the same `In → Does → Out → Next` chain. Small mock signatures or
+dataclasses may show a boundary, but their names and types must connect the
+preceding block's output to the next block's input. They are design sketches,
+not implementation or a second source of truth.

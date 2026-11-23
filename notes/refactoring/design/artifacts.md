@@ -79,6 +79,11 @@ No profile writes to the universal folder. No universal stage reads a profile
 folder. The Dani scoped collection writes under its own `collections/dani/`
 folder precisely so it cannot be mistaken for root coverage.
 
+The universal folder is the expected layout, not a contract that every run
+produces. Derivation receives its input records from the caller (a pipeline node,
+a catalog dataset or a test) and does not discover or require a universal
+history; a run can be planned per pipeline as today (Q28).
+
 ## Merge and diff rules
 
 These are the rules the current code implements or intends; they must be
@@ -96,6 +101,9 @@ fixtures before the data layer moves.
 - **Lists.** Ordered union; `matched_titlewords` accumulates provenance.
 - **Profile fields.** `points`, profile keywords, `profile_excluded`,
   `language_excluded` and profile scores never enter universal records.
+- **Vocabulary.** "Universal" names the expected shared record shape and folder,
+  not a run that must exist. Interfaces that read or write it take records or
+  paths as arguments; no stage or profile discovers a universal history (Q28).
 - **Diff.** Added = keys in current, absent from previous. Removed = keys in
   previous, absent from current. The neutral diff must not inject `points` or
   any other profile default.
@@ -143,7 +151,7 @@ fixtures before the data layer moves.
 | --- | --- | --- | --- |
 | collect | `CollectionConfig`, optional seed history | chunks, run report, incomplete-run on failure | scope digest + unit + step |
 | store universal | chunks or facts, previous universal files | universal current/history/newly-added/scope | scope digest |
-| derive profile | universal current, `ProfileConfig`, profile functions, profile history | profile candidates/history/current/newly-added/baseline | profile name |
+| derive profile | **input records supplied by the caller** (in practice the universal current file), `ProfileConfig`, profile functions, profile history | profile candidates/history/current/newly-added/baseline | profile name |
 | outputs | profile current/newly-added | Excel, Markdown, email | profile + run date |
 
 A policy change makes a derivation rerun a new derivation, not a continuation.

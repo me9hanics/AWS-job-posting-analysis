@@ -79,16 +79,21 @@ functions) stays in code. See
    reappearances and score-only changes stay out of newly added.
 6. Declare the `SCORED_POSTINGS` and `SELECTED_POSTINGS` specs and check them at
    the derivation boundary. The scored spec is what "fill out the spec" means
-   for scoring: start from universal records, add the declared derived fields.
+   for scoring: start from the input records the caller supplies (in practice
+   universal records) and add the declared derived fields.
 7. When converting tech/legal/tn, move their constants and transformation lists
    into their profile modules unchanged, then verify parity.
 8. Keep profile text/scoring constants under review by the existing tests
    (`tests/test_dani_profile.py`, `tests/test_language_requirements.py`).
+9. Derivation takes its records as an argument. It does not load a universal
+   history, import a universal loader, or assume one history exists; a profile
+   filter cannot know or care whether the input came from universal, another
+   pipeline or a fixture (Q28).
 
 ## Dependencies
 
-- Data workstream: derivation reads universal facts and writes profile
-  artifacts through the data layer.
+- Data workstream: derivation receives input records and writes profile
+  artifacts through the data layer. It does not read a universal file by name.
 - Pipelines workstream: policy construction moves to pipeline/CLI boundary.
 - Kedro: profile parameters (`conf/*/parameters_<profile>.yml`) after the policy
   contract exists.

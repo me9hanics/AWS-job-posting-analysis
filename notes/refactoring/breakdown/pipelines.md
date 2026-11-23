@@ -49,7 +49,7 @@ Stage contract table (proposal):
 | `collect_universal` | `CollectionConfig` (YAML), adapter registry, optional cache seed | shared records, chunks, scope digest, JSON run report | failed step recorded and run continues; zero records → acquisition failure |
 | `enrich_generic` | raw facts | raw facts with derived generic fields | per-record errors recorded, stage continues |
 | `store_universal` | enriched facts, scope digest | current, history, newly added | write conflict aborts before replacement |
-| `derive_profile` | universal current, `ProfileConfig`, profile functions, previous history | candidates, scored history, selected | policy error aborts with profile named |
+| `derive_profile` | input records from the caller, `ProfileConfig`, profile functions, previous history | candidates, scored history, selected | policy error aborts with profile named |
 | `generate_outputs` | selected artifacts, output config | Excel, Markdown, email | missing optional output is skipped, not fatal |
 
 Each stage must be runnable alone from saved artifacts (the "startable" goal).
