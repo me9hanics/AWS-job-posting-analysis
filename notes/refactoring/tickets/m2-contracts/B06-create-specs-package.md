@@ -1,6 +1,6 @@
 # B06 — Create the `specs` package
 
-Status: todo · Milestone: M2 Contracts · Phase 1 · Size: S
+Status: done · Milestone: M2 Contracts · Phase 1 · Size: S
 
 - Depends on: B02
 - Files: `src/jobscraping/specs/__init__.py`, `src/jobscraping/specs/base.py`
