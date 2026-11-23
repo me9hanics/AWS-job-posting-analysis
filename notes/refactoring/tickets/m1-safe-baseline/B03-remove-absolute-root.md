@@ -1,6 +1,6 @@
 # B03 — Remove the absolute repository root
 
-Status: todo · Milestone: M1 Safe baseline · Phase 0 · Size: S
+Status: done · Milestone: M1 Safe baseline · Phase 0 · Size: S
 
 - Depends on: B02
 - Files: `src/jobscraping/config/configs.py`, `tests/`
