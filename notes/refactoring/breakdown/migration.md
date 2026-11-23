@@ -178,9 +178,25 @@ From the repository root:
 uv run python -m unittest discover -s tests
 ```
 
-On 2026-11-23 this reported `Ran 55 tests` / `OK`.
-PowerShell may report exit code 1 because unittest writes progress to stderr;
-read the `OK` line. B02 owns the recorded baseline count.
+On 2026-11-23, from a clean `uv run` with no manual `PYTHONPATH`, this reported
+`Ran 55 tests in 0.334s` / `OK`. That command and that count are the baseline
+(B02). PowerShell may report exit code 1 because unittest writes progress to
+stderr; read the `OK` line. Per module: `test_collection_cli.py` 8,
+`test_incremental_collection.py` 17, `test_raw_collection.py` 11,
+`test_dani_profile.py` 14, `test_language_requirements.py` 5.
+
+No test needs the network or a live browser, so the default gate is the whole
+suite and excludes nothing; no skip markers are needed. The HTTP helpers are
+exercised with a patched `requests.Session` and stubbed
+`requests_responses[_with_cookies]`; URLs such as
+`https://example.test/jobs` and `https://www.karriere.at/jobs/1` are data or
+arguments to those stubs and are never fetched. `selenium` is imported lazily in
+`src` only, and no test constructs a driver.
+
+The suite imports files outside Git (the Git-ignored `schedule` modules and the
+untracked `pipelines.dani`), so it runs in this working tree but not in a fresh
+clone; [Live entry points](#live-entry-points) and the note below the behaviour
+table record why. That dependency is unchanged by B02.
 
 The tests that protect each behaviour:
 
@@ -195,7 +211,8 @@ The tests that protect each behaviour:
 Discovery imports `schedule.dani_collect` (and through it
 `pipelines.dani`), which are Git-ignored/untracked. The command therefore only
 runs in this working tree; a fresh clone fails at import until those files are
-tracked or the tests stop importing them. B02 has to decide that.
+tracked or the tests stop importing them. B02 records that as the baseline's
+known working-tree dependency; see [Test command](#test-command).
 
 ### Archive-only and inert scripts
 
@@ -224,8 +241,9 @@ tracked or the tests stop importing them. B02 has to decide that.
   live current/newly-added/scope files are under `collections/dani/`. The
   [artifacts table](../design/artifacts.md) describes the code contract, not
   the current root contents.
-- The 54-test note predates the untracked `tests/test_dani_profile.py`; the
-  working tree now reports 55.
+- The 54-test note is stale; the working tree reports 55 (B02's
+  `Ran 55 tests`). The untracked `tests/test_dani_profile.py` alone contributes
+  14 of those, so it does not explain the one-test difference by itself.
 
 ## Gates
 

@@ -122,7 +122,8 @@ rg "class BaseScraper|class KarriereAT|class Raiffeisen" src
 - Done when:
   - the command passes from a clean `uv run` without manual `PYTHONPATH`;
   - the baseline names the command and the pass count.
-- Note: at review time, 54 tests passed with this command.
+- Note: the review-time figure was 54; B02 confirmed 55 on 2026-11-23 with
+  `uv run python -m unittest discover -s tests` (`Ran 55 tests` / `OK`).
 
 ### B02a — Add a real `last_modified_on` field
 

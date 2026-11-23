@@ -38,7 +38,7 @@ ticket's status line in the same change.
 | ID | Ticket | Depends on | Status |
 | --- | --- | --- | --- |
 | B01 | [Record the baseline](m1-safe-baseline/B01-record-the-baseline.md) | — | done |
-| B02 | [Confirm the test command and baseline result](m1-safe-baseline/B02-confirm-test-command.md) | B01 | todo |
+| B02 | [Confirm the test command and baseline result](m1-safe-baseline/B02-confirm-test-command.md) | B01 | done |
 | B03 | [Remove the absolute repository root](m1-safe-baseline/B03-remove-absolute-root.md) | B02 | todo |
 | B04 | [Characterization tests for data rules](m1-safe-baseline/B04-characterization-tests.md) | B02 | todo |
 | B02a | [Add a real `last_modified_on` field](m1-safe-baseline/B02a-last-modified-on-field.md) | B04 | todo |
@@ -167,7 +167,7 @@ uv run python -m unittest discover -s tests
 ```
 
 PowerShell can report exit code 1 because unittest writes to stderr even when
-tests pass; read the `OK`/failure output. Baseline at handoff: 54 tests pass.
+tests pass; read the `OK`/failure output. Baseline: 55 tests pass.
 
 A ticket that claims "no absolute path" is verified with:
 
