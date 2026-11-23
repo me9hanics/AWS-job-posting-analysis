@@ -1,6 +1,6 @@
 # B09 — Define the adapter step contract
 
-Status: todo · Milestone: M2 Contracts · Phase 1 · Size: S
+Status: done · Milestone: M2 Contracts · Phase 1 · Size: S
 
 - Depends on: B06
 - Files: `src/jobscraping/scrapers/steps.py`
