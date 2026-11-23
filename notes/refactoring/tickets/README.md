@@ -56,11 +56,11 @@ Confirmed during M1:
 
 | ID | Ticket | Depends on | Status |
 | --- | --- | --- | --- |
-| B06 | [Create the `specs` package](m2-contracts/B06-create-specs-package.md) | B02 | todo |
-| B07 | [Define the five posting specs](m2-contracts/B07-posting-specs.md) | B06 | todo |
-| B08 | [Test the spec contract](m2-contracts/B08-spec-contract-tests.md) | B06, B07 | todo |
-| B09 | [Define the adapter step contract](m2-contracts/B09-step-contract.md) | B06 | todo |
-| B10 | [Prove the step contract with a fake adapter](m2-contracts/B10-fake-adapter.md) | B09 | todo |
+| B06 | [Create the `specs` package](m2-contracts/B06-create-specs-package.md) | B02 | done |
+| B07 | [Define the five posting specs](m2-contracts/B07-posting-specs.md) | B06 | done |
+| B08 | [Test the spec contract](m2-contracts/B08-spec-contract-tests.md) | B06, B07 | done |
+| B09 | [Define the adapter step contract](m2-contracts/B09-step-contract.md) | B06 | done |
+| B10 | [Prove the step contract with a fake adapter](m2-contracts/B10-fake-adapter.md) | B09 | done |
 
 B06–B10 may run in parallel with B03–B05 once B02 is done.
 

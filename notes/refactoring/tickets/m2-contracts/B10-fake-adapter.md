@@ -1,6 +1,6 @@
 # B10 — Prove the step contract with a fake adapter
 
-Status: todo · Milestone: M2 Contracts · Phase 1 · Size: S
+Status: done · Milestone: M2 Contracts · Phase 1 · Size: S
 
 - Depends on: B09
 - Files: `tests/test_steps_contract.py` (new)
