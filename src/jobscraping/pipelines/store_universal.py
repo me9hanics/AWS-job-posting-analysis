@@ -12,6 +12,22 @@ from jobscraping.processing.postings_utils import factual_postings
 UNIVERSAL_POSTINGS_FOLDER = "data/save/postings/universal"
 
 
+def _material_changed(old, posting):
+    """Only title and description decide a change; absent keys leave stored values."""
+    return any(
+        (posting.get(field) or "") != (old.get(field) or "")
+        for field in ("title", "description")
+        if field in posting
+    )
+
+
+def _last_modified_on(old, posting):
+    """Date of the observation that last changed the posting's material."""
+    if not old or _material_changed(old, posting):
+        return posting.get("collected_on")
+    return old.get("last_modified_on") or old.get("last_collected_on") or old.get("collected_on")
+
+
 def load_postings(path, filename):
     file = Path(path) / filename
     return load_file_if_str(str(file), "dict") if file.exists() else {}
@@ -31,6 +47,11 @@ def merge_observations(current, previous):
             merged["last_collected_on"] = max(dates)
             merged["timespan_days"] = (date.fromisoformat(max(dates)) - date.fromisoformat(min(dates))).days
         merge_matched_titlewords(merged, old)
+        modified_on = _last_modified_on(old, posting)
+        if modified_on:
+            merged["last_modified_on"] = modified_on
+        else:
+            merged.pop("last_modified_on", None)
         history[key] = merged
         posting.update(deepcopy(merged))
     return history

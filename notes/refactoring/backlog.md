@@ -135,13 +135,14 @@ rg "class BaseScraper|class KarriereAT|class Raiffeisen" src
   1. Add one derived field, `last_modified_on` (`YYYY-MM-DD`): the observation
      date on which any persisted fact of the posting last changed.
      Re-observing an unchanged posting does not move it.
-  2. Define "changed" in `design/artifacts.md` first: compare against the stored
-     record, ignoring `CACHE_ALWAYS_FRESH_FIELDS`, `last_modified_on` and the
-     merge bookkeeping (`first_collected_on`, `last_collected_on`,
-     `timespan_days`). Decide explicitly where `isActive` and `date` belong.
+  2. Define "changed" first: only `title` and `description` decide a change,
+     compared as raw incoming values. `isActive`, the site `date`,
+     `CACHE_ALWAYS_FRESH_FIELDS`, `last_modified_on` itself and the merge
+     bookkeeping (`first_collected_on`, `last_collected_on`, `timespan_days`)
+     never do.
   3. Set it on first observation to that observation's `collected_on`.
   4. Compute it only in the merge; add it to `RAW_POSTING_FIELDS` and to one
-     `EXCEL_COLUMNS`/`COLUMN_ORDER` position.
+     `COLUMN_ORDER` position right after `date` (no Excel column).
 - Done when:
   - the four acceptance cases hold: first observation equals `collected_on`;
     an unchanged observation leaves it; a changed description moves it; a

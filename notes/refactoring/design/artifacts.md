@@ -94,6 +94,25 @@ fixtures before the data layer moves.
 - **Dates.** `first_collected_on` = earliest known, `last_collected_on` = latest
   known, `timespan_days` recomputed from those two. `collected_on` is the
   observation date and is not a range.
+- **Material change.** `last_modified_on` is the observation date on which the
+  posting's material last changed. Only `title` and `description` decide a
+  change, compared as the raw values the observation supplies. No other field
+  does: `isActive`, the site's `date`, `url`, locations, salaries and the merge
+  bookkeeping (`collected_on`, `first_collected_on`, `last_collected_on`,
+  `timespan_days`) are ignored, and the comparison ignores `last_modified_on`
+  itself so a repeated merge cannot move it.
+- **Missing values.** Only fields present in the observation are compared; an
+  absent `title`/`description` leaves the stored value in place and is not a
+  change. Missing and empty compare equal, so an empty observation of a record
+  that also has no value is not a change.
+- **First observation and legacy records.** A record with no stored facts gets
+  `last_modified_on = collected_on` of that observation, so the field is never
+  `None` on a new record. A stored record that predates the field and whose
+  material is unchanged takes its `last_collected_on` (falling back to
+  `collected_on`) as the last known change date.
+- **One owner, no backfill.** Only the merge computes `last_modified_on`;
+  adapters, enrichment and derivation never set it. Existing history is not
+  backfilled (Q27): old records gain the field on their next observation.
 - **Description.** Latest non-empty observation wins.
 - **Scalars.** An existing non-empty value is preserved; a new non-empty value
   fills a missing one. Conflicts are resolved by an explicit rule, not by dict

@@ -18,7 +18,7 @@ COLUMN_ORDER = ["title", "company",  "salary_monthly_guessed",
                 "points", "url", "language", "guessed_required_languages",
                 "snippet", "description", "salary",
                 "employmentTypes", "salary_guessed",
-                "collected_on", "date", "id", "isHomeOffice", "isActive", "source"]
+                "collected_on", "date", "last_modified_on", "id", "isHomeOffice", "isActive", "source"]
 EXCEL_COLUMNS = {
     'title': {'as': 'Title', 'column': 'A', 'width': 38},
     'company': {'as': 'Company', 'column': 'B', 'width': 24},

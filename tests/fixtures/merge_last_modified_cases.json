@@ -1,0 +1,156 @@
+{
+  "first_observation": {
+    "previous": {},
+    "current": {
+      "test1": {
+        "id": "1",
+        "source": "test",
+        "title": "Data Engineer",
+        "description": "Build the platform.",
+        "collected_on": "2025-03-01"
+      }
+    },
+    "expected": {
+      "last_modified_on": "2025-03-01",
+      "last_collected_on": "2025-03-01"
+    }
+  },
+  "unchanged_observation": {
+    "previous": {
+      "test1": {
+        "id": "1",
+        "source": "test",
+        "title": "Data Engineer",
+        "description": "Build the platform.",
+        "collected_on": "2025-03-01",
+        "first_collected_on": "2025-03-01",
+        "last_collected_on": "2025-03-01",
+        "timespan_days": 0,
+        "last_modified_on": "2025-03-01"
+      }
+    },
+    "current": {
+      "test1": {
+        "id": "1",
+        "source": "test",
+        "title": "Data Engineer",
+        "description": "Build the platform.",
+        "collected_on": "2025-03-10"
+      }
+    },
+    "expected": {
+      "last_modified_on": "2025-03-01",
+      "last_collected_on": "2025-03-10"
+    }
+  },
+  "changed_description": {
+    "previous": {
+      "test1": {
+        "id": "1",
+        "source": "test",
+        "title": "Data Engineer",
+        "description": "Build the platform.",
+        "collected_on": "2025-03-01",
+        "first_collected_on": "2025-03-01",
+        "last_collected_on": "2025-03-01",
+        "timespan_days": 0,
+        "last_modified_on": "2025-03-01"
+      }
+    },
+    "current": {
+      "test1": {
+        "id": "1",
+        "source": "test",
+        "title": "Data Engineer",
+        "description": "Build and operate the platform.",
+        "collected_on": "2025-03-10"
+      }
+    },
+    "expected": {
+      "last_modified_on": "2025-03-10",
+      "last_collected_on": "2025-03-10"
+    }
+  },
+  "changed_title": {
+    "previous": {
+      "test1": {
+        "id": "1",
+        "source": "test",
+        "title": "Data Engineer",
+        "description": "Build the platform.",
+        "collected_on": "2025-03-01",
+        "first_collected_on": "2025-03-01",
+        "last_collected_on": "2025-03-01",
+        "timespan_days": 0,
+        "last_modified_on": "2025-03-01"
+      }
+    },
+    "current": {
+      "test1": {
+        "id": "1",
+        "source": "test",
+        "title": "Senior Data Engineer",
+        "description": "Build the platform.",
+        "collected_on": "2025-03-10"
+      }
+    },
+    "expected": {
+      "last_modified_on": "2025-03-10",
+      "last_collected_on": "2025-03-10"
+    }
+  },
+  "legacy_record_unchanged": {
+    "previous": {
+      "test1": {
+        "id": "1",
+        "source": "test",
+        "title": "Data Engineer",
+        "description": "Build the platform.",
+        "collected_on": "2025-02-01",
+        "first_collected_on": "2025-02-01",
+        "last_collected_on": "2025-02-01",
+        "timespan_days": 0
+      }
+    },
+    "current": {
+      "test1": {
+        "id": "1",
+        "source": "test",
+        "title": "Data Engineer",
+        "description": "Build the platform.",
+        "collected_on": "2025-03-10"
+      }
+    },
+    "expected": {
+      "last_modified_on": "2025-02-01",
+      "last_collected_on": "2025-03-10"
+    }
+  },
+  "empty_observation_of_empty_record": {
+    "previous": {
+      "test1": {
+        "id": "1",
+        "source": "test",
+        "title": "",
+        "collected_on": "2025-02-01",
+        "first_collected_on": "2025-02-01",
+        "last_collected_on": "2025-02-01",
+        "timespan_days": 0,
+        "last_modified_on": "2025-02-01"
+      }
+    },
+    "current": {
+      "test1": {
+        "id": "1",
+        "source": "test",
+        "title": "",
+        "description": "",
+        "collected_on": "2025-03-10"
+      }
+    },
+    "expected": {
+      "last_modified_on": "2025-02-01",
+      "last_collected_on": "2025-03-10"
+    }
+  }
+}

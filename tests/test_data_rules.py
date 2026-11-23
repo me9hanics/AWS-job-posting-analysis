@@ -7,11 +7,16 @@ B02a and B27 as a parity gate.
 
 import copy
 import json
+import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import patch
 
-from jobscraping.pipelines.store_universal import merge_observations
+from jobscraping.pipelines.store_universal import merge_observations, store_universal_postings
 from jobscraping.processing.postings_utils import factual_postings, get_added_and_removed
+from jobscraping.scrapers import scrape
+from jobscraping.scrapers.sites import KarriereAT
 
 
 FIXTURES = Path(__file__).with_name("fixtures")
@@ -25,13 +30,34 @@ EXPECTED_RAW_FIELDS = {
     "salary_monthly_guessed", "locations", "first_collected_on", "last_collected_on",
     "collected_on", "timespan_days", "matched_titlewords", "date", "id", "url",
     "isActive", "isHomeOffice", "employmentTypes", "snippet", "role",
-    "requirements", "nice_to_have", "benefits",
+    "requirements", "nice_to_have", "benefits", "last_modified_on",
 }
 
 
 def load_fixture(name):
     with open(FIXTURES / name, encoding="utf-8") as file:
         return json.load(file)
+
+
+def listing(posting_id=1, title="Sales"):
+    return {"jobsItem": {
+        "id": posting_id, "title": title, "company": {"name": "Company"},
+        "locations": [{"name": "Vienna"}], "salary": "", "isActive": True,
+        "isHomeOffice": False, "employmentTypes": [],
+        "link": f"https://www.karriere.at/jobs/{posting_id}", "snippet": "",
+        "date": "2025-03-01",
+    }}
+
+
+def listing_response(items):
+    payload = {"data": {"jobsSearchList": {"activeItems": {"items": items}}}}
+    return SimpleNamespace(text=json.dumps(payload))
+
+
+def detail_response(text):
+    payload = {"data": {"jobDetailContent": {"jobContent": {"text": text},
+                                             "jobHeader": {"job": {"id": 1}}}}}
+    return SimpleNamespace(text=json.dumps(payload))
 
 
 class FactualPostingsTests(unittest.TestCase):
@@ -126,6 +152,76 @@ class MergeObservationsTests(unittest.TestCase):
         history = merge_observations(current, copy.deepcopy(self.previous))
         again = merge_observations(current, history)
         self.assertEqual(again, history)
+
+
+class LastModifiedOnMergeTests(unittest.TestCase):
+    def setUp(self):
+        self.cases = load_fixture("merge_last_modified_cases.json")
+
+    def merge(self, case):
+        current = copy.deepcopy(self.cases[case]["current"])
+        previous = copy.deepcopy(self.cases[case]["previous"])
+        return merge_observations(current, previous)
+
+    def assert_expected(self, case, merged):
+        for field, value in self.cases[case]["expected"].items():
+            self.assertEqual(merged["test1"][field], value, field)
+
+    def test_first_observation_last_modified_on_equals_collected_on(self):
+        self.assert_expected("first_observation", self.merge("first_observation"))
+
+    def test_unchanged_observation_keeps_last_modified_on_and_advances_last_collected_on(self):
+        merged = self.merge("unchanged_observation")
+        self.assert_expected("unchanged_observation", merged)
+
+    def test_changed_description_moves_last_modified_on(self):
+        self.assert_expected("changed_description", self.merge("changed_description"))
+
+    def test_changed_title_moves_last_modified_on(self):
+        self.assert_expected("changed_title", self.merge("changed_title"))
+
+    def test_repeated_merge_does_not_move_last_modified_on(self):
+        case = "unchanged_observation"
+        history = self.merge(case)
+        repeated = merge_observations(
+            copy.deepcopy(self.cases[case]["current"]), history
+        )
+        self.assertEqual(history["test1"]["last_modified_on"], "2025-03-01")
+        self.assertEqual(repeated["test1"]["last_modified_on"], "2025-03-01")
+        self.assertEqual(repeated["test1"]["last_collected_on"], "2025-03-10")
+
+    def test_legacy_record_without_field_keeps_last_known_change_date(self):
+        merged = self.merge("legacy_record_unchanged")
+        self.assert_expected("legacy_record_unchanged", merged)
+        self.assertIsNotNone(merged["test1"]["last_modified_on"])
+
+    def test_empty_observation_of_empty_record_is_not_a_change(self):
+        self.assert_expected("empty_observation_of_empty_record",
+                             self.merge("empty_observation_of_empty_record"))
+
+
+class LastModifiedOnStorageTests(unittest.TestCase):
+    def test_new_universal_record_carries_last_modified_on(self):
+        raw = {"test1": {"id": "1", "source": "test", "title": "Data Engineer",
+                         "description": "Build the platform.",
+                         "collected_on": "2025-03-01"}}
+        with tempfile.TemporaryDirectory(dir=Path.cwd()) as folder:
+            stored = store_universal_postings(copy.deepcopy(raw), folder, {"scope": "test"})
+
+        self.assertEqual(stored["test1"]["last_modified_on"], "2025-03-01")
+
+    def test_scraper_raw_output_has_no_last_modified_on(self):
+        scraper = KarriereAT(
+            driver="", keywords={"titlewords": ["sales"], "locations": ["Vienna"]},
+            date_day="2025-03-01",
+        )
+        responses = [[listing_response([listing()])], [detail_response("<p>Details</p>")]]
+        with patch.object(scrape, "requests_responses_with_cookies", side_effect=responses):
+            raw = scraper.gather_data(process=False, descriptions=True)
+
+        self.assertTrue(raw)
+        for posting in raw.values():
+            self.assertNotIn("last_modified_on", posting)
 
 
 class GetAddedAndRemovedTests(unittest.TestCase):

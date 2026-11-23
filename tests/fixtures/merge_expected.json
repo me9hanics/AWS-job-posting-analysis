@@ -11,6 +11,7 @@
     "first_collected_on": "2025-01-10",
     "last_collected_on": "2025-02-20",
     "timespan_days": 41,
+    "last_modified_on": "2025-02-20",
     "snippet": "Python and SQL.",
     "url": "https://example.test/karriere/7818416",
     "isActive": true,
@@ -27,7 +28,8 @@
     "collected_on": "2025-02-20",
     "first_collected_on": "2025-02-20",
     "last_collected_on": "2025-02-20",
-    "timespan_days": 0
+    "timespan_days": 0,
+    "last_modified_on": "2025-02-20"
   },
   "karriere.at7818419": {
     "id": "7818419",
@@ -37,7 +39,8 @@
     "collected_on": "2025-02-20",
     "first_collected_on": "2025-01-10",
     "last_collected_on": "2025-02-20",
-    "timespan_days": 41
+    "timespan_days": 41,
+    "last_modified_on": "2025-02-20"
   },
   "karriere.at7820001": {
     "id": "7820001",

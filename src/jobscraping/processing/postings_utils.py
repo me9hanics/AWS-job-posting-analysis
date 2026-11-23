@@ -25,7 +25,7 @@ RAW_POSTING_FIELDS = {
     "salary_monthly_guessed", "locations", "first_collected_on", "last_collected_on",
     "collected_on", "timespan_days", "matched_titlewords", "date", "id", "url",
     "isActive", "isHomeOffice", "employmentTypes", "snippet", "role",
-    "requirements", "nice_to_have", "benefits",
+    "requirements", "nice_to_have", "benefits", "last_modified_on",
 }
 INCOMPLETE_HISTORY_REPAIR_FIELDS = {
     "company",
