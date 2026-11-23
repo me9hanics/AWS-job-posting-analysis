@@ -37,7 +37,7 @@ ticket's status line in the same change.
 
 | ID | Ticket | Depends on | Status |
 | --- | --- | --- | --- |
-| B01 | [Record the baseline](m1-safe-baseline/B01-record-the-baseline.md) | — | todo |
+| B01 | [Record the baseline](m1-safe-baseline/B01-record-the-baseline.md) | — | done |
 | B02 | [Confirm the test command and baseline result](m1-safe-baseline/B02-confirm-test-command.md) | B01 | todo |
 | B03 | [Remove the absolute repository root](m1-safe-baseline/B03-remove-absolute-root.md) | B02 | todo |
 | B04 | [Characterization tests for data rules](m1-safe-baseline/B04-characterization-tests.md) | B02 | todo |

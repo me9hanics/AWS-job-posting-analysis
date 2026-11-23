@@ -1,6 +1,6 @@
 # B01 — Record the baseline
 
-Status: todo · Milestone: M1 Safe baseline · Phase 0 · Size: S
+Status: done · Milestone: M1 Safe baseline · Phase 0 · Size: S
 
 - Depends on: —
 - Files: [breakdown/migration.md](../../breakdown/migration.md)
