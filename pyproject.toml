@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Scraping and analyzing job postings from various websites."
 readme = "README.md"
 authors = [{name="Mihaly Hanics", email="hanicsm@gmail.com"}]
-requires-python = ">=3.13.17"
+requires-python = ">=3.13.18"
 dependencies = [
     "pip>=26.2.2",
     "ipykernel",
@@ -14,8 +14,9 @@ dependencies = [
     "pandas",
     "numpy",
     "matplotlib",
-    "openpyxl"
     #"smtplib",
+    "openpyxl",
+    "kedro>=1.8.0",
 ]
 
 [build-system]
