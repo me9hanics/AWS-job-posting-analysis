@@ -335,7 +335,9 @@ def requests_responses_with_cookies(
     stop_condition=None,
     continue_on_http_error=False,
     retry_http_statuses=(429, 500, 502, 503, 504),
+    terminal_http_statuses=(),
     raise_on_retry_failure=False,
+    raise_on_http_error=False,
 ):  # pylint: disable=too-many-arguments,too-many-locals,too-many-branches,too-many-statements
     """
     Make HTTP requests with cookie persistence, timeout, retry, and backoff logic.
@@ -354,6 +356,7 @@ def requests_responses_with_cookies(
         stop_condition: Optional callable that stops pagination after a successful response
         continue_on_http_error: Continue with later pages after a non-retryable error
         retry_http_statuses: HTTP statuses to retry once with an extended timeout
+        terminal_http_statuses: HTTP statuses that end pagination after a successful page
         raise_on_retry_failure: Raise instead of returning partial data after a failed retry
 
     Returns:
@@ -406,6 +409,10 @@ def requests_responses_with_cookies(
         try:
             response = session.get(url, headers=headers, timeout=timeout)
             if response.status_code != 200:
+                if response.status_code in terminal_http_statuses and responses:
+                    if verbose:
+                        print(f"Stopped at page {page}, error: {response.status_code}")
+                    break
                 if response.status_code in retry_http_statuses:
                     retry_later.append((page, len(responses)))
                     if verbose:
@@ -417,6 +424,8 @@ def requests_responses_with_cookies(
                     break
                 if verbose:
                     print(f"Stopped at page {page}, error: {response.status_code}")
+                if raise_on_http_error:
+                    raise RuntimeError(f"Acquisition failed for {url}: HTTP {response.status_code}")
                 if continue_on_http_error:
                     continue
                 break

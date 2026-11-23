@@ -14,11 +14,19 @@ from jobscraping.processing.attributes import (
     rank_postings,
     salary_from_text,
 )
+from jobscraping.processing.language_requirements import guess_required_languages
 from jobscraping.processing.transformations import apply_filters_transformations as apply_filters_transformations_func
 from jobscraping.utils.datastruct_utils import sort_dict_by_key, get_nested_dict_keys
 
 
 CACHE_ALWAYS_FRESH_FIELDS = {"collected_on", "date", "isActive", "url"}
+RAW_POSTING_FIELDS = {
+    "title", "company", "description", "source", "salary", "salary_guessed",
+    "salary_monthly_guessed", "locations", "first_collected_on", "last_collected_on",
+    "collected_on", "timespan_days", "matched_titlewords", "date", "id", "url",
+    "isActive", "isHomeOffice", "employmentTypes", "snippet", "role",
+    "requirements", "nice_to_have", "benefits",
+}
 INCOMPLETE_HISTORY_REPAIR_FIELDS = {
     "company",
     "description",
@@ -30,6 +38,14 @@ INCOMPLETE_HISTORY_REPAIR_FIELDS = {
 
 def _has_value(value):
     return value is not None and value != "" and value != [] and value != {}
+
+
+def factual_postings(postings):
+    """Project reusable facts; never carry profile fields into raw collection."""
+    return {
+        key: {field: deepcopy(value) for field, value in posting.items() if field in RAW_POSTING_FIELDS}
+        for key, posting in postings.items()
+    }
 
 
 def validate_cache_mode(cache_mode):
@@ -429,6 +445,10 @@ def process_data(
     postings = filter_method(postings, banned_words=banned_words,
                              banned_capital_words=banned_capital_words, **kwargs)
     postings = language_analysis_method(postings, description_key=description_key, **kwargs)
+    for posting in postings.values():
+        posting["guessed_required_languages"] = guess_required_languages(
+            f"{posting.get('title', '')}\n{posting.get(description_key, '')}"
+        )
     postings = rank_method(postings, **kwargs)
     postings = keyword_finding_method(postings, description_key=description_key, **kwargs)
     postings = apply_filters_transformations(postings, transformations=transformations, **kwargs)

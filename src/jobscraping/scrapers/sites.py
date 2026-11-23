@@ -34,6 +34,7 @@ from jobscraping.processing.attributes import (
     salary_points,
 )
 from jobscraping.processing.postings_utils import (
+    factual_postings,
     filter_postings,
     process_data,
     process_posting_soups,
@@ -571,6 +572,7 @@ class KarriereAT(BaseScraper):
         cached_postings=None,
         cache_mode=None,
         cache_hit_predicate=None,
+        process=True,
     ):
         website = self.rules["website"]
         locations = self.keywords["locations"]
@@ -610,7 +612,11 @@ class KarriereAT(BaseScraper):
                                        return_kind='responses',
                                        stop_condition=_search_page_has_no_postings,
                                        raise_on_retry_failure=True,
+                                       terminal_http_statuses=(410,) if not process else (),
+                                       raise_on_http_error=not process,
                                        verbose=verbose)
+            if not process and not responses:
+                raise RuntimeError(f"Acquisition failed for {base_url}")
             if responses:
                 for response in responses:
                     content = json.loads(response.text)
@@ -648,7 +654,8 @@ class KarriereAT(BaseScraper):
                                     print(item)
                             continue
 
-        postings = self._filter_postings(postings)
+        if process:
+            postings = self._filter_postings(postings)
         cached_hits, postings = split_cached_postings(
             postings,
             cached_postings=cached_postings,
@@ -656,7 +663,7 @@ class KarriereAT(BaseScraper):
             cache_hit_predicate=cache_hit_predicate,
         )
 
-        if descriptions:
+        if descriptions and postings:
             jobs_url = [posting["url"] for posting in postings.values()]
             ids = [re.search(r'\d+', url) for url in jobs_url if re.search(r'\d+', url)]
             ids = ["/"+ str(id.group()) for id in ids]
@@ -671,7 +678,7 @@ class KarriereAT(BaseScraper):
                                        },
                                        return_kind='responses',
                                        continue_on_http_error=True,
-                                       raise_on_retry_failure=True,
+                                       raise_on_retry_failure=process,
                                        verbose=verbose)
             if responses:
                 for response in responses:
@@ -700,11 +707,14 @@ class KarriereAT(BaseScraper):
             postings = {
                 posting_id: posting
                 for posting_id, posting in postings.items()
-                if posting_id not in incomplete_ids
+                if not process or posting_id not in incomplete_ids
             }
 
-        postings = self._process_data(postings, transformations=transformations, description_key=description_key)
+        if process:
+            postings = self._process_data(postings, transformations=transformations, description_key=description_key)
         postings = {**cached_hits, **postings}
+        if not process:
+            postings = factual_postings(postings)
         if save_data:
             self._save_data(postings, name="karriere_at", with_timestamp=True)
         return postings
@@ -909,6 +919,7 @@ class Raiffeisen(BaseScraper):
         cached_postings=None,
         cache_mode=None,
         cache_hit_predicate=None,
+        process=True,
     ):
         titles_pattern = self.rules["gather_data_selector"]
         website = self.rules["website"]
@@ -966,6 +977,8 @@ class Raiffeisen(BaseScraper):
                                               return_kind="soups", wait_time=request_wait_time,
                                               verbose=verbose)
             if not result:
+                if not process:
+                    raise RuntimeError(f"Acquisition failed for {url}")
                 if verbose:
                     print(f"No response received for {url}, skipping...")
                 continue
@@ -981,6 +994,8 @@ class Raiffeisen(BaseScraper):
                                                   return_kind="soups", wait_time=request_wait_time,
                                                   verbose=verbose)
                 if not result:
+                    if not process:
+                        raise RuntimeError(f"Acquisition failed for {next_page}")
                     if verbose:
                         print(f"No response for next page {next_page}, stopping pagination...")
                     break
@@ -989,7 +1004,8 @@ class Raiffeisen(BaseScraper):
                 get_next_page = self._next_page_logic(soup, titles_pattern)
                 row += 25
 
-        postings = self._filter_postings(postings)
+        if process:
+            postings = self._filter_postings(postings)
         cached_hits, postings = split_cached_postings(
             postings,
             cached_postings=cached_postings,
@@ -997,7 +1013,15 @@ class Raiffeisen(BaseScraper):
             cache_hit_predicate=cache_hit_predicate,
         )
 
-        if descriptions:
+        if descriptions and not process:
+            # Fetch separately so a failed detail cannot shift another ID's soup.
+            for posting_id, posting in postings.items():
+                soups = scrape.requests_responses([posting["url"]], https=(usecase=="https"),
+                    return_kind="soups", wait_time=request_wait_time, verbose=verbose)
+                if soups:
+                    details = self._get_descriptions_from_soups({posting_id: soups[0]}, verbose=verbose)
+                    posting.update(details.get(posting_id, {}))
+        elif descriptions:
             url_list = [posting["url"] for posting in postings.values()]
             ids = [website+re.search(r'/\d+/$', url).group().replace("/", "") for url in url_list]
             soups = scrape.requests_responses(url_list, https=(usecase=="https"),
@@ -1014,6 +1038,9 @@ class Raiffeisen(BaseScraper):
                                 "collected_on": self.business_day,
                                 }
         
-        postings = self._process_data(postings, transformations=transformations, description_key=description_key)
+        if process:
+            postings = self._process_data(postings, transformations=transformations, description_key=description_key)
         postings = {**cached_hits, **postings}
+        if not process:
+            postings = factual_postings(postings)
         return postings
