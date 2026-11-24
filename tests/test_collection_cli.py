@@ -6,12 +6,8 @@ from unittest.mock import patch
 
 from jobscraping.pipelines.cli import parse_collection_args
 from jobscraping.pipelines.collecting import scrape_sites
-from jobscraping.scrapers.sites import (
-    BUSINESS_DAY_SHIFT,
-    BaseScraper,
-    KarriereAT,
-    Raiffeisen,
-)
+from jobscraping.scrapers import BaseScraper, KarriereAT, Raiffeisen
+from jobscraping.scrapers.basescraper import BUSINESS_DAY_SHIFT
 from schedule import dani_collect, legal_collect, tech_collect, tn_collect
 
 
@@ -77,7 +73,7 @@ class CollectionDateTests(unittest.TestCase):
 
     def test_default_date_uses_business_day_shift_across_midnight(self):
         now = time.mktime((2026, 10, 31, 3, 0, 0, 0, 0, -1))
-        with patch("jobscraping.scrapers.sites.time.time", return_value=now):
+        with patch("jobscraping.scrapers.basescraper.time.time", return_value=now):
             scraper = BaseScraper(driver="")
         self.assertEqual(scraper.day, "2026-10-31")
         self.assertEqual(scraper.business_day, time.strftime("%Y-%m-%d", time.localtime(now - BUSINESS_DAY_SHIFT)))

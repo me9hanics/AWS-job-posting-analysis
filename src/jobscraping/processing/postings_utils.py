@@ -465,7 +465,7 @@ def enrich_postings(
 ):  # rankings = BASE_KEYWORD_SCORING,
     """Add salary guesses and reprocess postings as needed."""
     # Keep import inside function to avoid heavy scraper imports unless used.
-    from jobscraping.scrapers.sites import BaseScraper  # pylint: disable=import-outside-toplevel
+    from jobscraping.scrapers import BaseScraper  # pylint: disable=import-outside-toplevel
     if keywords is None:
         keywords = BASE_PHRASES
     if extra_keywords is None:

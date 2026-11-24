@@ -15,9 +15,12 @@ from jobscraping.config.constants import BASE_RULES
 from jobscraping.processing.attributes import (
     salary_from_description,
 )
-from jobscraping.scrapers import scrape
+from jobscraping.processing.postings_utils import (
+    factual_postings,
+    split_cached_postings,
+)
+from jobscraping.scrapers import http, pagination
 from jobscraping.scrapers.basescraper import BaseScraper
-from jobscraping.scrapers.scrape import next_page_logic_by_length
 
 
 class Raiffeisen(BaseScraper):
@@ -36,6 +39,7 @@ class Raiffeisen(BaseScraper):
         locations_desired=None,
         locations_secondary=None,
         transformations=None,
+        date_day=None,
     ):
         if rules is None:
             rules = deepcopy(BASE_RULES)
@@ -78,7 +82,7 @@ class Raiffeisen(BaseScraper):
                          extra_keywords = extra_keywords, extra_titlewords=extra_titlewords,
                          extra_locations=extra_locations, salary_bearable=salary_bearable, locations=locations,
                          locations_desired=locations_desired, locations_secondary=locations_secondary, 
-                         transformations = transformations)
+                         transformations = transformations, date_day=date_day)
 
     def _construct_page_urls(self, base_url = None, titlewords = None):
         if base_url is None:
@@ -92,7 +96,7 @@ class Raiffeisen(BaseScraper):
         return links
     
     def _next_page_logic(self, data:BeautifulSoup, pattern:str):
-        return next_page_logic_by_length(data, pattern, lengths=[25,50])
+        return pagination.next_page_logic_by_length(data, pattern, lengths=[25,50])
 
     def _process_posting_soups(self, soups:List[BeautifulSoup], pattern:str,
                               website="", jobs_base_url=None):
@@ -209,8 +213,18 @@ class Raiffeisen(BaseScraper):
         return super()._salary_from_text(text, keywords=keywords, clarity_comma_char=clarity_comma_char,
                                         decimal_separator=decimal_separator, conversion_rate=conversion_rate)
 
-    def gather_data(self, url_links=None, descriptions=False, verbose=False,
-                    transformations = None, description_key ="description"):
+    def gather_data(
+        self,
+        url_links=None,
+        descriptions=False,
+        verbose=False,
+        transformations=None,
+        description_key="description",
+        cached_postings=None,
+        cache_mode=None,
+        cache_hit_predicate=None,
+        process=True,
+    ):
         titles_pattern = self.rules["gather_data_selector"]
         website = self.rules["website"]
         usecase = self.rules["usecase"]
@@ -256,16 +270,19 @@ class Raiffeisen(BaseScraper):
                         "source": website,
                         "id": posting_id,
                         "matched_titlewords": [matched_titleword] if matched_titleword else [],
+                        "collected_on": self.business_day,
                     }
                 else:
                     _add_matched_titleword(postings[posting_id], matched_titleword)
 
         for url in url_links:
             matched_titleword = _titleword_from_url(url)
-            result = scrape.requests_responses([url], https=(usecase=="https"),
+            result = http.requests_responses([url], https=(usecase=="https"),
                                               return_kind="soups", wait_time=request_wait_time,
                                               verbose=verbose)
             if not result:
+                if not process:
+                    raise RuntimeError(f"Acquisition failed for {url}")
                 if verbose:
                     print(f"No response received for {url}, skipping...")
                 continue
@@ -277,10 +294,12 @@ class Raiffeisen(BaseScraper):
                 if verbose:
                     print(f"Getting next page for {url}")
                 next_page = url + more_pages_url_extension + str(row)
-                result = scrape.requests_responses([next_page], https=(usecase=="https"),
+                result = http.requests_responses([next_page], https=(usecase=="https"),
                                                   return_kind="soups", wait_time=request_wait_time,
                                                   verbose=verbose)
                 if not result:
+                    if not process:
+                        raise RuntimeError(f"Acquisition failed for {next_page}")
                     if verbose:
                         print(f"No response for next page {next_page}, stopping pagination...")
                     break
@@ -289,12 +308,27 @@ class Raiffeisen(BaseScraper):
                 get_next_page = self._next_page_logic(soup, titles_pattern)
                 row += 25
 
-        postings = self._filter_postings(postings)
+        if process:
+            postings = self._filter_postings(postings)
+        cached_hits, postings = split_cached_postings(
+            postings,
+            cached_postings=cached_postings,
+            cache_mode=cache_mode,
+            cache_hit_predicate=cache_hit_predicate,
+        )
 
-        if descriptions:
+        if descriptions and not process:
+            # Fetch separately so a failed detail cannot shift another ID's soup.
+            for posting_id, posting in postings.items():
+                soups = http.requests_responses([posting["url"]], https=(usecase=="https"),
+                    return_kind="soups", wait_time=request_wait_time, verbose=verbose)
+                if soups:
+                    details = self._get_descriptions_from_soups({posting_id: soups[0]}, verbose=verbose)
+                    posting.update(details.get(posting_id, {}))
+        elif descriptions:
             url_list = [posting["url"] for posting in postings.values()]
             ids = [website+re.search(r'/\d+/$', url).group().replace("/", "") for url in url_list]
-            soups = scrape.requests_responses(url_list, https=(usecase=="https"),
+            soups = http.requests_responses(url_list, https=(usecase=="https"),
                                               return_kind="soups", wait_time=request_wait_time,
                                               verbose=verbose)
             #Match ids to soups (if some requests failed, soups may be shorter)
@@ -308,5 +342,9 @@ class Raiffeisen(BaseScraper):
                                 "collected_on": self.business_day,
                                 }
         
-        postings = self._process_data(postings, transformations=transformations, description_key=description_key)
+        if process:
+            postings = self._process_data(postings, transformations=transformations, description_key=description_key)
+        postings = {**cached_hits, **postings}
+        if not process:
+            postings = factual_postings(postings)
         return postings

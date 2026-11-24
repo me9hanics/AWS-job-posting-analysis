@@ -14,8 +14,8 @@ from unittest.mock import patch
 
 from bs4 import BeautifulSoup
 
-from jobscraping.scrapers import scrape
-from jobscraping.scrapers.sites import KarriereAT, Raiffeisen
+from jobscraping.scrapers import http
+from jobscraping.scrapers import KarriereAT, Raiffeisen
 
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -66,8 +66,8 @@ class KarriereFixtureParsingTests(unittest.TestCase):
             date_day="2026-11-23",
         )
         with (
-            patch.object(scrape.requests, "Session", return_value=session),
-            patch.object(scrape.time, "sleep"),
+            patch.object(http.requests, "Session", return_value=session),
+            patch.object(http.time, "sleep"),
         ):
             postings = scraper.gather_data(process=False, descriptions=True)
         return postings, session
@@ -123,8 +123,8 @@ class RaiffeisenFixtureParsingTests(unittest.TestCase):
             date_day="2026-11-23",
         )
         with (
-            patch.object(scrape.requests, "Session", return_value=session),
-            patch.object(scrape.time, "sleep"),
+            patch.object(http.requests, "Session", return_value=session),
+            patch.object(http.time, "sleep"),
         ):
             postings = scraper.gather_data(process=False, descriptions=True)
         return postings, session
@@ -165,6 +165,26 @@ class RaiffeisenFixtureParsingTests(unittest.TestCase):
         self.assertIn("Erfahrung im Wertpapier-", posting["nice_to_have"])
         self.assertIn("Ein hohes Maß an Eigenverantwortung", posting["benefits"])
         self.assertIsNone(posting["salary_guessed"])
+
+
+class HttpRequestParsingTests(unittest.TestCase):
+    """The HTTP path issues one request and parses the payload, without network."""
+
+    def test_requests_responses_parses_the_listing_fixture_into_a_soup(self):
+        session = FixtureSession()
+        url = "https://jobs.rbinternational.com/search/?q=sales&page=1"
+        with (
+            patch.object(http.requests, "Session", return_value=session),
+            patch.object(http.time, "sleep"),
+        ):
+            soups = http.requests_responses(
+                [url], return_kind="soups", https=True, wait_time=0.3
+            )
+
+        self.assertEqual(session.requested_urls, [url])
+        self.assertEqual(len(soups), 1)
+        self.assertIsInstance(soups[0], BeautifulSoup)
+        self.assertEqual(len(soups[0].select("a.jobTitle-link")), 2)
 
 
 class RaiffeisenHelperParsingTests(unittest.TestCase):

@@ -1,5 +1,6 @@
 """Scraper implementations and low-level scraping helpers."""
 
-from jobscraping.scrapers.sites import BaseScraper, KarriereAT, Raiffeisen
+from jobscraping.scrapers.basescraper import BaseScraper
+from jobscraping.scrapers.websites import KarriereAT, Raiffeisen
 
 __all__ = ["BaseScraper", "KarriereAT", "Raiffeisen"]

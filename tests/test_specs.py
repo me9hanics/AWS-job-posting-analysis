@@ -63,5 +63,52 @@ class DataSpecTest(unittest.TestCase):
             self.assertEqual(spec.key, ("source", "id"))
 
 
+ANNOTATIONS = ("language", "matched_titlewords", "guessed_required_languages")
+POLICY_FIELDS = (
+    "points",
+    "keywords",
+    "role_families",
+    "language_adjustment",
+    "language_excluded",
+    "profile_excluded",
+)
+CARRIED_SPECS = (UNIVERSAL_POSTINGS, SCORED_POSTINGS, SELECTED_POSTINGS)
+
+
+class ProfileNeutralAnnotationTest(unittest.TestCase):
+    """Q29: annotations describe the posting; policy fields describe a profile."""
+
+    def test_universal_declares_the_annotations(self):
+        names = {field.name for field in UNIVERSAL_POSTINGS.fields}
+        self.assertLessEqual(set(ANNOTATIONS), names)
+
+    def test_universal_declares_no_policy_field(self):
+        names = {field.name for field in UNIVERSAL_POSTINGS.fields}
+        self.assertEqual(set(POLICY_FIELDS) & names, set())
+
+    def test_annotations_are_carried_from_enrichment(self):
+        universal = {field.name: field.produced_by for field in UNIVERSAL_POSTINGS.fields}
+        for spec in (SCORED_POSTINGS, SELECTED_POSTINGS):
+            producers = {field.name: field.produced_by for field in spec.fields}
+            for name in ANNOTATIONS:
+                self.assertEqual(producers[name], universal[name], f"{spec.name}.{name}")
+
+    def test_language_annotations_come_from_enrichment(self):
+        for spec in CARRIED_SPECS:
+            producers = {field.name: field.produced_by for field in spec.fields}
+            for name in ("language", "guessed_required_languages"):
+                self.assertEqual(producers[name], "enrichment", f"{spec.name}.{name}")
+
+    def test_policy_fields_are_derived(self):
+        producers = {field.name: field.produced_by for field in SCORED_POSTINGS.fields}
+        for name in POLICY_FIELDS:
+            self.assertEqual(producers[name], "derivation", f"scored_postings.{name}")
+
+    def test_guessed_required_languages_is_a_dict(self):
+        for spec in CARRIED_SPECS:
+            kinds = {field.name: field.kind for field in spec.fields}
+            self.assertEqual(kinds["guessed_required_languages"], "dict", spec.name)
+
+
 if __name__ == "__main__":
     unittest.main()

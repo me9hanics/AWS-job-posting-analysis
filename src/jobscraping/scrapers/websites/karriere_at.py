@@ -4,10 +4,6 @@ from copy import deepcopy
 
 from bs4 import BeautifulSoup
 
-try:
-    from selenium import webdriver
-except ModuleNotFoundError:
-    webdriver = None
 from jobscraping.config.configs import (
     BASE_KEYWORD_SCORING,
     BASE_PHRASES,
@@ -16,7 +12,11 @@ from jobscraping.config.configs import (
     SALARY_BEARABLE,
 )
 from jobscraping.config.constants import BASE_RULES
-from jobscraping.scrapers import scrape
+from jobscraping.processing.postings_utils import (
+    factual_postings,
+    split_cached_postings,
+)
+from jobscraping.scrapers import http
 from jobscraping.scrapers.basescraper import BaseScraper
 
 
@@ -36,6 +36,7 @@ class KarriereAT(BaseScraper):
         locations_desired=None,
         locations_secondary=None,
         transformations=None,
+        date_day=None,
     ):
         """
         If Selenium is used, the driver argument should be None or a previously opened driver
@@ -87,7 +88,7 @@ class KarriereAT(BaseScraper):
                  extra_locations=extra_locations, salary_bearable=salary_bearable,
                  locations=locations, locations_desired=locations_desired,
                  locations_secondary=locations_secondary,
-                 transformations = transformations)
+                 transformations = transformations, date_day=date_day)
 
     def _salary_from_text(self, text, keywords=None, clarity_comma_char=".",
                           decimal_separator=",", conversion_rate=14):
@@ -108,8 +109,18 @@ class KarriereAT(BaseScraper):
         return super()._salary_from_text(text, keywords=keywords, clarity_comma_char=clarity_comma_char,
                                         decimal_separator=decimal_separator, conversion_rate=conversion_rate)
         
-    def gather_data(self, descriptions=False, save_data=False, verbose=False,
-                    transformations = None, description_key="description"):
+    def gather_data(
+        self,
+        descriptions=False,
+        save_data=False,
+        verbose=False,
+        transformations=None,
+        description_key="description",
+        cached_postings=None,
+        cache_mode=None,
+        cache_hit_predicate=None,
+        process=True,
+    ):
         website = self.rules["website"]
         locations = self.keywords["locations"]
         titlewords = self.keywords["titlewords"] #expected not to have dashes, but spaces
@@ -118,6 +129,11 @@ class KarriereAT(BaseScraper):
             transformations = []
         pairs = [(title, location) for title in titlewords for location in locations]
         postings = {}
+        def _search_page_has_no_postings(response):
+            content = json.loads(response.text)
+            items = content['data']['jobsSearchList']['activeItems']['items']
+            return not any('jobsItem' in item for item in items)
+
         def _add_matched_titleword(posting_data, titleword):
             if not titleword:
                 return
@@ -130,7 +146,7 @@ class KarriereAT(BaseScraper):
             base_url = 'https://www.karriere.at/jobs?keywords='+pair[0]+'&location='+pair[1]
             path = '/jobs?keywords='+pair[0]+'&location='+pair[1]
             referer = 'https://www.karriere.at/jobs/'+pair[0].replace(' ','-')+'/'+pair[1].replace(' ','-')
-            responses = scrape.requests_responses_with_cookies(base_url= base_url,
+            responses = http.requests_responses_with_cookies(base_url= base_url,
                                        pages=["&page=" + str(i) for i in range(1,40)],
                                        base_path = path,
                                        referer = referer,
@@ -141,7 +157,13 @@ class KarriereAT(BaseScraper):
                                            "X-Requested-With": "XMLHttpRequest",
                                        },
                                        return_kind='responses',
+                                       stop_condition=_search_page_has_no_postings,
+                                       raise_on_retry_failure=True,
+                                       terminal_http_statuses=(410,) if not process else (),
+                                       raise_on_http_error=not process,
                                        verbose=verbose)
+            if not process and not responses:
+                raise RuntimeError(f"Acquisition failed for {base_url}")
             if responses:
                 for response in responses:
                     content = json.loads(response.text)
@@ -179,13 +201,20 @@ class KarriereAT(BaseScraper):
                                     print(item)
                             continue
 
-        postings = self._filter_postings(postings)
+        if process:
+            postings = self._filter_postings(postings)
+        cached_hits, postings = split_cached_postings(
+            postings,
+            cached_postings=cached_postings,
+            cache_mode=cache_mode,
+            cache_hit_predicate=cache_hit_predicate,
+        )
 
-        if descriptions:
+        if descriptions and postings:
             jobs_url = [posting["url"] for posting in postings.values()]
             ids = [re.search(r'\d+', url) for url in jobs_url if re.search(r'\d+', url)]
             ids = ["/"+ str(id.group()) for id in ids]
-            responses = scrape.requests_responses_with_cookies(base_url='https://www.karriere.at/jobs',
+            responses = http.requests_responses_with_cookies(base_url='https://www.karriere.at/jobs',
                                        base_path = '/jobs',
                                        referer = 'https://www.karriere.at/jobs/machine-learning/wien-und-umgebung',
                                        pages=ids,
@@ -195,6 +224,8 @@ class KarriereAT(BaseScraper):
                                            "X-Requested-With": "XMLHttpRequest",
                                        },
                                        return_kind='responses',
+                                       continue_on_http_error=True,
+                                       raise_on_retry_failure=process,
                                        verbose=verbose)
             if responses:
                 for response in responses:
@@ -209,9 +240,29 @@ class KarriereAT(BaseScraper):
                     else:
                         if verbose:
                             print(f"Could not find id {_id} in saved postings - likely programming error")
-                postings = self._find_keywords_in_postings(postings)
 
-        postings = self._process_data(postings, transformations=transformations, description_key=description_key)
+            incomplete_ids = [
+                posting_id
+                for posting_id, posting in postings.items()
+                if not posting.get("description")
+            ]
+            if incomplete_ids and verbose:
+                print(
+                    "Skipped "
+                    f"{len(incomplete_ids)} Karriere postings without descriptions"
+                )
+            postings = {
+                posting_id: posting
+                for posting_id, posting in postings.items()
+                if not process or posting_id not in incomplete_ids
+            }
+
+        if process:
+            postings = self._process_data(postings, transformations=transformations, description_key=description_key)
+        postings = {**cached_hits, **postings}
+        if not process:
+            postings = factual_postings(postings)
         if save_data:
             self._save_data(postings, name="karriere_at", with_timestamp=True)
         return postings
+

@@ -15,8 +15,8 @@ from unittest.mock import patch
 
 from jobscraping.pipelines.store_universal import merge_observations, store_universal_postings
 from jobscraping.processing.postings_utils import factual_postings, get_added_and_removed
-from jobscraping.scrapers import scrape
-from jobscraping.scrapers.sites import KarriereAT
+from jobscraping.scrapers import http
+from jobscraping.scrapers import KarriereAT
 
 
 FIXTURES = Path(__file__).with_name("fixtures")
@@ -237,7 +237,7 @@ class LastModifiedOnStorageTests(unittest.TestCase):
             date_day="2025-03-01",
         )
         responses = [[listing_response([listing()])], [detail_response("<p>Details</p>")]]
-        with patch.object(scrape, "requests_responses_with_cookies", side_effect=responses):
+        with patch.object(http, "requests_responses_with_cookies", side_effect=responses):
             raw = scraper.gather_data(process=False, descriptions=True)
 
         self.assertTrue(raw)

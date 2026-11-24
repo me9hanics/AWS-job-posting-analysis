@@ -7,8 +7,8 @@ from unittest.mock import patch
 
 from jobscraping.pipelines import collecting
 from jobscraping.processing.postings_utils import split_cached_postings, unify_postings
-from jobscraping.scrapers import scrape
-from jobscraping.scrapers.sites import KarriereAT
+from jobscraping.scrapers import http
+from jobscraping.scrapers import KarriereAT
 from schedule.dani_collect import dani_cache_hit_by_id
 from schedule import dani_collect, legal_collect, tech_collect, tn_collect
 
@@ -36,8 +36,8 @@ class IncrementalCollectionTests(unittest.TestCase):
                 calls.append(url)
                 return responses[len(calls) - 1]
 
-        with patch.object(scrape.requests, "Session", _Session):
-            collected = scrape.requests_responses_with_cookies(
+        with patch.object(http.requests, "Session", _Session):
+            collected = http.requests_responses_with_cookies(
                 base_url="https://example.test/jobs",
                 pages=["?page=1", "?page=2", "?page=3"],
                 base_path="/jobs",
@@ -62,8 +62,8 @@ class IncrementalCollectionTests(unittest.TestCase):
                 calls.append((url, timeout))
                 return responses[len(calls) - 1]
 
-        with patch.object(scrape.requests, "Session", _Session):
-            collected = scrape.requests_responses_with_cookies(
+        with patch.object(http.requests, "Session", _Session):
+            collected = http.requests_responses_with_cookies(
                 base_url="https://example.test/jobs",
                 pages=["?page=1"],
                 base_path="/jobs",
@@ -87,8 +87,8 @@ class IncrementalCollectionTests(unittest.TestCase):
                 calls.append(url)
                 return responses[len(calls) - 1]
 
-        with patch.object(scrape.requests, "Session", _Session):
-            collected = scrape.requests_responses_with_cookies(
+        with patch.object(http.requests, "Session", _Session):
+            collected = http.requests_responses_with_cookies(
                 base_url="https://example.test/jobs",
                 pages=["/1", "/2"],
                 base_path="/jobs",
@@ -114,10 +114,10 @@ class IncrementalCollectionTests(unittest.TestCase):
                 return responses[len(calls) - 1]
 
         with (
-            patch.object(scrape.requests, "Session", _Session),
+            patch.object(http.requests, "Session", _Session),
             self.assertRaisesRegex(RuntimeError, "504"),
         ):
-            scrape.requests_responses_with_cookies(
+            http.requests_responses_with_cookies(
                 base_url="https://example.test/jobs",
                 pages=["?page=1"],
                 base_path="/jobs",
@@ -244,6 +244,11 @@ class IncrementalCollectionTests(unittest.TestCase):
                     received["minimum_source_retention"],
                     {"karriere.at": 0.5},
                 )
+                if module is dani_collect:
+                    self.assertEqual(
+                        received["minimum_field_completeness_by_source"],
+                        {"karriere.at": {"description": .98}},
+                    )
 
     def test_tn_id_cache_is_limited_to_karriere(self):
         self.assertTrue(
@@ -342,7 +347,7 @@ class IncrementalCollectionTests(unittest.TestCase):
             return postings
 
         with (
-            patch.object(scrape, "requests_responses_with_cookies", _requests_with_cookies),
+            patch.object(http, "requests_responses_with_cookies", _requests_with_cookies),
             patch.object(scraper, "_process_data", _process_data),
         ):
             results = scraper.gather_data(
@@ -412,7 +417,7 @@ class IncrementalCollectionTests(unittest.TestCase):
         )
 
         with (
-            patch.object(scrape, "requests_responses_with_cookies", _requests_with_cookies),
+            patch.object(http, "requests_responses_with_cookies", _requests_with_cookies),
             patch.object(scraper, "_process_data", return_value={}) as process_data,
         ):
             results = scraper.gather_data(descriptions=True)

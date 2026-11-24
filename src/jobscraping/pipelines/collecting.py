@@ -18,12 +18,12 @@ from jobscraping.config.constants import (
 from jobscraping.config.configs import RELATIVE_POSTINGS_PATH #EXCELS_PATH, POSTINGS_PATH, 
 from jobscraping.io import files_io
 from jobscraping.processing import postings_utils
-from jobscraping.scrapers import sites
+from jobscraping.scrapers import BaseScraper, KarriereAT, Raiffeisen
 from jobscraping.utils import datastruct_utils
 
 KEYWORDS = configs.BASE_PHRASES.copy()
 RANKINGS = configs.BASE_KEYWORD_SCORING.copy()
-SCRAPERS = [sites.KarriereAT, sites.Raiffeisen]
+SCRAPERS = [KarriereAT, Raiffeisen]
 SALARY_BEARABLE = configs.SALARY_BEARABLE
 
 
@@ -127,7 +127,7 @@ def validate_postings_quality(
 
 
 def scrape_sites(
-    scrapers: List[Type[sites.BaseScraper]] = SCRAPERS,
+    scrapers: List[Type[BaseScraper]] = SCRAPERS,
     keywords=KEYWORDS,
     rankings=RANKINGS,
     salary_bearable=SALARY_BEARABLE,

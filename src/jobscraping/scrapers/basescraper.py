@@ -2,6 +2,7 @@
 
 import time
 from copy import deepcopy
+from datetime import date
 from typing import Callable, List, Tuple
 
 try:
@@ -34,13 +35,15 @@ from jobscraping.processing.postings_utils import (
     process_posting_soups,
 )
 from jobscraping.processing.transformations import apply_filters_transformations
-from jobscraping.scrapers import scrape
+from jobscraping.scrapers import browser, http
 from jobscraping.utils import urls
 
 GET_HEIGHT_SCRIPT = "return document.body.scrollHeight"
 SCROLL_DOWN_SCRIPT = "window.scrollTo(0, document.body.scrollHeight);" #scroll to height value of the bottom of the page
 SCROLL_1000_SCRIPT = "window.scrollTo(0, 1000);"
 CSS_SELECTOR = "css selector" #can use instead: from selenium.webdriver.common.by import By, then By.CSS_SELECTOR
+
+BUSINESS_DAY_SHIFT = 8 * 60 * 60  # 8 hours; converted to seconds
 
 def get_all_keywords(keywords=None):  # rankings = BASE_KEYWORD_SCORING
     """
@@ -81,6 +84,7 @@ class BaseScraper: #Make abstract?
         locations_desired=None,
         locations_secondary=None,
         transformations=None,
+        date_day=None,
     ):
         if driver is None:
             if webdriver is None:
@@ -92,7 +96,11 @@ class BaseScraper: #Make abstract?
         _time = time.time()
         self.time = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime(_time))
         self.day = self.time[:10]
-        self.business_day = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime(_time - 8*(60*60)))[:10] #8hrs shift
+        self.business_day = (
+            date.fromisoformat(date_day).isoformat()
+            if date_day is not None
+            else time.strftime("%Y-%m-%d", time.localtime(_time - BUSINESS_DAY_SHIFT))
+        )
 
         if rules is None:
             rules = deepcopy(BASE_RULES)
@@ -172,7 +180,7 @@ class BaseScraper: #Make abstract?
         #if driver is None:
         #    driver = webdriver.Firefox()
         driver = self.driver
-        return scrape.close_website_popup(driver, button_selector, url=url, click_wait=click_wait,
+        return browser.close_website_popup(driver, button_selector, url=url, click_wait=click_wait,
                                           pre_click_scroll=pre_click_scroll, post_click_wait=post_click_wait,
                                           post_click_scroll_down=post_click_scroll_down,
                                           close_driver=close_driver, open_page=open_page)
@@ -224,7 +232,7 @@ class BaseScraper: #Make abstract?
         driver = self.driver
         if not close_popup_method:
             close_popup_method = getattr(self, "close_popup_method", None) or self._close_website_popup
-        return scrape.load_page(driver, url, close_popup=close_popup, load_more_button = load_more_button,
+        return browser.load_page(driver, url, close_popup=close_popup, load_more_button = load_more_button,
                                 close_popup_method = close_popup_method,
                                 load_by_scrolling = load_by_scrolling, popup_wait=popup_wait,
                                 pre_popup_scroll=pre_popup_scroll, popup_selector=popup_selector,
@@ -242,7 +250,7 @@ class BaseScraper: #Make abstract?
         driver = self.driver
         if not page_load_method:
             page_load_method = getattr(self, "page_load_method", None) or self._load_page
-        return scrape.load_pages(driver, page_urls, close_popup=close_popup, popup_closing_wait=popup_closing_wait,
+        return browser.load_pages(driver, page_urls, close_popup=close_popup, popup_closing_wait=popup_closing_wait,
                                 page_load_method=page_load_method,
                                 load_more_button = load_more_button, load_by_scrolling = load_by_scrolling,
                                 post_click_wait = post_click_wait, close_driver=close_driver, **kwargs)
@@ -423,7 +431,7 @@ class BaseScraper: #Make abstract?
 
         if usecase in ["http", "https"]:
             request_wait_time = self.rules.get("request_wait_time", 0.3)
-            soups = scrape.requests_responses(url_links, https=(usecase=="https"),
+            soups = http.requests_responses(url_links, https=(usecase=="https"),
                                               return_kind="soups", wait_time=request_wait_time)
         elif usecase in ["selenium", "http_selenium"]:
             driver = self.driver
