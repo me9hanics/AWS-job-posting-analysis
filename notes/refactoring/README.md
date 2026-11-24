@@ -108,6 +108,8 @@ Confirmed decisions are binding. Only Q16 remains open; the full decision log is
 | D21 | No `ProfilePolicy` wrapper and no scoring class; delete the three empty processing modules. | Confirmed 2026-11-16 |
 | D22 | No per-spec digest or old-data compatibility requirement; a vault `schema_version` is enough. | Confirmed 2026-11-16 |
 | D23 | The universal history is expected but not guaranteed. Collection may be planned per pipeline; profiles and stages take their input records as arguments and never assume one universal history exists. | Confirmed 2026-11-22 — Q28 |
+| D24 | Universal records carry profile-neutral annotations (`language`, `guessed_required_languages`, `matched_titlewords`); policy fields stay in scored/selected, and enrichment in `data/enrich.py` produces the language facts. | Confirmed 2026-11-24 — Q29 |
+| D25 | A site is a class in its own module and is its own adapter. `BaseScraper` shrinks to per-run setup (rules/keywords/date), `source` and the declared `steps` — no overridable helper methods; shared mechanics are module functions and per-site differences are arguments or `rules` keys. | Confirmed 2026-11-24 — Q30 |
 
 ## The three mandated directions
 

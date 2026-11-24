@@ -115,7 +115,7 @@ src/jobscraping/
     pagination.py         # URL construction and next-page rules
     parsing.py            # payload -> neutral facts
     steps.py              # optional Step convenience, no enforcement
-    basescraper.py        # shared orchestration only; one copy
+    basescraper.py        # run context, source, steps; one copy, no hooks
     websites/
       __init__.py         # public exports + registry
       karriere_at.py      # adapter + its declared steps
@@ -160,6 +160,67 @@ src/jobscraping/
 | `processing/attributes.py` | `processing/language.py`, `processing/scoring_mechanics.py`, `data/enrich.py` | Detection, scoring and enrichment are different reasons to change. |
 | `config/configs.py` | `config/models.py`, `config/constants.py`, `specs/`, `conf/` | Config values, code constants and data-spec field names are three different things. |
 
+## Canonical copies (B11)
+
+Three copy sets exist; `sites.py` is canonical for all three classes.
+
+| Class | Canonical | Also present (stale) | Evidence |
+| --- | --- | --- | --- |
+| `BaseScraper` | `scrapers/sites.py` | `scrapers/basescraper.py` | Owns `date_day`, the `process=False` raw path, cache split and `factual_postings`; the copy lacks them and builds `business_day` differently. |
+| `KarriereAT` | `scrapers/sites.py` | `scrapers/websites/karriere_at.py` | Same `__init__`/`gather_data` as the base it must match; the copy predates `process`. |
+| `Raiffeisen` | `scrapers/sites.py` | `scrapers/websites/raiffeisen.py` | Holds `collected_on` in the listing and fetches per-posting details when `process=False`. |
+
+`scrapers/__init__.py` imports from `sites.py`, so the B05 fixture parity tests
+(`tests/test_scraper_fixtures.py`, 6 tests) already exercise the canonical copy;
+they pass as recorded in the milestone flow. The stale copies are **overwritten**
+by the moves in B12–B14, never merged: there is no third copy to reconcile later.
+
+## Site class and its base
+
+A site is **one class in its own module**, and that class is the adapter. The
+class is not a thin shell over inherited machinery, and `BaseScraper` is not a
+hook surface (Q30):
+
+```python
+class Raiffeisen(BaseScraper):
+    source = "raiffeisen_international"          # the adapter contract (B09)
+
+    def __init__(self, **kwargs):
+        super().__init__(rules=RAIFFEISEN_RULES, **kwargs)
+        self.steps = (Step("listings", self.listings),
+                      Step("details", self.details, output_spec=COLLECTED_POSTINGS))
+```
+
+`BaseScraper` keeps the parts every run needs and no site would sensibly
+replace: config normalization (`rules`, `keywords`, `rankings`, `locations`,
+`transformations`), per-run state (`time`, `day`, `business_day`, `date_day`),
+`source` and `steps`. It declares **no** `gather_data` template and no
+helper methods for sites to override.
+
+Everything else is a module function the site calls: `pagination` (URLs, next
+page), `browser` (session, popups, scrolling), `http` (requests), `parsing`
+(payload → facts). Per-site differences are arguments or `rules` keys — a
+conversion rate, a selector, a regex — not overridden methods. The base's module
+docstring names the mechanics modules once; it does not mirror their API.
+
+A step is declared by the site class, typically as a bound method, so per-run
+state (cookies, tokens) is available without a base hook:
+
+```python
+def listings(self, records: RecordSet, config: CollectionConfigLike) -> RecordSet: ...
+```
+
+Why: the two existing sites both override `gather_data` wholesale and Raiffeisen
+overrides `_process_posting_soups` with a different signature, so the old hook
+contract was already vestigial; it made "add a site" mean "copy the base class".
+Inheritance still carries the run context; it no longer carries an algorithm to
+override.
+
+Rejected alternative: an empty `gather_data` raising `NotImplementedError` as a
+"you must implement this" prompt — it re-declares the algorithm shape the base
+just dropped and competes with `steps` as the contract, so the base declares
+`source` and `steps` and nothing else to implement.
+
 ## Seams deliberately not made
 
 - **Posting records stay dicts.** JSON export implies dicts; a `Posting`
@@ -172,8 +233,10 @@ src/jobscraping/
   backend has a consumer.
 - **Excel rendering and its cleaning helpers stay together.** They change for
   the same reason.
-- **`BaseScraper` stays a class.** Site adapters share lifecycle and hooks; a
-  function-only design would reintroduce parameter passing.
+- **`BaseScraper` stays a class, but not a hook surface.** It carries run
+  context and the adapter contract (`source`, `steps`); helper methods are not
+  overridden — they are module functions, and per-site differences are arguments
+  or `rules` keys (Q30, [above](#site-class-and-its-base)).
 - **No plugin/discovery system for sites.** Adding a site is one module and one
   registry entry; the registry is an explicit list, not a framework.
 - **No `ProfilePolicy` wrapper.** Profile functions and `ProfileConfig` are

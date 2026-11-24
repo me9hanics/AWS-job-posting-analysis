@@ -238,11 +238,14 @@ These tasks add contracts only; no runtime behaviour changes.
      and `derive_profile_postings`; do not invent a new vocabulary.
   3. Keep required fields minimal (identity and URL); move completeness to the
      quality gate.
-  4. Keep profile fields out of `UNIVERSAL_POSTINGS`.
+  4. Keep profile policy fields out of `UNIVERSAL_POSTINGS`.
 - Done when:
   - all five import;
   - the field sets match [design/specs.md](design/specs.md#specs-per-step);
   - no profile-only key appears in `UNIVERSAL_POSTINGS`.
+- Note: B07a adds the profile-neutral annotations (`language`,
+  `guessed_required_languages`) to `UNIVERSAL_POSTINGS`; B07's rule 4 now reads
+  "profile *policy* fields", see [design/specs.md](design/specs.md#profile-neutral-annotations).
 
 ### B08 — Test the spec contract
 
@@ -256,6 +259,34 @@ These tasks add contracts only; no runtime behaviour changes.
   4. `check` does not mutate the input records.
 - Done when:
   - the tests cover the four rules above and fail if `check` starts coercing.
+
+### B07a — Put profile-neutral annotations in the universal spec
+
+- Depends on: B07, B08
+- Size: S
+- Files: `src/jobscraping/specs/postings.py`, `tests/test_specs.py`
+- Do:
+  1. Declare `language` and `guessed_required_languages` in
+     `UNIVERSAL_POSTINGS` with `produced_by="enrichment"`
+     (`guessed_required_languages` as `dict`, matching the producer).
+  2. In `SCORED_POSTINGS`/`SELECTED_POSTINGS`, mark `language`,
+     `matched_titlewords` and `guessed_required_languages` as carried
+     (`produced_by` names the universal producer); keep `keywords`,
+     `role_families`, `language_adjustment`, `language_excluded`,
+     `profile_excluded` and `points` as derivation.
+  3. Assert in `tests/test_specs.py` that the three annotations are universal
+     fields and that no policy field is.
+- Done when:
+  - `UNIVERSAL_POSTINGS` declares the three annotations and no policy field;
+  - the spec test fails if a policy field is added to universal;
+  - `guessed_required_languages` is declared `dict`, matching
+    `guess_required_languages`'s return (the current `list` declaration is
+    corrected here because this ticket re-declares the field);
+  - no runtime behaviour changes (specs are still metadata).
+- Note: implements Q29. This is the only completed ticket whose output changes;
+  B29 produces the two language fields, B31 stores them, B33 stops recomputing
+  them. Field sets are in
+  [design/specs.md](design/specs.md#profile-neutral-annotations).
 
 ### B09 — Define the adapter step contract
 
@@ -401,7 +432,8 @@ it.
 - Done when:
   - `browser.py` imports no `requests` request path;
   - scraper fixture tests pass;
-  - importing `http.py` does not import Selenium.
+  - `http.py` contains no Selenium import (checked in source; a `sys.modules`
+    assertion cannot hold while `scrapers/__init__.py` imports `BaseScraper`).
 
 ### B18 — Extract pagination and retire the facade
 
@@ -409,7 +441,8 @@ it.
 - Size: S
 - Files: `src/jobscraping/scrapers/pagination.py`, `scrapers/scrape.py`
 - Do:
-  1. Move URL construction and next-page rules.
+  1. Move the next-page rule into `pagination.py`; URL construction stays per
+     site (query parameters vs base path plus extension), per Q30.
   2. Update internal imports to `http`/`browser`/`pagination`.
   3. Remove `scrape.py` if no caller outside the package needs it; otherwise
      keep a thin re-export and note the caller.
@@ -417,6 +450,8 @@ it.
   - pagination tests pass;
   - `scrape.py` is either gone or contains only re-exports;
   - no site module contains HTTP/session code.
+- Note: a site may keep a one-line delegate such as `_next_page_logic` until B20
+  reshapes it; it is not a pagination seam.
 
 ## Phase 4 — Multi-step adapters and the universal collector
 
@@ -433,11 +468,16 @@ it.
   3. Keep the final facts identical to the pre-split flow.
   4. Keep `gather_data` as a compatibility wrapper until B24 wires the
      collector; the step list is the new path.
+  5. Declare the steps as bound methods so per-run state is available; import
+     mechanics from `http`/`browser`/`pagination`/`parsing` and pass site
+     differences as arguments or `rules` keys. Add nothing to `BaseScraper` and
+     override nothing (Q30).
 - Done when:
   - a listings-only run returns identity/URL records;
   - a full run returns the same facts as the B05 fixture baseline;
   - no required/optional flag is introduced;
-  - the legacy entry point still calls the wrapper.
+  - the legacy entry point still calls the wrapper;
+  - the class inherits `BaseScraper` only for run context.
 
 ### B20 — Give `Raiffeisen` declared steps
 
@@ -448,10 +488,13 @@ it.
   1. Same split as B19, using Raiffeisen's actual flow.
   2. Keep a single-step path if that is what the site actually does.
   3. Keep the legacy wrapper until B24.
+  4. Follow B19's shape: bound-method steps, site differences as arguments or
+     `rules` keys, no additions to and no overrides of `BaseScraper` (Q30).
 - Done when:
   - the adapter exposes its steps in order;
   - fixture parity holds;
-  - the two site modules do not share a hidden “main” step.
+  - the two site modules do not share a hidden “main” step;
+  - neither site class overrides a base method.
 
 ### B21 — Extract the quality gate
 
@@ -576,7 +619,7 @@ it.
   2. Remove the `points = 0` injection; profile derivation adds its own default.
   3. Add tests for added, removed and reappeared identities.
 - Done when:
-  - a universal diff contains no profile field;
+  - a universal diff contains no profile policy field;
   - a reappearing posting is current, not newly added;
   - the profile path still orders by points after derivation.
 
@@ -590,10 +633,20 @@ it.
   1. Move `enrich_postings` and its re-processing behaviour into `data/enrich.py`.
   2. Remove the `BaseScraper` import from `processing/postings_utils.py`.
   3. Keep enrichment idempotent: rerun replaces derived values, never appends.
+  4. Add a profile-neutral annotation pass that fills `language`
+     (`analyze_text_language`) and `guessed_required_languages`
+     (`guess_required_languages`) on records that have a description; replace,
+     never merge, the previous values (Q29).
+  5. Let the annotations survive the fact projection: add both names to
+     `RAW_POSTING_FIELDS` (or its successor) so `factual_postings` keeps them
+     when it is applied to already-annotated records.
 - Done when:
   - `rg "from jobscraping.scrapers" src/jobscraping/processing` finds nothing;
   - enrichment tests pass without a browser or network;
-  - double enrichment is byte-stable.
+  - double enrichment is byte-stable;
+  - a record with a description gains `language` and
+    `guessed_required_languages`, and a second run produces identical values;
+  - `factual_postings` keeps both fields instead of stripping them.
 
 ### B30 — Atomic writes, UTC and `schema_version`
 
@@ -624,11 +677,14 @@ it.
      `get_postings` in this task.
   3. Keep only factual normalization and quality gates on the universal path.
   4. Ensure a posting that a profile would reject still appears in universal.
+  5. Store the profile-neutral annotations from B29 (`language`,
+     `guessed_required_languages`) alongside `matched_titlewords`.
 - Done when:
   - a fixture with a manager/irrelevant title is stored in universal;
   - the same posting can be rejected by a profile;
   - the legacy profile tests still pass;
-  - no profile field appears in universal records.
+  - universal records carry the three annotations and no profile *policy* field;
+  - the stored universal record passes `UNIVERSAL_POSTINGS.check`.
 
 ## Phase 6 — Profile configuration and generic derivation
 
@@ -660,12 +716,17 @@ it.
   2. Accept `ProfileConfig` plus profile functions; remove Dani imports and
      defaults.
   3. Keep the existing delta rules and output ordering.
+  4. Consume `language` and `guessed_required_languages` from the input records
+     when present; compute them only when missing, so legacy history still
+     derives (Q29).
 - Done when:
   - `processing/derive.py` imports no profile module;
   - Dani's selected output matches the baseline;
   - a second config can call the same function;
   - derivation receives its input records as an argument and does not load a
-    universal history by name (Q28).
+    universal history by name (Q28);
+  - an input with the two annotations is not re-annotated, and an input without
+    them still produces the same result as today.
 
 ### B34 — Move profile rules and delete the empty modules
 
@@ -679,10 +740,14 @@ it.
   2. Put shared ranking/keyword mechanics in
      `processing/scoring_mechanics.py`.
   3. Delete the three empty modules.
+  4. Keep evidence extraction (`extract_language_requirements`,
+     `guess_required_languages`) generic; the profile keeps only the policy that
+     turns evidence into `language_adjustment`/`language_excluded` (Q29).
 - Done when:
   - the empty modules are gone;
   - `profiles/dani.py` imports no pipeline module;
-  - candidate and selection behaviour are separately testable.
+  - candidate and selection behaviour are separately testable;
+  - the profile module contains no language-evidence parsing.
 
 ### B35 — Make profile current selected-only
 
@@ -840,6 +905,8 @@ parity checks; they do not prescribe node granularity.
 - Done when:
   - no module is imported only for compatibility;
   - no duplicate scraper or empty placeholder remains;
+  - `basescraper.py` exposes no overridable helper and no `gather_data`
+    template, and no site module overrides a base method (Q30);
   - the suite passes.
 
 ### B45 — Update documentation and ADRs

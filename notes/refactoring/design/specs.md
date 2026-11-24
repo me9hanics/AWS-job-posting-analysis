@@ -1,7 +1,8 @@
 # Specs and dataclasses
 
-Status: decided 2026-11-16. Field sets follow the current pipeline's logic; they
-are the minimum contracts the refactoring moves behavior onto.
+Status: decided 2026-11-16; refined 2026-11-24 with Q29 (profile-neutral
+annotations in the universal record). Field sets follow the current pipeline's
+logic; they are the minimum contracts the refactoring moves behavior onto.
 
 The contract that matters is the **data spec** for each pipeline step, not a
 dataclass per helper object. Most of the earlier dataclass candidates were too
@@ -92,15 +93,43 @@ by the quality gate with per-source thresholds; the rest is optional.
 | --- | --- | --- | --- | --- |
 | `DISCOVERED_POSTINGS` | `source`, `id` | `source`, `id`, `url` | `title`, `company`, `locations`, `collected_on`, `date`, `isActive` | listing step, detail steps |
 | `COLLECTED_POSTINGS` | `source`, `id` | `source`, `id`, `url` | `title`, `company`, `description`, `collected_on`, `date`, `salary`, `salary_guessed`, `salary_monthly_guessed`, `locations`, `isActive`, `isHomeOffice`, `employmentTypes`, `snippet`, `role`, `requirements`, `nice_to_have`, `benefits` | quality gate, universal storage |
-| `UNIVERSAL_POSTINGS` | `source`, `id` | `source`, `id`, `url` | `first_collected_on`, `last_collected_on`, `timespan_days`, and every other `RAW_POSTING_FIELDS` key, including title, company, description, dates, salary and `matched_titlewords` | derivation, history |
-| `SCORED_POSTINGS` | `source`, `id` | `source`, `id`, `points` | `language`, `matched_titlewords`, `keywords`, `role_families`, `guessed_required_languages`, `language_adjustment`, `language_excluded`, `profile_excluded` | selection, outputs |
+| `UNIVERSAL_POSTINGS` | `source`, `id` | `source`, `id`, `url` | `first_collected_on`, `last_collected_on`, `timespan_days`, and every other `RAW_POSTING_FIELDS` key, including title, company, description, dates, salary and `matched_titlewords`; plus the profile-neutral annotations `language` and `guessed_required_languages` | derivation, history |
+| `SCORED_POSTINGS` | `source`, `id` | `source`, `id`, `points` | carried from universal: `language`, `matched_titlewords`, `guessed_required_languages`; produced by derivation: `keywords`, `role_families`, `language_adjustment`, `language_excluded`, `profile_excluded` | selection, outputs |
 | `SELECTED_POSTINGS` | `source`, `id` | `source`, `id`, `points` | same fields as scored | outputs |
 
 `SELECTED_POSTINGS` is a subset of `SCORED_POSTINGS`, not a new shape.
-`UNIVERSAL_POSTINGS` intentionally has no profile fields: `points`, `keywords`,
-`language`, `role_families`, `guessed_required_languages`, `profile_excluded`
-and `language_excluded` are produced by derivation and never enter the vault.
+`UNIVERSAL_POSTINGS` has no **profile policy** fields: `points`, `keywords`,
+`role_families`, `language_adjustment`, `language_excluded` and
+`profile_excluded` are produced by derivation and never enter the vault.
 Old profile points are dropped when backfilling (Q14, plan only).
+
+### Profile-neutral annotations
+
+Not every derived field is profile policy. A field belongs in the universal
+record when any profile would compute the same value from the record and
+non-profile config (Q29). Today that is:
+
+| Field | Producer | Why it is not policy |
+| --- | --- | --- |
+| `matched_titlewords` | collection | Which query titleword found the posting; already collection-owned. |
+| `language` | `data/enrich.py` | Detected description language; `analyze_text_language` reads the text only. |
+| `guessed_required_languages` | `data/enrich.py` | Deterministic `guess_required_languages` evidence from the description. |
+
+The profile still owns what it *does* with them: `language_adjustment`,
+`language_excluded`, `profile_excluded`, `points`, `role_families` and the
+`keywords` vocabulary are policy and stay in scored/selected.
+
+`keywords` is deliberately not universal: the occurrence list is factual given a
+vocabulary, but that vocabulary is `description_keywords_order`, a profile
+setting. If a collection-level keyword list is ever defined in `conf/`, keywords
+could move too; that is not this decision.
+
+Test for the boundary: adding a second profile with a different vocabulary,
+threshold or language policy must not change any field the universal record
+holds.
+
+Code follows the decision in B07a: until it lands, `language` and
+`guessed_required_languages` are declared only in `SCORED_POSTINGS`.
 
 Side outputs (a company list, for example) get their own spec only when a real
 export exists. They are exports or BI views, not pipeline datasets (Q18).

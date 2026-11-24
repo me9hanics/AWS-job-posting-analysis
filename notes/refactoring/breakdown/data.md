@@ -71,9 +71,13 @@ absolute; the root is derived from `__file__`.
 7. Backfill the universal vault from existing profile histories only as a
    dry-run artifact first; compare counts, overlaps and conflicts before writing.
    No old-data compatibility is required (Q27).
-8. Keep profile fields (`points`, profile keywords, language exclusions) out of
-   universal records. Old profile points are dropped when a backfill happens;
-   plan only, not executed in this round (Q14).
+8. Keep profile policy fields (`points`, profile keywords, language exclusions)
+   out of universal records. Profile-neutral annotations are different: the
+   universal record carries `language`, `guessed_required_languages` and
+   `matched_titlewords`, produced by enrichment/collection, not by a profile
+   (Q29, [specs.md](../design/specs.md#profile-neutral-annotations)). Old
+   profile points are dropped when a backfill happens; plan only, not executed
+   in this round (Q14).
 9. Replace the absolute `REPO_ROOT_PATH` with a root derived from `__file__`;
    make every data path relative.
 10. Make `save_data` atomic and use UTC timestamps; add `schema_version` to
@@ -83,14 +87,17 @@ absolute; the root is derived from `__file__`.
 
 - Phase 0 fixtures for merge and compare.
 - Collection workstream for `factual_postings` ownership.
-- Profiles workstream for which derived fields are generic and which are policy.
+- Profiles workstream for which derived fields are generic and which are policy;
+  answered by Q29 for today's field set.
 
 ## Completion check
 
 - Merge and diff are importable and testable without a scraper, a browser or a
   profile module.
 - Repeated merge/enrich on saved fixtures is idempotent and byte-stable.
-- A universal record contains no profile score, threshold or exclusion.
+- A universal record contains no profile score, threshold or exclusion; it does
+  carry the profile-neutral annotations `language`, `guessed_required_languages`
+  and `matched_titlewords` (Q29).
 - A record missing a required field is rejected with the field named; a record
   with an unknown extra field passes and keeps it.
 - A backfill dry run reports counts, overlaps and conflicts for review.

@@ -80,7 +80,10 @@ functions) stays in code. See
 6. Declare the `SCORED_POSTINGS` and `SELECTED_POSTINGS` specs and check them at
    the derivation boundary. The scored spec is what "fill out the spec" means
    for scoring: start from the input records the caller supplies (in practice
-   universal records) and add the declared derived fields.
+   universal records) and add the declared derived fields. The profile-neutral
+   annotations (`language`, `guessed_required_languages`, `matched_titlewords`)
+   arrive filled from the data layer; derivation adds only policy fields and
+   recomputes an annotation only when it is missing (Q29).
 7. When converting tech/legal/tn, move their constants and transformation lists
    into their profile modules unchanged, then verify parity.
 8. Keep profile text/scoring constants under review by the existing tests
@@ -117,6 +120,8 @@ functions) stays in code. See
 - No scoring class; values in `ProfileConfig` (Q4).
 - Thresholds and scoring values are `conf/` parameters (Q6).
 - Empty filtering/scoring modules are deleted (Q15).
+- Language facts belong to the universal record; language policy stays in the
+  profile (Q29).
 
 How a profile's language policy is expressed without making the generic language
 module profile-aware is an implementation detail inside the profile module. The

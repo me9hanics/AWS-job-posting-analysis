@@ -258,7 +258,8 @@ Each gate must pass before the next consumer switches.
    stale `scrapers.sites` import. Legacy pipeline still works. (Hardverapro is
    archive-only and not part of this gate.)
 2. **Data gate.** Pure merge/compare/enrich with fixtures; reruns idempotent;
-   profile fields absent from universal records.
+   profile policy fields absent from universal records, profile-neutral
+   annotations present.
 3. **Universal gate.** Collection writes chunks, resume works, a failed quality
    check leaves the previous snapshot intact.
 4. **Profile gate.** Dani derives from universal facts with unchanged selected

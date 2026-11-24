@@ -65,6 +65,11 @@ class KarriereAT:
     steps = (Step("listings", LISTINGS), Step("details", DETAILS))
 ```
 
+The site class is both the adapter and the owner of its steps; it inherits
+`BaseScraper` only for the run context (config, dates), not for an algorithm to
+override (Q30). Steps are usually bound methods declared in `__init__`, so
+per-run state such as cookies is available without a base hook.
+
 The `Step` dataclass is a convenience, not a framework. An adapter that prefers
 two plain functions and a tuple can expose `steps = (("listings", LISTINGS),
 ("details", DETAILS))`; the collector only needs ordered `(name, callable)`
@@ -158,8 +163,11 @@ happened.
 
 - `BaseScraper.gather_data` and the `process` flag become step selection: an
   adapter declares steps, and the collector decides which run.
-- `BaseScraper` keeps page loading, parsing helpers and common mechanics; site
-  adapters implement steps on top. Exactly one `BaseScraper` survives.
+- `BaseScraper` keeps only run context: config normalization, `time`/`day`/
+  `business_day`, `source` and `steps`. It keeps no page-loading or parsing
+  helpers for sites to override; those live in `http`, `browser`, `pagination`
+  and `parsing`, and per-site differences are arguments or `rules` keys (Q30).
+  Exactly one `BaseScraper` survives.
 - `scrapers/scrape.py` splits into HTTP and headless-browser paths
   (`scrapers/http.py`, `scrapers/browser.py`), with pagination shared (Q2).
   `scrape.py` stays as a facade during migration.

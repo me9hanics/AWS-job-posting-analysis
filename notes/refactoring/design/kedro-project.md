@@ -91,9 +91,10 @@ Node mapping from current code:
 | `collect` | `scrape_sites` plus adapter step selection; may be split further |
 | `validate_quality` | `validate_postings_quality` |
 | `store_universal` | `store_universal_postings` |
+| `enrich` | `data/enrich.py` annotation pass: `analyze_text_language`, `guess_required_languages` (Q29) |
 | `load_universal` | catalog dataset, no node |
 | `candidate_filter` | filter inside `derive_profile_postings` |
-| `score` | `rank_postings`, `find_keywords_in_postings`, `guess_required_languages` |
+| `score` | `rank_postings`, `find_keywords_in_postings` |
 | `assess_language` | `assess_language` + `language_adjustment` |
 | `diff_history` | `get_added_and_removed` |
 | `merge_history` | `merge_observations` |

@@ -124,8 +124,13 @@ fixtures before the data layer moves.
   fills a missing one. Conflicts are resolved by an explicit rule, not by dict
   order.
 - **Lists.** Ordered union; `matched_titlewords` accumulates provenance.
-- **Profile fields.** `points`, profile keywords, `profile_excluded`,
-  `language_excluded` and profile scores never enter universal records.
+- **Profile policy fields.** `points`, profile keywords, `role_families`,
+  `language_adjustment`, `profile_excluded`, `language_excluded` and profile
+  scores never enter universal records.
+- **Profile-neutral annotations.** `language` and `guessed_required_languages`
+  are universal fields (Q29). They are derived from the stored description, so
+  the merge replaces them with the latest enrichment instead of unioning them;
+  `matched_titlewords` stays a collection field and unions.
 - **Vocabulary.** "Universal" names the expected shared record shape and folder,
   not a run that must exist. Interfaces that read or write it take records or
   paths as arguments; no stage or profile discovers a universal history (Q28).

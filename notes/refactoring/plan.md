@@ -34,6 +34,9 @@ can be run, tested and replaced independently.
 4. **Profile-neutral, unfiltered collection.** The universal vault stores every
    posting the queries returned; no profile score, threshold, language
    exclusion, manager or role filter leaks into raw data. Profiles filter.
+   Profile-neutral facts (detected language, matched titlewords, language
+   evidence) do belong in the universal record; the policy built on them does
+   not (Q29).
 5. **Resumable, verifiable runs.** Every stage reads named artifacts and writes
    named artifacts; a failed run cannot silently replace a healthy snapshot.
 6. **Kedro as the pipeline runtime.** Pipelines, `conf/`, parameters and
@@ -167,13 +170,16 @@ partial result that later stages accept or reject explicitly.
 
 Move merge, comparison, history rebuild and generic enrichment into a layer that
 runs without scraping or profile knowledge. Settle conflict rules (dates,
-description freshness, scalar fields) and keep profile fields out. The universal
-vault stores all postings; no role or manager filtering happens here. Old profile
-points are dropped from universal records (plan only; live data is not migrated).
+description freshness, scalar fields) and keep profile policy out. Generic
+enrichment adds the profile-neutral annotations (language and language-requirement
+evidence, Q29). The universal vault stores all postings; no role or manager
+filtering happens here. Old profile points are dropped from universal records
+(plan only; live data is not migrated).
 
 **Verify:** deterministic fixtures: repeated merges are idempotent, earliest and
 latest dates survive, reruns produce byte-identical JSON; a universal record
-contains no profile field; writes are atomic and timestamps are UTC.
+contains no profile policy field and does carry the annotations; writes are
+atomic and timestamps are UTC.
 
 ### Phase 3 — Profile policy seam
 

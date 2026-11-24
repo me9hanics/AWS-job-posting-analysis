@@ -80,7 +80,9 @@ site needs a collector change, the seam is wrong.
    into the collector/quality modules; `scrape_universal.py` then composes the
    collector with storage only.
 9. Remove the profile-processing methods from `BaseScraper` once derivation owns
-   filtering and scoring. Replace the `process` flag with step selection.
+   filtering and scoring. Replace the `process` flag with step selection, and
+   leave no overridable helper on the base: mechanics live in `http`, `browser`,
+   `pagination` and `parsing` (Q30).
 10. Keep the two-step pattern from the current sites: listing facts first, detail
     facts second. Name the steps after what the site does, not after a global
     vocabulary.
@@ -97,6 +99,8 @@ site needs a collector change, the seam is wrong.
 ## Completion check
 
 - Exactly one implementation of `BaseScraper` and of each site class exists.
+- `BaseScraper` holds run context only: no `gather_data` template and no
+  overridable helper; no site class overrides a base method.
 - All production imports use public scraper paths; no import of a deleted
   module remains.
 - A saved fixture per site produces the same facts before and after the move.

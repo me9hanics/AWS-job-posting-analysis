@@ -1,8 +1,8 @@
 # Decisions and open questions
 
-Status: decisions resolved 2026-11-16. One question remains open (Q16). The
-resolved list records what was decided and which document follows; the original
-option lists are no longer needed.
+Status: decisions resolved 2026-11-16, refined 2026-11-24 (Q29). One question
+remains open (Q16). The resolved list records what was decided and which document
+follows; the original option lists are no longer needed.
 
 This file is the design decision log. When a decision changes, update the row
 and the affected document in the same change.
@@ -59,6 +59,8 @@ and the affected document in the same change.
 | Q26 | Collector at `acquisition/collector.py`, entry point `run_collection`. | [module-seams.md](module-seams.md#target-package-map). |
 | Q27 | No spec version or digest, and no compatibility requirement for old data. `schema_version` on the vault is enough. | [artifacts.md](artifacts.md#resume-and-failure). |
 | Q28 | The universal history is expected but not guaranteed. Collection may be planned per pipeline and run as today; a profile's input is whatever records it is given, not "the universal vault". Interfaces that read or write universal data take records or paths as arguments; nothing may depend on one universal history existing. | [artifacts.md](artifacts.md#stage-interface), [open-questions.md](#universal-history-is-not-guaranteed). |
+| Q29 | The universal record carries profile-neutral annotations: `language`, `guessed_required_languages` and `matched_titlewords`. Policy fields (`points`, `keywords`, `role_families`, `language_adjustment`, `language_excluded`, `profile_excluded`) stay in scored/selected. `data/enrich.py` produces the two language fields; derivation consumes them instead of recomputing. | [specs.md](specs.md#profile-neutral-annotations); backlog B07a, B29, B31, B33. |
+| Q30 | A site is a class in its own module and is its own adapter. `BaseScraper` keeps only per-run setup (config normalization, dates), `source` and the declared `steps`; overridable helper methods are removed. Shared mechanics are module functions (`http`, `browser`, `pagination`, `parsing`); per-site differences are arguments or `rules` keys. Steps are declared by the site class, typically as bound methods in `__init__`. | [module-seams.md](module-seams.md#site-class-and-its-base); backlog B19, B20, B31, B44. |
 
 ## Still open
 
