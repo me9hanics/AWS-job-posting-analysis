@@ -14,8 +14,8 @@ descend only as far as the question requires.
 | 1 | [Plan](plan.md) | Goals, principles, phases, risks, success criteria. |
 | 2 | [Breakdown](breakdown/README.md) | One document per workstream: current state, target, changes, dependencies. |
 | 2.5 | [Backlog](backlog.md) | Ordered tasks B01–B46 with dependencies, files and done criteria. |
-| 2.6 | [Tickets](tickets/README.md) | The same tasks as one ticket per file, grouped by milestone, with status. |
-| 3 | [Design](design/README.md) | Concrete module maps, data specs, artifact contracts, and implementation-flow sketches where a design needs them. |
+| 2.6 | [Tickets](tickets/README.md) | The same tasks as one ticket per file, grouped by milestone, with status and one `implementation-flow.md` per milestone. |
+| 3 | [Design](design/README.md) | Concrete module maps, data specs, artifact contracts, and cross-block implementation-flow sketches. |
 | — | [Process map](process_map.md) | The detailed 2026-11-02 work-and-dependency map. Still the long-form sequencing reference. |
 | raw | [Raw archive](raw/restructuring-2026-11-02/README.md) | Historical plans and sketches. Local only, Git-ignored. |
 
@@ -25,15 +25,18 @@ descend only as far as the question requires.
 - **Adding or reordering work** → edit the relevant breakdown document and, if
   the dependency order changes, [process_map.md](process_map.md). The executable
   order is [backlog.md](backlog.md).
-- **Starting a work session** → pick the first unchecked task in
-  [backlog.md](backlog.md) whose dependencies are done, and work it from its
-  ticket in [tickets/](tickets/README.md).
+- **Starting a work session** → read the milestone's
+  `implementation-flow.md` for the ordered per-ticket mocks, then pick the first
+  unchecked task in [backlog.md](backlog.md) whose dependencies are done, and
+  work it from its ticket in [tickets/](tickets/README.md).
 - **Deciding a concrete interface** → edit the design document and remove or
   update the matching entry in
   [design/open-questions.md](design/open-questions.md).
 - **Planning a cross-block implementation flow** → add or update its
-  implementation-flow sketch in the relevant design document before relying on
-  it in tickets.
+  implementation-flow sketch in the relevant design document, and the
+  milestone's `tickets/<milestone>/implementation-flow.md` (one section per
+  ticket, in order, with that ticket's mock shapes), before relying on it in
+  tickets.
 - **Quoting history** → link the raw file; never treat it as the current
   specification.
 

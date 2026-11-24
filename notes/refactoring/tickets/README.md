@@ -24,6 +24,11 @@ tickets/
   m9-done/               # B44–B46
 ```
 
+Every milestone folder also holds one `implementation-flow.md`: the milestone's
+own `In → Does → Out → Next` view, organized one section per ticket in
+implementation order, each with the mock shapes that ticket introduces. It may
+be brief, but it must exist. M1 predates the rule and has none.
+
 Folders follow the backlog milestones, because a milestone is what "done" means
 for a reviewable batch; the backlog's phases are mapped to them by the table
 below.
@@ -62,7 +67,8 @@ Confirmed during M1:
 | B09 | [Define the adapter step contract](m2-contracts/B09-step-contract.md) | B06 | done |
 | B10 | [Prove the step contract with a fake adapter](m2-contracts/B10-fake-adapter.md) | B09 | done |
 
-B06–B10 may run in parallel with B03–B05 once B02 is done.
+B06–B10 may run in parallel with B03–B05 once B02 is done. The milestone flow is
+[implementation-flow.md](m2-contracts/implementation-flow.md).
 
 ### M3 — One scraper per site (phases 2–3)
 
@@ -137,16 +143,25 @@ B06–B10 may run in parallel with B03–B05 once B02 is done.
 
 ## Ticket implementation notes
 
-Tickets do not get companion prototype files or placeholders. When a ticket
-changes a boundary or has a non-obvious local flow, add a short
-`## Implementation notes` section to that ticket. State what changes and, only
-where it clarifies the work, use `In → Does → Out → Next` to describe the local
-handoff. Keep it smaller than the design's implementation-flow sketch and link
-to that sketch when the ticket implements part of a wider flow.
+Tickets do not get companion prototype files or placeholders. The one companion
+file a milestone carries is its `implementation-flow.md` (see
+[Layout](#layout)). That file is scoped to the milestone but divided per ticket:
+it lists the tickets in implementation order and shows, for each, the mock
+shapes the ticket introduces and its `In → Does → Out → Next` chain. A ticket
+that builds one continuous segment gets one chain; a ticket with unrelated parts
+gets one chain per part. This is where "what will exist, and where it fits" is
+written down.
+
+A ticket's own `## Implementation notes` section stays scoped to that ticket:
+state what changes and, only where it clarifies the work, use
+`In → Does → Out → Next` for a local handoff the milestone file does not
+already cover. Link to the milestone's `implementation-flow.md` and to the
+design sketch instead of repeating them.
 
 Mock signatures in a ticket are illustrative only. The design documents remain
-the source for cross-block interfaces and data flow; the ticket remains the
-source for the scoped change and its completion checks.
+the source for cross-block interfaces and data flow; the milestone flow file is
+the ordered, per-ticket view of that flow; the ticket remains the source for the
+scoped change and its completion checks.
 
 ## Working agreement
 

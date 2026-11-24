@@ -36,9 +36,12 @@ interfaces, module maps and layout; the workstreams in
 
 Add an implementation-flow sketch to the relevant design document when a
 design decision needs to show how data moves through several logical blocks.
-Do not create one automatically for every milestone, folder, or ticket, and do
-not create placeholders. The agent planning or starting the work writes it when
-the flow is useful.
+The cross-block sketch lives in the design document; each milestone's own view
+of the flow it implements lives in
+`tickets/<milestone>/implementation-flow.md` and must exist even when brief.
+There are no separate per-ticket sketch files and no placeholders; per-ticket
+blocks live inside the milestone file. The agent planning or starting a
+milestone writes both.
 
 The sketch follows the data in execution order: pipeline context before the
 change, then each logical block, then the downstream artifact or stage. Each
@@ -54,3 +57,24 @@ order with the same `In → Does → Out → Next` chain. Small mock signatures 
 dataclasses may show a boundary, but their names and types must connect the
 preceding block's output to the next block's input. They are design sketches,
 not implementation or a second source of truth.
+
+### Milestone sketches: organize by ticket
+
+The milestone file is the bridge between the spec and the tickets, so it is
+organized the way the work is: one section per ticket, in implementation order.
+Each section gives that ticket its own chain and shows the mock shapes the
+ticket introduces (dataclasses, signatures, constants, report fields), so a
+reader can see what will exist and where it fits before any code is written.
+
+- A ticket that builds one continuous segment of the pipeline gets one chain:
+  input, its parts in execution order, output.
+- A ticket whose parts are not continuous (two unrelated classes, a class and
+  its tests, two independent modules) gets one chain per part.
+- Short mock code is the point, not decoration: show the shape the next ticket
+  will consume. Keep it to the boundary, and make its names and types match the
+  neighbouring blocks.
+- End with one short end-to-end chain across the milestone, if the tickets
+  together form a flow. Do not repeat every detail there.
+
+A ticket's own `## Implementation notes` stays scoped to that ticket and links
+to the milestone file instead of restating it.
