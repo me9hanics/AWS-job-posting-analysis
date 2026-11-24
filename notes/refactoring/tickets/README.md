@@ -6,7 +6,8 @@ task can be picked up, tracked and closed on its own.
 
 `B01`–`B46` are the backlog tasks. `B02a` is one task that was missing from the
 backlog and was added early, by decision on 2026-11-19; it inserts without
-renumbering anything else.
+renumbering anything else. `B07a` is a follow-up to the closed B07/B08 specs after
+Q29 (2026-11-24) and is placed after B08.
 
 ## Layout
 
@@ -63,6 +64,7 @@ Confirmed during M1:
 | --- | --- | --- | --- |
 | B06 | [Create the `specs` package](m2-contracts/B06-create-specs-package.md) | B02 | done |
 | B07 | [Define the five posting specs](m2-contracts/B07-posting-specs.md) | B06 | done |
+| B07a | [Put profile-neutral annotations in the universal spec](m2-contracts/B07a-universal-annotations.md) | B07, B08 | done |
 | B08 | [Test the spec contract](m2-contracts/B08-spec-contract-tests.md) | B06, B07 | done |
 | B09 | [Define the adapter step contract](m2-contracts/B09-step-contract.md) | B06 | done |
 | B10 | [Prove the step contract with a fake adapter](m2-contracts/B10-fake-adapter.md) | B09 | done |
@@ -70,18 +72,23 @@ Confirmed during M1:
 B06–B10 may run in parallel with B03–B05 once B02 is done. The milestone flow is
 [implementation-flow.md](m2-contracts/implementation-flow.md).
 
+B07a is a follow-up to B07/B08 rather than a reopened ticket: it adds the
+profile-neutral annotations (`language`, `guessed_required_languages`) to
+`UNIVERSAL_POSTINGS` after Q29 (2026-11-24). It changes the specs' field list and
+one test, no runtime behaviour. Its producers land in B29/B31; B33 consumes them.
+
 ### M3 — One scraper per site (phases 2–3)
 
 | ID | Ticket | Depends on | Status |
 | --- | --- | --- | --- |
-| B11 | [Choose the canonical scraper implementations](m3-one-scraper-per-site/B11-canonical-scrapers.md) | B05 | todo |
-| B12 | [Move `KarriereAT` to its site module](m3-one-scraper-per-site/B12-move-karriere-at.md) | B11 | todo |
-| B13 | [Move `Raiffeisen` to its site module](m3-one-scraper-per-site/B13-move-raiffeisen.md) | B12 | todo |
-| B14 | [Make `BaseScraper` single-source and shrink `sites.py`](m3-one-scraper-per-site/B14-single-base-scraper.md) | B13 | todo |
-| B15 | [Update every importer](m3-one-scraper-per-site/B15-update-importers.md) | B14 | todo |
-| B16 | [Extract the HTTP path](m3-one-scraper-per-site/B16-extract-http.md) | B15 | todo |
-| B17 | [Extract the headless-browser path](m3-one-scraper-per-site/B17-extract-browser.md) | B16 | todo |
-| B18 | [Extract pagination and retire the facade](m3-one-scraper-per-site/B18-extract-pagination.md) | B17 | todo |
+| B11 | [Choose the canonical scraper implementations](m3-one-scraper-per-site/B11-canonical-scrapers.md) | B05 | done |
+| B12 | [Move `KarriereAT` to its site module](m3-one-scraper-per-site/B12-move-karriere-at.md) | B11 | done |
+| B13 | [Move `Raiffeisen` to its site module](m3-one-scraper-per-site/B13-move-raiffeisen.md) | B12 | done |
+| B14 | [Make `BaseScraper` single-source and shrink `sites.py`](m3-one-scraper-per-site/B14-single-base-scraper.md) | B13 | done |
+| B15 | [Update every importer](m3-one-scraper-per-site/B15-update-importers.md) | B14 | done |
+| B16 | [Extract the HTTP path](m3-one-scraper-per-site/B16-extract-http.md) | B15 | done |
+| B17 | [Extract the headless-browser path](m3-one-scraper-per-site/B17-extract-browser.md) | B16 | done |
+| B18 | [Extract pagination and retire the facade](m3-one-scraper-per-site/B18-extract-pagination.md) | B17 | done |
 
 ### M4 — Collector (phase 4)
 
@@ -187,9 +194,11 @@ uv run python -m unittest discover -s tests
 ```
 
 PowerShell can report exit code 1 because unittest writes to stderr even when
-tests pass; read the `OK`/failure output. M1 started at 55 tests, closed at 89,
-and the M1 code-review fix set brought it to 93; M2 adds 14 contract tests, so
-HEAD reports 107, with the same command.
+tests pass; read the `OK`/failure output. At the end of M3 the runner reports 114
+tests with this working tree — 84 tracked test methods plus 30 from the untracked
+WIP test modules (`test_dani_profile.py`, `test_language_requirements.py`,
+`test_raw_collection.py`). Quote 114 only as "reported", not as the tracked
+count.
 
 A ticket that claims "no absolute path" is verified with:
 

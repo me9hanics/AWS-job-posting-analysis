@@ -1,6 +1,6 @@
 # B12 — Move `KarriereAT` to its site module
 
-Status: todo · Milestone: M3 One scraper per site · Phase 2 · Size: M
+Status: done · Milestone: M3 One scraper per site · Phase 2 · Size: M
 
 - Depends on: B11
 - Files: `src/jobscraping/scrapers/websites/karriere_at.py`,

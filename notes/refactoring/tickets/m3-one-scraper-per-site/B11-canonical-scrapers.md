@@ -1,6 +1,6 @@
 # B11 — Choose the canonical scraper implementations
 
-Status: todo · Milestone: M3 One scraper per site · Phase 2 · Size: M
+Status: done · Milestone: M3 One scraper per site · Phase 2 · Size: M
 
 - Depends on: B05
 - Files: [design/module-seams.md](../../design/module-seams.md),

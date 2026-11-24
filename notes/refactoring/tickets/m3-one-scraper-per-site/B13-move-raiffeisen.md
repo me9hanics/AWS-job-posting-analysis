@@ -1,6 +1,6 @@
 # B13 — Move `Raiffeisen` to its site module
 
-Status: todo · Milestone: M3 One scraper per site · Phase 2 · Size: M
+Status: done · Milestone: M3 One scraper per site · Phase 2 · Size: M
 
 - Depends on: B12
 - Files: `src/jobscraping/scrapers/websites/raiffeisen.py`,

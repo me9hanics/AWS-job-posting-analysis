@@ -14,9 +14,25 @@ Status: todo · Milestone: M6 Profiles · Phase 6 · Size: L
 2. Accept `ProfileConfig` plus profile functions; remove Dani imports and
    defaults.
 3. Keep the existing delta rules and output ordering.
+4. Consume `language` and `guessed_required_languages` from the input when
+   present; compute them only when missing, so legacy history still derives
+   (Q29).
+
+## Implementation notes
+
+Today `derive_profile_postings` calls `analyze_postings_language` and
+`guess_required_languages` on every input, including `previous_history`. After
+B29/B31 the input already carries both. Keep the recompute as a fallback for
+records without the fields — it is what makes old histories and hand-built
+fixtures still work — but do not overwrite a supplied annotation.
+
+`keywords`, `role_families`, `points`, `language_adjustment`,
+`language_excluded` and `profile_excluded` stay derivation output.
 
 ## Done when
 
 - `processing/derive.py` imports no profile module and loads no input file.
 - Dani's selected output matches the baseline.
 - A second config can call the same function.
+- An input with the annotations is not re-annotated; an input without them
+  produces today's result.

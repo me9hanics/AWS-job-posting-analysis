@@ -13,6 +13,10 @@ Status: todo · Milestone: M4 Collector · Phase 4 · Size: M
 3. Keep the final facts identical to the pre-split flow.
 4. Keep `gather_data` as a compatibility wrapper until B24 wires the collector;
    the step list is the new path.
+5. Declare the steps as bound methods on the class, so per-run state (cookies,
+   tokens) is available; import mechanics from `http`/`browser`/`pagination`/
+   `parsing` and pass site differences as arguments or `rules` keys. Add no
+   helper method to `BaseScraper` and override none (Q30).
 
 ## Done when
 
@@ -20,3 +24,5 @@ Status: todo · Milestone: M4 Collector · Phase 4 · Size: M
 - A full run returns the same facts as the B05 fixture baseline.
 - No required/optional flag is introduced.
 - The legacy entry point still calls the wrapper.
+- The class inherits `BaseScraper` only for run context; the step methods are
+  its only site-specific members.

@@ -1,6 +1,6 @@
 # B15 — Update every importer
 
-Status: todo · Milestone: M3 One scraper per site · Phase 2 · Size: S
+Status: done · Milestone: M3 One scraper per site · Phase 2 · Size: S
 
 - Depends on: B14
 - Files: `pipelines/collecting.py`, `processing/postings_utils.py`,

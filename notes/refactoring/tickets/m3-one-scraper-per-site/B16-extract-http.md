@@ -1,6 +1,6 @@
 # B16 — Extract the HTTP path
 
-Status: todo · Milestone: M3 One scraper per site · Phase 3 · Size: M
+Status: done · Milestone: M3 One scraper per site · Phase 3 · Size: M
 
 - Depends on: B15
 - Files: `src/jobscraping/scrapers/http.py`, `src/jobscraping/scrapers/scrape.py`

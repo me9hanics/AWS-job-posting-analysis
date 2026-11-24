@@ -16,4 +16,6 @@ Status: todo · Milestone: M9 Done · Phase 9 · Size: M
 
 - No module is imported only for compatibility.
 - No duplicate scraper or empty placeholder remains.
+- `basescraper.py` exposes no overridable helper and declares no `gather_data`
+  template; no site module overrides a base method (Q30).
 - The suite passes.

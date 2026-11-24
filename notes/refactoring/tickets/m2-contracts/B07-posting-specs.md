@@ -21,3 +21,11 @@ Status: done · Milestone: M2 Contracts · Phase 1 · Size: S
 - All five import.
 - The field sets match [design/specs.md](../../design/specs.md#specs-per-step).
 - No profile-only key appears in `UNIVERSAL_POSTINGS`.
+
+## Amended by B07a
+
+Q29 (2026-11-24) split "profile fields" into **annotations** that belong to the
+universal record (`language`, `guessed_required_languages`,
+`matched_titlewords`) and **policy** that does not. Item 4 above now reads
+"profile *policy* fields out of `UNIVERSAL_POSTINGS`". The field-set follow-up is
+[B07a](B07a-universal-annotations.md); this ticket stays done.

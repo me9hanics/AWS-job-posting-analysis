@@ -14,6 +14,6 @@ Status: todo · Milestone: M5 Data layer · Phase 5 · Size: S
 
 ## Done when
 
-- A universal diff contains no profile field.
+- A universal diff contains no profile policy field.
 - A reappearing posting is current, not newly added.
 - The profile path still orders by points after derivation.

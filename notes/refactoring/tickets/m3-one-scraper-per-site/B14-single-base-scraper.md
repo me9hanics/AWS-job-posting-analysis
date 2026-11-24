@@ -1,6 +1,6 @@
 # B14 — Make `BaseScraper` single-source and shrink `sites.py`
 
-Status: todo · Milestone: M3 One scraper per site · Phase 2 · Size: M
+Status: done · Milestone: M3 One scraper per site · Phase 2 · Size: M
 
 - Depends on: B13
 - Files: `src/jobscraping/scrapers/basescraper.py`,

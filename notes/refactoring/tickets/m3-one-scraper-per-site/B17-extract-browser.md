@@ -1,6 +1,6 @@
 # B17 — Extract the headless-browser path
 
-Status: todo · Milestone: M3 One scraper per site · Phase 3 · Size: M
+Status: done · Milestone: M3 One scraper per site · Phase 3 · Size: M
 
 - Depends on: B16
 - Files: `src/jobscraping/scrapers/browser.py`, `scrapers/scrape.py`
@@ -15,4 +15,5 @@ Status: todo · Milestone: M3 One scraper per site · Phase 3 · Size: M
 
 - `browser.py` imports no `requests` request path.
 - Scraper fixture tests pass.
-- Importing `http.py` does not import Selenium.
+- `http.py` contains no Selenium import (checked in source; a `sys.modules`
+  assertion cannot hold while `scrapers/__init__.py` imports `BaseScraper`).

@@ -1,8 +1,9 @@
 # M2 implementation flow — data specs and the step contract
 
-The milestone's own view of what B06–B10 build and where each piece sits. Tickets
-run in order; each gets its own short chain, with the mock shapes it introduces.
-Mock code shows boundaries only — it is never imported or copied verbatim.
+The milestone's own view of what B06–B10 build and where each piece sits, plus
+B07a, the later refinement of the universal shape (Q29). Tickets run in order;
+each gets its own short chain, with the mock shapes it introduces. Mock code
+shows boundaries only — it is never imported or copied verbatim.
 
 `In → Does → Out → Next`, per ticket. A ticket with unrelated parts gets one
 chain per part; a ticket that builds one continuous segment gets one chain.
@@ -54,7 +55,8 @@ One data flow: vocabulary in, five constants out.
 - **Out:** `DISCOVERED_POSTINGS`, `COLLECTED_POSTINGS`, `UNIVERSAL_POSTINGS`,
   `SCORED_POSTINGS`, `SELECTED_POSTINGS`.
 - **Next:** B09 binds them to steps; B22 checks step boundaries; B31 stores the
-  universal shape.
+  universal shape; B07a refines the universal shape with the profile-neutral
+  annotations.
 
 The shapes differ only in which fields each stage owns (`*` = required):
 
@@ -64,11 +66,44 @@ COLLECTED_POSTINGS   # + description, salary, salary_guessed, salary_monthly_gue
                      #   isHomeOffice, employmentTypes, snippet, role, requirements,
                      #   nice_to_have, benefits
 UNIVERSAL_POSTINGS   # every RAW_POSTING_FIELDS key + first/last_collected_on,
-                     #   timespan_days, last_modified_on  (no points/keywords/language)
+                     #   timespan_days, last_modified_on; no policy fields
+                     #   (see B07a for the annotations)
 SCORED_POSTINGS      # source*, id*, points* | language, matched_titlewords, keywords,
                      #   role_families, guessed_required_languages,
                      #   language_adjustment, language_excluded, profile_excluded
 SELECTED_POSTINGS    # same fields as SCORED_POSTINGS, filtered subset
+```
+
+B07 is refined by B07a: the universal shape gains the profile-neutral
+annotations `language` and `guessed_required_languages` (Q29).
+
+---
+
+## B07a — universal annotations
+
+Spec-only follow-up to B07, after B08. No runtime flow yet; this fixes the
+boundary the later producers and consumers use.
+
+- **In:** `UNIVERSAL_POSTINGS`/`SCORED_POSTINGS` (B07), Q29 and
+  [specs.md](../../design/specs.md#profile-neutral-annotations).
+- **Does:** declare `language` and `guessed_required_languages` as universal
+  fields; mark them plus `matched_titlewords` as carried in scored.
+- **Out:** one field list per stage where "annotation" and "policy" are
+  distinguishable, plus a test that keeps them apart.
+- **Next:** B29 produces the two fields, B31 stores them, B33 stops recomputing
+  them.
+
+```python
+ANNOTATIONS = (
+    FieldSpec("matched_titlewords", "list", produced_by="collection"),
+    FieldSpec("language", "str", produced_by="enrichment"),
+    FieldSpec("guessed_required_languages", "dict", produced_by="enrichment"),
+)
+POLICY_FIELDS = ("points", "keywords", "role_families",
+                 "language_adjustment", "language_excluded", "profile_excluded")
+
+UNIVERSAL_POSTINGS  # every RAW_POSTING_FIELDS key + store fields + ANNOTATIONS
+SCORED_POSTINGS     # points + carried ANNOTATIONS + POLICY_FIELDS
 ```
 
 ---
@@ -162,6 +197,7 @@ adapter declares steps + specs (B09)
 ```
 
 What is fixed in place: field vocabulary from `RAW_POSTING_FIELDS`; required
-fields = identity + URL (plus `points` after derivation); no profile fields in
-the universal shape; `check` reports, never coerces; specs travel beside the
-callable, not inside it.
+fields = identity + URL (plus `points` after derivation); no profile *policy*
+fields in the universal shape, though profile-neutral annotations do live there
+(B07a); `check` reports, never coerces; specs travel beside the callable, not
+inside it.
