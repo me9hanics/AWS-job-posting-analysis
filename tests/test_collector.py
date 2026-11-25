@@ -76,6 +76,28 @@ class FindsNothing:
     steps = (("listings", nothing),)
 
 
+def fetch_everything(records, config):
+    """A new site's one step: fetch its complete postings in one response."""
+    return {
+        "fake.test1": {
+            "source": "fake.test",
+            "id": "1",
+            "url": "https://fake.test/1",
+            "description": "fake text",
+        }
+    }
+
+
+class FakeNewSite:
+    """A new site: one module with a source and its steps."""
+
+    source = "fake.test"
+    steps = (Step("all", fetch_everything, output_spec=COLLECTED_POSTINGS),)
+
+
+ADAPTERS = [FakeNewSite]
+
+
 class OneStepTest(unittest.TestCase):
     def test_one_step_adapter_runs_in_declared_order(self):
         result = run_collection([DiscoveryOnly()], CollectionConfig(sites=("one.test",)))
@@ -267,6 +289,124 @@ class ArtifactTest(unittest.TestCase):
                 (Path(root) / "run_report.json").read_text(encoding="utf-8")
             )
             self.assertEqual(report, result["report"])
+
+
+class IntegrationTest(unittest.TestCase):
+    """End-to-end runs of ``run_collection`` with a temporary artifact path."""
+
+    def chunk_files(self, root):
+        return sorted((Path(root) / "chunks").rglob("*.json"))
+
+    def test_a_one_shot_and_a_two_step_adapter_run_together(self):
+        config = CollectionConfig(sites=("one.test", "two.test"))
+        with tempfile.TemporaryDirectory() as root:
+            result = run_collection(
+                [DiscoveryOnly(), ListingThenDetails()], config, artifact_path=root
+            )
+
+            self.assertEqual(
+                set(result["records"]),
+                {"one.test1", "two.test1"},
+            )
+            self.assertEqual(result["records"]["one.test1"]["description"], "full text")
+            self.assertEqual(
+                result["records"]["two.test1"]["description"], "detail text"
+            )
+            sites = result["report"]["sites"]
+            self.assertEqual([site["source"] for site in sites], ["one.test", "two.test"])
+            self.assertEqual(
+                [[step["status"] for step in site["steps"]] for site in sites],
+                [["ok"], ["ok", "ok"]],
+            )
+            self.assertFalse(result["report"]["failed"])
+            self.assertFalse(result["report"]["zero_records"])
+            steps = [chunk.stem for chunk in self.chunk_files(root)]
+            self.assertEqual(
+                steps, ["all", "details", "listings"], "one chunk per ok step"
+            )
+            report = json.loads(
+                (Path(root) / "run_report.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(report, result["report"])
+
+    def test_skipping_details_keeps_partial_records_and_writes_no_details_chunk(self):
+        config = CollectionConfig(steps=("listings",))
+        with tempfile.TemporaryDirectory() as root:
+            result = run_collection([ListingThenDetails()], config, artifact_path=root)
+
+            record = result["records"]["two.test1"]
+            self.assertEqual(record["url"], "https://two.test/1")
+            self.assertNotIn("description", record, "details never ran")
+            site = result["report"]["sites"][0]
+            self.assertEqual(
+                [(step["name"], step["status"]) for step in site["steps"]],
+                [("listings", "ok"), ("details", "skipped")],
+            )
+            chunked_steps = [chunk.stem for chunk in self.chunk_files(root)]
+            self.assertEqual(chunked_steps, ["listings"], "a skipped step writes no chunk")
+            self.assertTrue((Path(root) / "run_report.json").exists())
+
+    def test_a_raising_step_names_its_error_and_other_adapters_records_survive(self):
+        with tempfile.TemporaryDirectory() as root:
+            result = run_collection(
+                [DiscoveryOnly(), FailingDetails()],
+                CollectionConfig(),
+                artifact_path=root,
+            )
+
+            failed_site = result["report"]["sites"][1]
+            self.assertEqual(
+                [(step["name"], step["status"]) for step in failed_site["steps"]],
+                [("listings", "ok"), ("details", "failed"), ("cleanup", "ok")],
+                "a raising step does not stop later steps",
+            )
+            self.assertIn("detail page unavailable", failed_site["steps"][1]["error"])
+            self.assertIn(
+                "one.test1", result["records"], "a healthy adapter keeps its records"
+            )
+            report = json.loads(
+                (Path(root) / "run_report.json").read_text(encoding="utf-8")
+            )
+            failed = [
+                step
+                for site in report["sites"]
+                for step in site["steps"]
+                if step["status"] == "failed"
+            ]
+            self.assertEqual([step["name"] for step in failed], ["details"])
+            self.assertIn("detail page unavailable", failed[0]["error"])
+
+    def test_an_adapter_that_returns_nothing_is_zero_records_and_failed(self):
+        with tempfile.TemporaryDirectory() as root:
+            result = run_collection(
+                [FindsNothing()], CollectionConfig(), artifact_path=root
+            )
+
+            self.assertTrue(result["report"]["zero_records"])
+            self.assertTrue(result["report"]["failed"])
+            self.assertEqual(result["records"], {})
+            self.assertEqual(
+                result["report"]["sites"][0]["steps"][0]["status"], "empty"
+            )
+
+    def test_a_new_site_runs_through_the_same_call_with_one_registry_entry(self):
+        adapters = [adapter() for adapter in ADAPTERS]
+        with tempfile.TemporaryDirectory() as root:
+            result = run_collection(adapters, CollectionConfig(), artifact_path=root)
+
+            self.assertEqual(
+                result["records"]["fake.test1"]["description"], "fake text"
+            )
+            site = result["report"]["sites"][0]
+            self.assertEqual(site["source"], "fake.test")
+            self.assertEqual(
+                [(step["name"], step["status"]) for step in site["steps"]],
+                [("all", "ok")],
+            )
+            self.assertFalse(result["report"]["failed"])
+            self.assertEqual(
+                [chunk.stem for chunk in self.chunk_files(root)], ["all"]
+            )
 
 
 if __name__ == "__main__":

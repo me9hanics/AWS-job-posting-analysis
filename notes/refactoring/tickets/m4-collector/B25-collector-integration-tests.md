@@ -1,6 +1,6 @@
 # B25 — Collector integration tests
 
-Status: todo · Milestone: M4 Collector · Phase 4 · Size: M
+Status: done · Milestone: M4 Collector · Phase 4 · Size: M
 
 - Depends on: B24
 - Files: `tests/test_collector.py` (extends the module created in B22)

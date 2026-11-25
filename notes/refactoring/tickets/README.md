@@ -100,7 +100,7 @@ one test, no runtime behaviour. Its producers land in B29/B31; B33 consumes them
 | B22 | [Create the universal collector](m4-collector/B22-universal-collector.md) | B09, B10, B19, B20, B21 | done |
 | B23 | [Add chunk artifacts and the JSON run report](m4-collector/B23-chunks-and-report.md) | B22 | done |
 | B24 | [Wire the universal pipeline to the collector](m4-collector/B24-wire-universal-pipeline.md) | B22, B23 | done |
-| B25 | [Collector integration tests](m4-collector/B25-collector-integration-tests.md) | B24 | todo |
+| B25 | [Collector integration tests](m4-collector/B25-collector-integration-tests.md) | B24 | done |
 
 ### M5 — Data layer (phase 5)
 
