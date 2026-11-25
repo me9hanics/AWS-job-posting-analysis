@@ -1,6 +1,6 @@
 """Raw acquisition for one explicit query scope; no profile selection."""
 
-from jobscraping.acquisition.collector import run_collection
+from jobscraping.acquisition.collector import failure_message, run_collection
 from jobscraping.config.models import CollectionConfig
 from jobscraping.pipelines.collecting import (
     KEYWORDS,
@@ -16,20 +16,6 @@ from jobscraping.pipelines.store_universal import (
     store_universal_postings,
 )
 from jobscraping.processing.postings_utils import factual_postings, validate_cache_mode
-
-
-def _collection_failure(report):
-    """Describe every failed step, embedding its recorded error verbatim."""
-    failures = []
-    for site in report["sites"]:
-        for step in site["steps"]:
-            if step["status"] == "failed":
-                failures.append(f"{site['source']} {step['name']}: {step['error']}")
-            elif step["status"] == "empty":
-                failures.append(f"{site['source']} {step['name']}: no records")
-    if not failures:
-        failures.append("no records collected")
-    return "Collection failed: " + "; ".join(failures)
 
 
 def run_universal_scrape_flow(
@@ -84,7 +70,9 @@ def run_universal_scrape_flow(
     result = run_collection(adapters, config, artifact_path=path)
     raw = factual_postings(result["records"])
     if result["report"]["failed"]:
-        raise RuntimeError(_collection_failure(result["report"]))
+        error = RuntimeError(failure_message(result["report"]))
+        save_incomplete_run(raw, path, error)
+        raise error
     try:
         required_fields = {p.get("source"): ("title", "description", "company") for p in raw.values()}
         for source, fields in (required_fields_by_source or {}).items():

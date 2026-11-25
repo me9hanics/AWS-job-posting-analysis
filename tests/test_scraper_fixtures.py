@@ -242,7 +242,7 @@ class RaiffeisenFixtureParsingTests(unittest.TestCase):
 
 
 class RaiffeisenStepTests(unittest.TestCase):
-    """The declared steps are the new path; ``gather_data`` delegates to them."""
+    """The declared steps are the raw path; ``gather_data(process=False)`` delegates to them."""
 
     def scraper(self):
         return Raiffeisen(
@@ -289,6 +289,26 @@ class RaiffeisenStepTests(unittest.TestCase):
         self.assertEqual(posting["matched_titlewords"], ["sales"])
         self.assertEqual(posting["collected_on"], "2026-11-23")
         self.assertNotIn("description", posting)
+
+    def test_url_links_limits_the_fetched_pages(self):
+        url = "https://jobs.rbinternational.com/search/?q=sales"
+        session = FixtureSession()
+        with (
+            patch.object(http.requests, "Session", return_value=session),
+            patch.object(http.time, "sleep"),
+        ):
+            postings = self.scraper().listings({}, self.config(), url_links=[url])
+
+        self.assertEqual(
+            session.requested_urls, [url], "only the supplied page is fetched"
+        )
+        self.assertEqual(
+            sorted(postings),
+            [
+                "raiffeisen_international1364426457",
+                "raiffeisen_international1373093957",
+            ],
+        )
 
     def test_details_skips_cached_ids_and_merges_the_hit(self):
         scraper = self.scraper()

@@ -9,7 +9,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from jobscraping.acquisition.collector import run_collection
+from jobscraping.acquisition.collector import failure_message, run_collection
 from jobscraping.config.models import CollectionConfig
 from jobscraping.scrapers.steps import Step
 from jobscraping.specs.postings import COLLECTED_POSTINGS, DISCOVERED_POSTINGS
@@ -74,6 +74,17 @@ def nothing(records, config):
 class FindsNothing:
     source = "empty.test"
     steps = (("listings", nothing),)
+
+
+def empty_details(records, config):
+    return {}
+
+
+class ListingsThenEmptyDetails:
+    """A later step that returns nothing must not wipe the earlier records."""
+
+    source = "two.test"
+    steps = (("listings", listings), ("details", empty_details))
 
 
 def fetch_everything(records, config):
@@ -141,13 +152,13 @@ class TwoStepTest(unittest.TestCase):
         self.assertIsNone(site["steps"][1]["records"])
         self.assertNotIn("description", result["records"]["two.test1"])
 
-    def test_requested_step_the_adapter_does_not_declare_is_skipped(self):
+    def test_requested_step_the_adapter_does_not_declare_is_ignored(self):
         config = CollectionConfig(steps=("listings", "company-list"))
         result = run_collection([ListingThenDetails()], config)
 
         steps = result["report"]["sites"][0]["steps"]
-        self.assertEqual([step["name"] for step in steps], ["listings", "details", "company-list"])
-        self.assertEqual([step["status"] for step in steps], ["ok", "skipped", "skipped"])
+        self.assertEqual([step["name"] for step in steps], ["listings", "details"])
+        self.assertEqual([step["status"] for step in steps], ["ok", "skipped"])
 
     def test_raising_step_is_recorded_and_later_steps_still_run(self):
         result = run_collection([FailingDetails()], CollectionConfig())
@@ -182,6 +193,93 @@ class FailureTest(unittest.TestCase):
         self.assertFalse(result["report"]["zero_records"])
         self.assertTrue(result["report"]["failed"])
         self.assertEqual(len(result["records"]), 1)
+
+    def test_an_empty_later_step_keeps_the_earlier_records(self):
+        config = CollectionConfig()
+        with tempfile.TemporaryDirectory() as root:
+            result = run_collection(
+                [ListingsThenEmptyDetails()], config, artifact_path=root
+            )
+
+            site = result["report"]["sites"][0]
+            self.assertEqual(
+                [(step["name"], step["status"]) for step in site["steps"]],
+                [("listings", "ok"), ("details", "empty")],
+            )
+            self.assertTrue(site["failed"])
+            self.assertEqual(list(result["records"]), ["two.test1"])
+            chunks = sorted((Path(root) / "chunks").rglob("*.json"))
+            self.assertEqual(
+                [chunk.stem for chunk in chunks], ["listings"], "the empty step writes no chunk"
+            )
+
+
+class FailureMessageTest(unittest.TestCase):
+    """The one-line summary the pipeline raises for a failed report."""
+
+    def test_failed_and_empty_steps_are_named_with_their_recorded_error(self):
+        report = {
+            "sites": [
+                {
+                    "source": "raiffeisen_international",
+                    "failed": True,
+                    "steps": [
+                        {"name": "listings", "status": "failed",
+                         "records": None, "error": "HTTP 410 Gone"},
+                        {"name": "details", "status": "empty",
+                         "records": 0, "error": None},
+                        {"name": "cleanup", "status": "ok",
+                         "records": 1, "error": None},
+                    ],
+                }
+            ]
+        }
+
+        self.assertEqual(
+            failure_message(report),
+            "Collection failed: raiffeisen_international listings: HTTP 410 Gone; "
+            "raiffeisen_international details: no records",
+        )
+
+    def test_a_report_without_failed_steps_falls_back_to_no_records(self):
+        self.assertEqual(
+            failure_message({"sites": [{"source": "x", "failed": False, "steps": []}]}),
+            "Collection failed: no records collected",
+        )
+
+
+def http_gone(records, config):
+    raise RuntimeError("HTTP 410 Gone")
+
+
+class AlwaysGone:
+    """A site whose only step fails the way a removed posting page does."""
+
+    source = "gone.test"
+
+    def __init__(self, **_kwargs):
+        self.steps = (Step("listings", http_gone),)
+
+
+class PipelineFailureTest(unittest.TestCase):
+    """A failed collection writes its artifacts and leaves the vault untouched."""
+
+    def test_a_failed_run_writes_the_report_and_an_incomplete_run(self):
+        from jobscraping.pipelines.scrape_universal import run_universal_scrape_flow
+
+        with tempfile.TemporaryDirectory() as root:
+            with self.assertRaises(RuntimeError) as caught:
+                run_universal_scrape_flow(
+                    root,
+                    scrapers=[AlwaysGone],
+                    keywords={"titlewords": ["sales"], "locations": []},
+                )
+
+            self.assertIn("HTTP 410 Gone", str(caught.exception))
+            self.assertEqual(len(list(Path(root).glob("incomplete_run_*.json"))), 1)
+            self.assertTrue((Path(root) / "run_report.json").exists())
+            self.assertFalse((Path(root) / "current_postings.json").exists())
+            self.assertFalse((Path(root) / "postings_history.json").exists())
 
 
 class ScopeDigestTest(unittest.TestCase):

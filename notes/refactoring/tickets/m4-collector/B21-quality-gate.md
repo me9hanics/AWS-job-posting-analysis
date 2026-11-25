@@ -27,6 +27,15 @@ source scan, not a runtime assertion: `rg "profiles|profile"` over
 
 See [implementation-flow.md](implementation-flow.md#b21--the-quality-gate-moves).
 
+## Checks
+
+Moved-code finding, reported not fixed:
+`uvx ruff check --select PLR0913 src/jobscraping/acquisition/quality.py`
+→ PLR0913 on `validate_postings_quality` (6 > 5 arguments). The body is the
+moved `collecting.validate_postings_quality` body, unchanged; "too many
+arguments" is the working agreement's expected exception and is not worked
+around here.
+
 ## Done when
 
 - The quality gate imports no profile module.

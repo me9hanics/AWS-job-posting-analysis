@@ -47,8 +47,14 @@ See [implementation-flow.md](implementation-flow.md#b22--the-universal-collector
 Ruff and ty are clean on the new files. `scrapers/steps.py` carries one
 pre-existing `I001` (import block order, line 10); this ticket only corrects its
 docstring and leaves that finding untouched. `ty check src` reports the baseline
-95 diagnostics, none of them from `config/models.py` or
+94 diagnostics, none of them from `config/models.py` or
 `acquisition/collector.py`.
+
+The collector's step catch is a broad `except Exception` because the collector
+rules mandate it: one step failing must not stop later steps and must be
+recorded. It carries no `noqa`; the current ruff default rule set reports
+`BLE001` (blind except) on it, and that finding stays reported rather than
+suppressed.
 
 ## Done when
 

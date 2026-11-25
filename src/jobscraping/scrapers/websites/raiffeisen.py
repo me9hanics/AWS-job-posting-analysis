@@ -28,7 +28,7 @@ from jobscraping.specs.postings import COLLECTED_POSTINGS, DISCOVERED_POSTINGS
 
 def page_urls(titlewords, base_url) -> list[str]:
     """One search URL per title word, without duplicates."""
-    links = [base_url + titleword for titleword in titlewords]
+    links = [str(base_url) + str(titleword) for titleword in titlewords]
     return list(set(links))
 
 
@@ -58,7 +58,7 @@ def parse_listing_soups(soups, titles_pattern, website, jobs_base_url) -> Record
 
 def has_next_page(soup, titles_pattern) -> bool:
     """The site lists in blocks of 25, so a full block may have a successor."""
-    return pagination.next_page_logic_by_length(soup, titles_pattern, lengths=[25, 50])
+    return pagination.next_page_logic_by_length(soup, str(titles_pattern), lengths=[25, 50])
 
 
 def clean_variables(variables):
@@ -201,15 +201,15 @@ class Raiffeisen(BaseScraper):
                  output_spec=COLLECTED_POSTINGS),
         )
 
-    def listings(self, records: RecordSet, config) -> RecordSet:
+    def listings(self, records: RecordSet, config, *, url_links=None) -> RecordSet:
         """Search pages: identity, URL and listing facts, keyed by identity."""
-        titles_pattern = self.rules["gather_data_selector"]
-        website = self.rules["website"]
-        usecase = self.rules["usecase"]
+        titles_pattern = str(self.rules["gather_data_selector"])
+        website = str(self.rules["website"])
+        usecase = str(self.rules["usecase"])
         wait_time = self.rules["request_wait_time"]
-        more_pages_url_extension = self.rules["more_pages_url_extension"]
-        jobs_base_url = self.rules["jobs_base_url"]
-        base_url = self.rules["scraping_base_url"]
+        more_pages_url_extension = str(self.rules["more_pages_url_extension"])
+        jobs_base_url = str(self.rules["jobs_base_url"])
+        base_url = str(self.rules["scraping_base_url"])
         postings = {key: deepcopy(record) for key, record in (records or {}).items()}
 
         def _titleword_from_url(url):
@@ -227,7 +227,7 @@ class Raiffeisen(BaseScraper):
                 posting["collected_on"] = self.business_day
                 postings[posting_id] = posting
 
-        for url in page_urls(self.keywords["titlewords"], base_url):
+        for url in (url_links or page_urls(self.keywords["titlewords"], base_url)):
             titleword = _titleword_from_url(url)
             result = http.requests_responses([url], https=(usecase=="https"),
                                               return_kind="soups", wait_time=wait_time)
@@ -249,7 +249,7 @@ class Raiffeisen(BaseScraper):
 
     def details(self, records: RecordSet, config) -> RecordSet:
         """Fetch one detail page per cache miss and merge the cache hits back in."""
-        usecase = self.rules["usecase"]
+        usecase = str(self.rules["usecase"])
         wait_time = self.rules["request_wait_time"]
         cached_hits, postings = split_cached_postings(
             {key: deepcopy(record) for key, record in (records or {}).items()},
@@ -285,7 +285,7 @@ class Raiffeisen(BaseScraper):
                 cache_mode=cache_mode,
                 cache_hit_predicate=cache_hit_predicate,
             )
-            postings = self.listings({}, config)
+            postings = self.listings({}, config, url_links=url_links)
             if descriptions:
                 postings = self.details(postings, config)
             return factual_postings(postings)
