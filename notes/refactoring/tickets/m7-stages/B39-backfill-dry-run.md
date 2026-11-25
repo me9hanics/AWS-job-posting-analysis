@@ -17,3 +17,5 @@ Status: todo (optional, off the critical path) · Milestone: M7 Stages · Phase 
 - A reviewable dry-run JSON exists.
 - No live file is modified.
 - Q14 remains a plan, not an executed migration.
+- New code passes `ruff` and `ty`; findings in untouched old code are reported,
+  not fixed ([checks](../README.md#linting-and-typing)).

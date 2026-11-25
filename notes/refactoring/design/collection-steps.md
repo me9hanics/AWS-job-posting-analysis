@@ -116,6 +116,11 @@ the requirement that the growing site list will test.
 10. **Scope.** The collector merges unit results and deduplicates by identity;
     steps do not coordinate with each other across sites.
 
+Cache inputs (`cached_postings`, `cache_hit_predicate`) travel in the config,
+not in the record set, so a `details` step can skip work for reusable IDs
+without adding a marker field. They are data, not scope: `scope_digest()` does
+not include them (B22, [specs.md](specs.md#collectionconfig)).
+
 Failures are visible in the JSON run report and in the pipeline's exit status.
 Silence is reserved for a genuinely empty but valid response.
 
@@ -144,16 +149,23 @@ input spec is satisfied. There is no special partial-run mode.
 
 The universal collector is the only place that:
 
-- iterates sites and query units,
+- iterates adapters and their declared steps (an adapter's `listings` step owns
+  its own query × location units until steps take a unit argument),
 - applies step selection,
 - merges unit results and deduplicates by identity,
-- runs quality gates,
-- writes universal artifacts and the scope digest.
+- records step outcomes, and writes chunks plus the run report (M4),
+- writes universal artifacts and the scope digest *through the pipeline* in M4.
 
 It lives at `acquisition/collector.py` with `run_collection` as the entry point
 (Q26). Today `pipelines/scrape_universal.py::run_universal_scrape_flow` is the
 closest equivalent. The refactoring should name and isolate that role rather than
 leaving it inside a function that also handles caching and quality details.
+
+M4 keeps the quality gate and vault storage in the pipeline: B21 moves the gate
+to `acquisition/quality.py`, and B24 calls it around `run_collection`. The
+collector therefore writes only its own artifacts (chunks, run report) and
+returns `{"records", "report"}`. Stage extraction (B36) may later pull the gate
+into the collection stage; that is a change of caller, not of the collector.
 
 The collector does not know site mechanics and does not contain profile rules.
 It does know how to call an adapter's steps in order and how to record what

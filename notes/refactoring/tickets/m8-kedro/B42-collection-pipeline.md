@@ -18,3 +18,5 @@ Status: todo · Milestone: M8 Kedro · Phase 8 · Size: L · User-owned
   as the script path.
 - Parameters come from `conf/`.
 - The run is restartable through chunks.
+- New code passes `ruff` and `ty`; findings in untouched old code are reported,
+  not fixed ([checks](../README.md#linting-and-typing)).

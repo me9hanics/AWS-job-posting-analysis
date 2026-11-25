@@ -36,3 +36,6 @@ enrichment, not merged as lists.
 - The legacy profile tests still pass.
 - Universal records carry the three annotations and no policy field.
 - The stored record passes `UNIVERSAL_POSTINGS.check`.
+- New code passes `ruff` and `ty`; findings in untouched old code are reported,
+  not fixed ([checks](../README.md#linting-and-typing)). Every stored fact lands
+  in history; `current` and `newly-added` stay views over it (Q32).

@@ -16,3 +16,5 @@ Status: todo · Milestone: M7 Stages · Phase 7 · Size: M
 - Interrupt and resume reproduce the same vault.
 - A failed gate leaves the prior snapshot intact and writes one artifact.
 - A skipped step remains visible as a missing chunk.
+- New code passes `ruff` and `ty`; findings in untouched old code are reported,
+  not fixed ([checks](../README.md#linting-and-typing)).

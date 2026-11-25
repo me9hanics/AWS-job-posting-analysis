@@ -19,3 +19,5 @@ Status: todo · Milestone: M6 Profiles · Phase 6 · Size: M
 - `derive_profile_postings` can receive a `ProfileConfig`.
 - Dani values are no longer scattered defaults in the pipeline signature.
 - Tests pass.
+- New code passes `ruff` and `ty`; findings in untouched old code are reported,
+  not fixed ([checks](../README.md#linting-and-typing)).

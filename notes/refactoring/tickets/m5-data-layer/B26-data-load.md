@@ -17,3 +17,5 @@ Status: todo · Milestone: M5 Data layer · Phase 5 · Size: S
 - `store_universal.py` no longer defines `load_postings`.
 - Tests pass.
 - No absolute path is introduced.
+- New code passes `ruff` and `ty`; findings in untouched old code are reported,
+  not fixed ([checks](../README.md#linting-and-typing)).

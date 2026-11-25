@@ -19,3 +19,6 @@ Status: todo · Milestone: M5 Data layer · Phase 5 · Size: M
 - `data/merge.py` imports no pipeline module.
 - The B04 (and B02a) tests pass unchanged.
 - Byte-identical JSON on a repeated fixture run.
+- New code passes `ruff` and `ty`; findings in untouched old code are reported,
+  not fixed ([checks](../README.md#linting-and-typing)). History-only storage
+  (Q32) stays a write-path change: the merge can write history alone.

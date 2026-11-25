@@ -17,3 +17,7 @@ Status: todo · Milestone: M5 Data layer · Phase 5 · Size: S
 - A universal diff contains no profile policy field.
 - A reappearing posting is current, not newly added.
 - The profile path still orders by points after derivation.
+- New code passes `ruff` and `ty`; findings in untouched old code are reported,
+  not fixed ([checks](../README.md#linting-and-typing)). The diff and the current
+  view are computed from history, so neither file is the only carrier of a fact
+  (Q32).

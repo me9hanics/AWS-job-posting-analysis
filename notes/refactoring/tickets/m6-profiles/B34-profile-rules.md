@@ -30,3 +30,5 @@ function only needs the evidence and its policy values. Do not move
 - Candidate and selection behaviour are separately testable.
 - The profile module contains no language-evidence parsing; it consumes the
   language and requirements from the record.
+- New code passes `ruff` and `ty`; findings in untouched old code are reported,
+  not fixed ([checks](../README.md#linting-and-typing)).

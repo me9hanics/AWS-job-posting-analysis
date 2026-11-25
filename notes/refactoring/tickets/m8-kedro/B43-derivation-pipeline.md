@@ -16,3 +16,5 @@ Status: todo · Milestone: M8 Kedro · Phase 8 · Size: L · User-owned
 - Artifacts match byte-for-byte excluding timestamps.
 - `kedro run --pipeline=derivation --params=profile:dani` works.
 - No profile constants live in pipeline modules.
+- New code passes `ruff` and `ty`; findings in untouched old code are reported,
+  not fixed ([checks](../README.md#linting-and-typing)).

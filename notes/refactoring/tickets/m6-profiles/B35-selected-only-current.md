@@ -16,3 +16,5 @@ Status: todo · Milestone: M6 Profiles · Phase 6 · Size: S
 - A below-threshold candidate exists in history but not in current.
 - A known reappearance is not newly added.
 - The Dani test baseline is updated deliberately, not incidentally.
+- New code passes `ruff` and `ty`; findings in untouched old code are reported,
+  not fixed ([checks](../README.md#linting-and-typing)).

@@ -17,3 +17,5 @@ Status: todo · Milestone: M8 Kedro · Phase 8 · Size: M · User-owned
 - `kedro run` can load an empty project.
 - No existing script path changes.
 - Dependency versions are pinned in `uv.lock`.
+- New code passes `ruff` and `ty`; findings in untouched old code are reported,
+  not fixed ([checks](../README.md#linting-and-typing)).

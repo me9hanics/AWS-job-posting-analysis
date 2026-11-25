@@ -36,3 +36,5 @@ fixtures still work — but do not overwrite a supplied annotation.
 - A second config can call the same function.
 - An input with the annotations is not re-annotated; an input without them
   produces today's result.
+- New code passes `ruff` and `ty`; findings in untouched old code are reported,
+  not fixed ([checks](../README.md#linting-and-typing)).

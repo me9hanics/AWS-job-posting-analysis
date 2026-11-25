@@ -18,3 +18,5 @@ Status: todo · Milestone: M9 Done · Phase 9 · Size: S
 - A new contributor can run the project from the docs.
 - No document points at a retired module.
 - The backlog and tickets match the tree.
+- New code passes `ruff` and `ty`; findings in untouched old code are reported,
+  not fixed ([checks](../README.md#linting-and-typing)).

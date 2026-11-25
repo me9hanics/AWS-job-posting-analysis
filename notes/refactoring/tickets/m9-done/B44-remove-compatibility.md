@@ -19,3 +19,5 @@ Status: todo · Milestone: M9 Done · Phase 9 · Size: M
 - `basescraper.py` exposes no overridable helper and declares no `gather_data`
   template; no site module overrides a base method (Q30).
 - The suite passes.
+- New code passes `ruff` and `ty`; findings in untouched old code are reported,
+  not fixed ([checks](../README.md#linting-and-typing)).

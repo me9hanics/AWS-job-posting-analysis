@@ -204,9 +204,18 @@ class CollectionConfig:
     steps: tuple[str, ...] = ()            # empty = every adapter's default
     overrides: Mapping[str, object] = field(default_factory=dict)
     cache_mode: str | None = None
+    cached_postings: Mapping[str, dict] = field(default_factory=dict)
+    cache_hit_predicate: Callable[[str, dict, dict | None], bool] | None = None
 
     def scope_digest(self) -> str: ...     # sites, queries, locations, steps, overrides
 ```
+
+`cached_postings` and `cache_hit_predicate` are run inputs, not scope: a details
+step reads them to skip work for reusable IDs, and they are excluded from
+`scope_digest()` so cache contents never change a scope. The four scope fields
+and `overrides` are the digest's whole input, as before. This pair is the
+current minimum, not a final shape: the caching logic may later become an
+arbitrary supplied callable and may become site-scoped (Q31).
 
 Why it is one object: a collection run is one YAML block. Splitting "scope" from
 "request" made `sites` appear twice and added a second object with no separate

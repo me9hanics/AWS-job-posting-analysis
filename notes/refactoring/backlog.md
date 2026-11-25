@@ -32,7 +32,7 @@ messages and notes. Tick a task only when its "Done when" line is true.
 | 6 | B32–B35 | Profile configuration and generic derivation |
 | 7 | B36–B39 | Stage orchestration, resume and failure artifacts |
 | 8 | B40–B43 | Kedro composition (user-owned) |
-| 9 | B44–B46 | Cleanup, documentation, final gates |
+| 9 | B44–B46 (incl. B45b) | Cleanup, documentation, final gates |
 
 Critical path:
 
@@ -40,7 +40,7 @@ Critical path:
 B02 → B03 → B04 → B05 → B11 → B12 → B13 → B14 → B15 → B16 → B17 → B18
 → B19 → B20 → B21 → B22 → B23 → B24 → B25 → B26 → B27 → B28 → B29
 → B30 → B31 → B32 → B33 → B34 → B35 → B36 → B37 → B38 → B40 → B41
-→ B42 → B43 → B44 → B46
+→ B42 → B43 → B44 → B45 → B45b → B46
 ```
 
 B39 (backfill dry run) is optional and off the critical path. B06–B10 can run
@@ -58,7 +58,7 @@ in parallel with B03–B05 once B02 is done.
 | M6 — Profiles | B32–B35 | Config plus functions; no profile import in derivation |
 | M7 — Stages | B36–B39 | Startable stages, spec checks, resume and failure artifacts |
 | M8 — Kedro | B40–B43 | Kedro reproduces the script path for collection and Dani |
-| M9 — Done | B44–B46 | No compatibility shims, docs match, fresh-clone gate passes |
+| M9 — Done | B44–B46 (incl. B45b) | No compatibility shims, docs build, lint and type clean, fresh-clone gate passes |
 
 M1 and M2 are deliberately low-risk: apart from B03 (path resolution), they add
 tests and contracts without changing scraping or derivation. Do not skip them to
@@ -91,6 +91,18 @@ A task that claims "no duplicate scraper" is verified with:
 ```bash
 rg "class BaseScraper|class KarriereAT|class Raiffeisen" src
 ```
+
+New code is also checked with Ruff and ty, from B21 on:
+
+```bash
+uvx ruff check src tests
+uvx ty check src
+```
+
+The rule is about code a task writes or rewrites. Findings in code it only
+moves or leaves untouched are reported, not fixed as part of that task; a
+finding the change itself introduces is fixed in the same task. B46 runs both
+checks over the whole tree.
 
 ## Phase 0 — Baseline, portability, characterization
 
@@ -925,19 +937,43 @@ parity checks; they do not prescribe node granularity.
   - no document points at a retired module;
   - the backlog matches the tree.
 
+### B45b — Sphinx documentation in `docs/`
+
+- Depends on: B45
+- Size: S
+- Files: `docs/`, `pyproject.toml`, `.gitignore`
+- Do:
+  1. Set up a minimal Sphinx project in `docs/` that reads Markdown (MyST):
+     `conf.py`, a start page and one API page.
+  2. Document the entry points only — collection, storing, derivation,
+     outputs — plus how to run them. Scraping internals stay out.
+  3. Build with `uv run sphinx-build -b html docs docs/_build` and keep
+     `docs/_build` out of version control.
+- Done when:
+  - the Sphinx build succeeds with no warning about a missing page or target;
+  - the start page links every other page and the API page lists the
+    entry-point functions;
+  - a fresh clone can build the docs after the documented install.
+
 ### B46 — Final gates
 
-- Depends on: B44, B45
+- Depends on: B44, B45b
 - Size: S
 - Files: all
 - Do:
   1. Run the full suite.
   2. Run the import audit, duplicate-class audit and absolute-path audit.
-  3. Clone into a fresh directory and run the documented command.
+  3. Run `uvx ruff check src tests` and `uvx ty check src` over the whole tree;
+     add the tools as dev dependencies or a config file only if the run needs
+     it.
+  4. Clone into a fresh directory and run the documented command and the docs
+     build.
 - Done when:
   - all tests pass;
   - no absolute path in `src`/`tests`;
   - one implementation per scraper class;
+  - `ruff` and `ty` report no finding anywhere in `src`/`tests`;
+  - the docs build without warnings;
   - the fresh-clone run works without machine setup.
 - This is the definition of done for the refactoring round, not for every
   future site or profile.

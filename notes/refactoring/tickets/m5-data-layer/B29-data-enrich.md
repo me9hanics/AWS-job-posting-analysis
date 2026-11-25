@@ -39,3 +39,5 @@ fields yet, and the legacy path recomputes them afterwards.
 - Double enrichment is byte-stable.
 - A record with a description gains both fields; a second run is identical.
 - `factual_postings` keeps both fields instead of stripping them.
+- New code passes `ruff` and `ty`; findings in untouched old code are reported,
+  not fixed ([checks](../README.md#linting-and-typing)).

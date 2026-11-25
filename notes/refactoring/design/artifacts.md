@@ -84,6 +84,21 @@ produces. Derivation receives its input records from the caller (a pipeline node
 a catalog dataset or a test) and does not discover or require a universal
 history; a run can be planned per pipeline as today (Q28).
 
+### History as the source of truth
+
+`postings_history.json` is the only universal file that carries facts.
+`current_postings.json` is the latest observation per ID, `newly_added_postings.json`
+is an ID-set difference against the previous history, and the scope file marks a
+run; all three are views over history. The user may later default universal
+storage to history only (Q32), so:
+
+- a merge must be able to write history alone, and a reader must be able to
+  start from history and produce current in memory;
+- no fact may exist only in current, newly-added or the scope file — if it is
+  not in history, it cannot be recovered after the run;
+- consumers take records, never "the current file" by name (Q28), so switching
+  the default input from current to history is a pipeline wiring change.
+
 ## Merge and diff rules
 
 These are the rules the current code implements or intends; they must be
@@ -157,6 +172,13 @@ fixtures before the data layer moves.
 
   The digest is a hash of the normalized collection config; the slug is a
   readable derivative, not an identity. Exact naming is open.
+
+  In M4 (B23) a unit is one adapter: its `listings` step owns the
+  query×location loops, and `Step.run` receives no unit argument. The chunk is
+  therefore `chunks/<scope-digest>/<source>/<step>.json`, one file per completed
+  step. Per-query chunks wait for a step-level unit argument; that is a later
+  change, not a silent omission. The chunk file is
+  `{"source", "step", "records"}` so the step name survives a path rename.
 - **Partial failure.** A failed quality gate writes one
   `incomplete_run_<timestamp>.json` and raises; current/history files are not
   touched. Acquisition failure is never reported as "no relevant postings".
@@ -173,14 +195,15 @@ fixtures before the data layer moves.
   handled by the check, not by migration.
 - **Run report.** Decided: JSON artifact written by the collector (Q25),
   including unit, step, outcome and error. Promote to a dataclass only when a
-  second consumer needs structured access.
+  second consumer needs structured access. In M4 it is `<vault>/run_report.json`,
+  rewritten by each run of that scope (B23).
 
 ## Stage interface
 
 | Stage | Reads | Writes | Resume key |
 | --- | --- | --- | --- |
 | collect | `CollectionConfig`, optional seed history | chunks, run report, incomplete-run on failure | scope digest + unit + step |
-| store universal | chunks or facts, previous universal files | universal current/history/newly-added/scope | scope digest |
+| store universal | chunks or facts, previous universal files | universal current/history/newly-added/scope (history-only is a later option, Q32) | scope digest |
 | derive profile | **input records supplied by the caller** (in practice the universal current file), `ProfileConfig`, profile functions, profile history | profile candidates/history/current/newly-added/baseline | profile name |
 | outputs | profile current/newly-added | Excel, Markdown, email | profile + run date |
 

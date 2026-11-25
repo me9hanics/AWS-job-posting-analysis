@@ -94,7 +94,7 @@ one test, no runtime behaviour. Its producers land in B29/B31; B33 consumes them
 
 | ID | Ticket | Depends on | Status |
 | --- | --- | --- | --- |
-| B19 | [Give `KarriereAT` declared steps](m4-collector/B19-karriere-steps.md) | B12, B16, B17, B18 | todo |
+| B19 | [Give `KarriereAT` declared steps](m4-collector/B19-karriere-steps.md) | B12, B16, B17, B18 | done |
 | B20 | [Give `Raiffeisen` declared steps](m4-collector/B20-raiffeisen-steps.md) | B13, B19 | todo |
 | B21 | [Extract the quality gate](m4-collector/B21-quality-gate.md) | B15 | todo |
 | B22 | [Create the universal collector](m4-collector/B22-universal-collector.md) | B09, B10, B19, B20, B21 | todo |
@@ -146,7 +146,8 @@ one test, no runtime behaviour. Its producers land in B29/B31; B33 consumes them
 | --- | --- | --- | --- |
 | B44 | [Remove compatibility code and stale modules](m9-done/B44-remove-compatibility.md) | B43 | todo |
 | B45 | [Update documentation and ADRs](m9-done/B45-update-docs.md) | B44 | todo |
-| B46 | [Final gates](m9-done/B46-final-gates.md) | B44, B45 | todo |
+| B45b | [Sphinx documentation in `docs/`](m9-done/B45b-sphinx-docs.md) | B45 | todo |
+| B46 | [Final gates](m9-done/B46-final-gates.md) | B44, B45b | todo |
 
 ## Ticket implementation notes
 
@@ -180,6 +181,13 @@ Repeated in every ticket so each ticket can be read alone.
 - If a ticket outgrows one change, split it into `Bxxa`/`Bxxb` in the backlog and
   here rather than hiding the size.
 - Respect **Depends on**. Leave the suite green after every ticket.
+- Check new code with `ruff` and `ty` (see
+  [Linting and typing](#linting-and-typing)). Findings in old code the ticket
+  only moves or leaves untouched are reported, not swept into the ticket.
+- If `ruff` reports too many arguments on code the ticket writes, stop and ask
+  the user with two or three concrete variants (group into a config or request
+  object, keyword-only with defaults, split the function, an accepted `noqa`).
+  Do not choose silently and do not add `noqa` just to make the check pass.
 - If implementation shows a design decision is wrong, fix the design document
   first, then the backlog, then the ticket.
 - The tree contains the user's in-progress work. Never revert, clean, restore or
@@ -212,12 +220,46 @@ A ticket that claims "no duplicate scraper" is verified with:
 rg "class BaseScraper|class KarriereAT|class Raiffeisen" src
 ```
 
+### Linting and typing
+
+Ruff and ty join the gates from B21 on. Run them on the files the ticket
+touched, or on the tree:
+
+```powershell
+uvx ruff check src tests
+uvx ty check src
+```
+
+`uvx` is used because neither tool is a project dependency yet; B46 may add them
+as a dev group, after which `uv run ruff` and `uv run ty` replace `uvx`.
+
+The rule is about **new code**. A ticket leaves the code it writes or rewrites
+clean. Findings in code the ticket only moves, imports or leaves untouched are
+out of scope: list them (file, rule, line) in the ticket notes and keep them, or
+fix one only when the fix is a trivial local edit the move itself created (an
+unused import, a renamed symbol). Never reformat an old file to quiet a checker.
+B46 runs both tools over the whole tree.
+
+"Too many arguments" (`PLR0913`) is the expected exception. New functions such
+as the collector entry point or a step may legitimately grow parameters; when
+that finding appears, ask the user before changing the shape, and offer the
+variants above. Silent `# noqa` on new code is not a resolution.
+
 ## Still open
 
-- **Q16** — the compatibility layer for `scrapers.sites` and
-  `collecting.get_postings`. Decide when the first caller moves (B11/B19). See
-  [design/open-questions.md](../design/open-questions.md#still-open).
+- **Q16** — the compatibility layer. B11 decided the `scrapers.sites` half (no
+  layer beyond the move). M4 follows the stated default for
+  `collecting.get_postings`: `gather_data` wrappers and `scrape_sites` live
+  while their named callers exist and are removed in B44. See
+  [m4-collector/implementation-flow.md](m4-collector/implementation-flow.md#decisions-this-plan-fixes).
 - **Q28** — the universal history is expected but not guaranteed. Derived from
   the user's clarification on 2026-11-22; it constrains B32, B33, B36 and the
   derivation tests, not the folder layout. See
   [design/open-questions.md](../design/open-questions.md#universal-history-is-not-guaranteed).
+- **Q31** — the cache logic surface. M4 ships run-level cache inputs; a supplied
+  callable and per-site caching are possible later and are not built now. See
+  [design/open-questions.md](../design/open-questions.md#q31-cache-logic-surface).
+- **Q32** — universal history-only mode. `current`, `newly-added` and the scope
+  file stay views over history, so dropping them later is a write-path change.
+  It constrains B27, B28, B30 and B31. See
+  [design/open-questions.md](../design/open-questions.md#q32-universal-history-only-mode).

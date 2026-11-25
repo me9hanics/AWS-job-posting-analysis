@@ -19,3 +19,5 @@ Status: todo · Milestone: M7 Stages · Phase 7 · Size: L
   not a universal history.
 - The old entry points call the same stages.
 - No stage duplicates business logic.
+- New code passes `ruff` and `ty`; findings in untouched old code are reported,
+  not fixed ([checks](../README.md#linting-and-typing)).

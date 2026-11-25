@@ -61,6 +61,8 @@ and the affected document in the same change.
 | Q28 | The universal history is expected but not guaranteed. Collection may be planned per pipeline and run as today; a profile's input is whatever records it is given, not "the universal vault". Interfaces that read or write universal data take records or paths as arguments; nothing may depend on one universal history existing. | [artifacts.md](artifacts.md#stage-interface), [open-questions.md](#universal-history-is-not-guaranteed). |
 | Q29 | The universal record carries profile-neutral annotations: `language`, `guessed_required_languages` and `matched_titlewords`. Policy fields (`points`, `keywords`, `role_families`, `language_adjustment`, `language_excluded`, `profile_excluded`) stay in scored/selected. `data/enrich.py` produces the two language fields; derivation consumes them instead of recomputing. | [specs.md](specs.md#profile-neutral-annotations); backlog B07a, B29, B31, B33. |
 | Q30 | A site is a class in its own module and is its own adapter. `BaseScraper` keeps only per-run setup (config normalization, dates), `source` and the declared `steps`; overridable helper methods are removed. Shared mechanics are module functions (`http`, `browser`, `pagination`, `parsing`); per-site differences are arguments or `rules` keys. Steps are declared by the site class, typically as bound methods in `__init__`. | [module-seams.md](module-seams.md#site-class-and-its-base); backlog B19, B20, B31, B44. |
+| Q31 | Open. Caching is a run-level input for now. Later the caching logic may become a supplied callable — possibly a unique function per pipeline — and may become site-scoped rather than run-scoped. | See [Still open](#q31-cache-logic-surface). |
+| Q32 | Open. The (universal) folder may later default to history only. `current`, `newly-added` and the scope file stay writable for now, but must remain views over history so dropping them is a write-path change. | See [Still open](#q32-universal-history-only-mode). |
 
 ## Still open
 
@@ -71,6 +73,65 @@ while their callers move. Decide when the first caller moves, not before. The
 default remains: a re-export or wrapper only while a named caller exists; remove
 it when that caller is converted. Nothing in the target design depends on the
 answer.
+
+### Q31 Cache logic surface
+
+M4 fixes caching as a run-level input: `cached_postings` plus
+`cache_hit_predicate` in `CollectionConfig`, applied by the step that saves the
+work ([specs.md](specs.md#collectionconfig)). That is the minimum the current
+pipeline needs and it is not a commitment to the shape.
+
+Caching may later be rethought as an open knob rather than a fixed pair of
+fields:
+
+- **Arbitrary logic.** The cache decision could be any supplied callable or
+  object, including a unique function written for one `_collect.py`. The
+  collector and the steps would then only need to know how to ask "is this
+  posting a hit?", not how hits are stored or computed.
+- **Site scope, not only run scope.** Today one predicate covers a whole run. It
+  may be worth letting cache behaviour depend on the site — for example, an
+  adapter whose detail pages are expensive or whose ids are unstable could
+  declare its own policy while the run supplies the default.
+
+Constraints that keep both options open, so nothing has to be undone now:
+
+- caching reaches a step only through config, never through module state or a
+  hardcoded loader; a step that ignores the fields simply refetches;
+- cache inputs stay outside `scope_digest()`, so changing cache behaviour never
+  invalidates stored chunks (Q13, [artifacts.md](artifacts.md#resume-and-failure));
+- the merge stays in the step whose work it saves, so a different policy is a
+  different argument, not a different call graph.
+
+Decide after the site unification work, when at least two pipelines and two
+adapters exist to compare. Until then, do not add a cache registry, a cache
+class hierarchy, or per-site cache keys.
+
+### Q32 Universal history-only mode
+
+The universal folder currently receives four files: `postings_history.json`,
+`current_postings.json`, `newly_added_postings.json` and a scope file. The user
+may later prefer history only, at least for universal data: history is the
+record of what was seen, and the other files are conveniences derived from it.
+
+The mode is not adopted now. The constraint is that it must stay a write-path
+change later:
+
+- `current_postings.json` is the latest observation per ID taken from history;
+  `newly_added_postings.json` is an ID-set difference against the previous
+  history; the scope digest marks a run. None of them may carry a fact that
+  history lacks.
+- History-only mode therefore means "stop writing the derived files" plus
+  pointing the readers at history. Merging, diffing and enrichment already work
+  on records, and derivation takes its input records from the caller (Q28), so
+  nothing in the data layer has to change shape.
+- The profile folder keeps its own files; this question is scoped to universal
+  data. B35 still makes a profile `current_postings.json` the selected view.
+
+Decide after M5, once the store and diff functions exist and the cost of
+recomputing current from history is known for real data volumes. Until then, do
+not add a reader that can only accept `current_postings.json`, and do not add
+run state that exists nowhere in history. See
+[artifacts.md](artifacts.md#history-as-the-source-of-truth).
 
 ## Constraints that shape the design
 

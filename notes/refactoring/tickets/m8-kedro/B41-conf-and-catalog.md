@@ -17,3 +17,5 @@ Status: todo · Milestone: M8 Kedro · Phase 8 · Size: M · User-owned
 - Config objects load from `conf/`.
 - No absolute path appears in a tracked catalog.
 - A missing optional value falls back to code defaults.
+- New code passes `ruff` and `ty`; findings in untouched old code are reported,
+  not fixed ([checks](../README.md#linting-and-typing)).
