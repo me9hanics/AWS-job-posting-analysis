@@ -4,7 +4,10 @@ The adapter shapes come from the B10 step contract; here they meet the real
 ``run_collection`` call. B23 and B25 extend this module.
 """
 
+import json
+import tempfile
 import unittest
+from pathlib import Path
 
 from jobscraping.acquisition.collector import run_collection
 from jobscraping.config.models import CollectionConfig
@@ -182,6 +185,88 @@ class ScopeDigestTest(unittest.TestCase):
         second = CollectionConfig(overrides={"only": {"a", "b"}})
         self.assertEqual(first.scope_digest(), second.scope_digest())
         self.assertNotEqual(first.scope_digest(), CollectionConfig().scope_digest())
+
+
+class ArtifactTest(unittest.TestCase):
+    """The opt-in artifacts: chunks per ok step and one run report."""
+
+    def chunk_file(self, root, config, source, step):
+        return Path(root) / "chunks" / config.scope_digest() / source / f"{step}.json"
+
+    def test_skipped_step_has_no_chunk(self):
+        config = CollectionConfig(steps=("listings",))
+        with tempfile.TemporaryDirectory() as root:
+            run_collection([ListingThenDetails()], config, artifact_path=root)
+
+            self.assertTrue(self.chunk_file(root, config, "two.test", "listings").exists())
+            self.assertFalse(self.chunk_file(root, config, "two.test", "details").exists())
+
+    def test_empty_step_has_no_chunk(self):
+        config = CollectionConfig()
+        with tempfile.TemporaryDirectory() as root:
+            run_collection([FindsNothing()], config, artifact_path=root)
+
+            self.assertFalse(self.chunk_file(root, config, "empty.test", "listings").exists())
+
+    def test_failed_step_is_named_in_the_report_file(self):
+        config = CollectionConfig()
+        with tempfile.TemporaryDirectory() as root:
+            run_collection([FailingDetails()], config, artifact_path=root)
+
+            report = json.loads(
+                (Path(root) / "run_report.json").read_text(encoding="utf-8")
+            )
+            steps = report["sites"][0]["steps"]
+            failed = [step for step in steps if step["status"] == "failed"]
+            self.assertEqual([step["name"] for step in failed], ["details"])
+            self.assertIn("detail page unavailable", failed[0]["error"])
+            self.assertFalse(self.chunk_file(root, config, "two.test", "details").exists())
+
+    def test_rerunning_the_same_unit_replaces_its_chunk(self):
+        config = CollectionConfig()
+        with tempfile.TemporaryDirectory() as root:
+            run_collection([ListingThenDetails()], config, artifact_path=root)
+            run_collection([ListingThenDetails()], config, artifact_path=root)
+
+            chunks = sorted((Path(root) / "chunks").rglob("*.json"))
+            self.assertEqual(len(chunks), 2, [str(chunk) for chunk in chunks])
+            self.assertEqual(
+                json.loads(chunks[0].read_text(encoding="utf-8"))["step"], "details"
+            )
+
+    def test_each_ok_step_gets_its_own_file_with_source_step_and_records(self):
+        config = CollectionConfig()
+        with tempfile.TemporaryDirectory() as root:
+            result = run_collection([ListingThenDetails()], config, artifact_path=root)
+
+            listings_chunk = json.loads(
+                self.chunk_file(root, config, "two.test", "listings").read_text(
+                    encoding="utf-8"
+                )
+            )
+            details_chunk = json.loads(
+                self.chunk_file(root, config, "two.test", "details").read_text(
+                    encoding="utf-8"
+                )
+            )
+            self.assertEqual(listings_chunk["source"], "two.test")
+            self.assertEqual(listings_chunk["step"], "listings")
+            self.assertEqual(
+                listings_chunk["records"],
+                {"two.test1": {"source": "two.test", "id": "1", "url": "https://two.test/1"}},
+            )
+            self.assertEqual(details_chunk["step"], "details")
+            self.assertEqual(details_chunk["records"], result["records"])
+
+    def test_report_file_content_matches_the_returned_report(self):
+        config = CollectionConfig(sites=("one.test",), queries=("data",))
+        with tempfile.TemporaryDirectory() as root:
+            result = run_collection([DiscoveryOnly()], config, artifact_path=root)
+
+            report = json.loads(
+                (Path(root) / "run_report.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(report, result["report"])
 
 
 if __name__ == "__main__":

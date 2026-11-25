@@ -1,6 +1,6 @@
 # B23 — Add chunk artifacts and the JSON run report
 
-Status: todo · Milestone: M4 Collector · Phase 4 · Size: M
+Status: done · Milestone: M4 Collector · Phase 4 · Size: M
 
 - Depends on: B22
 - Files: `src/jobscraping/acquisition/chunks.py`,
