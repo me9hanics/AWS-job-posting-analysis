@@ -1,6 +1,6 @@
 # B21 — Extract the quality gate
 
-Status: todo · Milestone: M4 Collector · Phase 4 · Size: S
+Status: done · Milestone: M4 Collector · Phase 4 · Size: S
 
 - Depends on: B15
 - Files: `src/jobscraping/acquisition/quality.py`,
@@ -32,3 +32,5 @@ See [implementation-flow.md](implementation-flow.md#b21--the-quality-gate-moves)
 - The quality gate imports no profile module.
 - Existing tests pass.
 - `collecting.py` is thinner by the moved functions.
+- New code passes `ruff` and `ty`; findings in untouched old code are reported,
+  not fixed ([checks](../README.md#linting-and-typing)).
