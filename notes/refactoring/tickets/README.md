@@ -95,7 +95,7 @@ one test, no runtime behaviour. Its producers land in B29/B31; B33 consumes them
 | ID | Ticket | Depends on | Status |
 | --- | --- | --- | --- |
 | B19 | [Give `KarriereAT` declared steps](m4-collector/B19-karriere-steps.md) | B12, B16, B17, B18 | done |
-| B20 | [Give `Raiffeisen` declared steps](m4-collector/B20-raiffeisen-steps.md) | B13, B19 | todo |
+| B20 | [Give `Raiffeisen` declared steps](m4-collector/B20-raiffeisen-steps.md) | B13, B19 | done |
 | B21 | [Extract the quality gate](m4-collector/B21-quality-gate.md) | B15 | todo |
 | B22 | [Create the universal collector](m4-collector/B22-universal-collector.md) | B09, B10, B19, B20, B21 | todo |
 | B23 | [Add chunk artifacts and the JSON run report](m4-collector/B23-chunks-and-report.md) | B22 | todo |

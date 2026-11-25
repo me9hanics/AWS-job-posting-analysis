@@ -14,10 +14,12 @@ from unittest.mock import patch
 
 from bs4 import BeautifulSoup
 
-from jobscraping.scrapers import http
-from jobscraping.scrapers import KarriereAT, Raiffeisen
+from jobscraping.scrapers import KarriereAT, Raiffeisen, http
+from jobscraping.scrapers.websites.raiffeisen import (
+    parse_detail_soups,
+    parse_listing_soups,
+)
 from jobscraping.specs.postings import COLLECTED_POSTINGS, DISCOVERED_POSTINGS
-
 
 FIXTURES = Path(__file__).parent / "fixtures"
 KARRIERE_LISTING = FIXTURES / "karriere" / "listing.json"
@@ -239,6 +241,94 @@ class RaiffeisenFixtureParsingTests(unittest.TestCase):
         self.assertIsNone(posting["salary_guessed"])
 
 
+class RaiffeisenStepTests(unittest.TestCase):
+    """The declared steps are the new path; ``gather_data`` delegates to them."""
+
+    def scraper(self):
+        return Raiffeisen(
+            driver="",
+            keywords={"titlewords": ["sales"], "locations": []},
+            date_day="2026-11-23",
+        )
+
+    def config(self, **overrides):
+        values = {"cached_postings": {}, "cache_mode": None,
+                  "cache_hit_predicate": None}
+        values.update(overrides)
+        return SimpleNamespace(**values)
+
+    def test_steps_are_declared_in_order_with_their_specs(self):
+        steps = self.scraper().steps
+        self.assertEqual([step.name for step in steps], ["listings", "details"])
+        self.assertIs(steps[0].output_spec, DISCOVERED_POSTINGS)
+        self.assertIs(steps[1].input_spec, DISCOVERED_POSTINGS)
+        self.assertIs(steps[1].output_spec, COLLECTED_POSTINGS)
+
+    def test_listings_returns_identity_records_without_descriptions(self):
+        session = FixtureSession()
+        with (
+            patch.object(http.requests, "Session", return_value=session),
+            patch.object(http.time, "sleep"),
+        ):
+            postings = self.scraper().listings({}, self.config())
+
+        self.assertEqual(
+            sorted(postings),
+            [
+                "raiffeisen_international1364426457",
+                "raiffeisen_international1373093957",
+            ],
+        )
+        posting = postings["raiffeisen_international1364426457"]
+        self.assertEqual(posting["source"], "raiffeisen_international")
+        self.assertEqual(
+            posting["url"],
+            "https://jobs.rbinternational.com/raiffeisencapitalmgmt/job/"
+            "Wien-Operations-Manager-Digital-Investment-Platform-%28wmx%29-Savity-1190/1364426457/",
+        )
+        self.assertEqual(posting["matched_titlewords"], ["sales"])
+        self.assertEqual(posting["collected_on"], "2026-11-23")
+        self.assertNotIn("description", posting)
+
+    def test_details_skips_cached_ids_and_merges_the_hit(self):
+        scraper = self.scraper()
+        session = FixtureSession()
+        cached = {
+            "raiffeisen_international1364426457": {
+                "title": "Cached title",
+                "company": "Raiffeisen International",
+                "description": "Cached description",
+            }
+        }
+        config = self.config(cached_postings=cached, cache_mode="id-only")
+        with (
+            patch.object(http.requests, "Session", return_value=session),
+            patch.object(http.time, "sleep"),
+        ):
+            result = scraper.details(scraper.listings({}, config), config)
+
+        hit = result["raiffeisen_international1364426457"]
+        self.assertEqual(hit["description"], "Cached description")
+        self.assertEqual(
+            hit["title"],
+            "Operations Manager - Digital Investment Platform (w/m/x) - Savity",
+        )
+        detail_urls = [url for url in session.requested_urls if "/job/" in url]
+        self.assertEqual(
+            detail_urls,
+            [
+                (
+                    "https://jobs.rbinternational.com/job/"
+                    "Wien-Studentjob-%28fmx%29-Agile-Delivery-Client-Coverage-%2820hweek%29-Vien-1030/1373093957/"
+                )
+            ],
+        )
+        self.assertIn(
+            "Eigenständige Bearbeitung und Koordination operativer Aufgaben",
+            result["raiffeisen_international1373093957"]["description"],
+        )
+
+
 class HttpRequestParsingTests(unittest.TestCase):
     """The HTTP path issues one request and parses the payload, without network."""
 
@@ -262,20 +352,15 @@ class HttpRequestParsingTests(unittest.TestCase):
 class RaiffeisenHelperParsingTests(unittest.TestCase):
     """Drive Raiffeisen's separable parse helpers without HTTP or a browser."""
 
-    def setUp(self):
-        self.scraper = Raiffeisen(
-            driver="",
-            keywords={"titlewords": ["sales"], "locations": []},
-            date_day="2026-11-23",
-        )
-
     def soup(self, path):
         return BeautifulSoup(path.read_text(encoding="utf-8"), "html.parser")
 
-    def test_process_posting_soups_parses_the_listing_fixture(self):
-        postings = self.scraper._process_posting_soups(
+    def test_parse_listing_soups_parses_the_listing_fixture(self):
+        postings = parse_listing_soups(
             [self.soup(RAIFFEISEN_LISTING)],
-            self.scraper.rules["gather_data_selector"],
+            "a.jobTitle-link",
+            "raiffeisen_international",
+            "https://jobs.rbinternational.com",
         )
 
         self.assertEqual(
@@ -299,8 +384,8 @@ class RaiffeisenHelperParsingTests(unittest.TestCase):
         self.assertEqual(posting["source"], "raiffeisen_international")
         self.assertNotIn("collected_on", posting)
 
-    def test_get_descriptions_from_soups_parses_the_detail_fixture(self):
-        descriptions = self.scraper._get_descriptions_from_soups(
+    def test_parse_detail_soups_parses_the_detail_fixture(self):
+        descriptions = parse_detail_soups(
             {"raiffeisen_international1373093957": self.soup(RAIFFEISEN_DETAIL)}
         )
 

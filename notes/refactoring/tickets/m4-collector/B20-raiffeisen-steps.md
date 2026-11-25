@@ -1,6 +1,6 @@
 # B20 — Give `Raiffeisen` declared steps
 
-Status: todo · Milestone: M4 Collector · Phase 4 · Size: M
+Status: done · Milestone: M4 Collector · Phase 4 · Size: M
 
 - Depends on: B13, B19
 - Files: `scrapers/websites/raiffeisen.py`
