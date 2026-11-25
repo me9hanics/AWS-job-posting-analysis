@@ -20,8 +20,9 @@ RecordSet = dict[str, dict]
 class CollectionConfigLike(Protocol):
     """The part of the collection config a step may read.
 
-    The concrete ``CollectionConfig`` lands with B32; until then a step is
-    configured by anything that carries these values.
+    The concrete ``CollectionConfig`` lands with B22 in ``config/models.py``;
+    a step is configured by anything that carries these values. The cache
+    inputs are data, not scope, and never enter ``scope_digest()``.
     """
 
     sites: tuple[str, ...]
@@ -30,6 +31,8 @@ class CollectionConfigLike(Protocol):
     steps: tuple[str, ...]
     overrides: Mapping[str, object]
     cache_mode: str | None
+    cached_postings: Mapping[str, dict]
+    cache_hit_predicate: Callable[[str, dict, dict | None], bool] | None
 
 
 StepRun = Callable[[RecordSet, CollectionConfigLike], RecordSet]
