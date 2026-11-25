@@ -16,6 +16,7 @@ from bs4 import BeautifulSoup
 
 from jobscraping.scrapers import http
 from jobscraping.scrapers import KarriereAT, Raiffeisen
+from jobscraping.specs.postings import COLLECTED_POSTINGS, DISCOVERED_POSTINGS
 
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -112,6 +113,77 @@ class KarriereFixtureParsingTests(unittest.TestCase):
         self.assertEqual(posting["locations"], ["Jeging"])
         self.assertEqual(posting["date"], "vor 4 Tagen veröffentlicht")
         self.assertEqual(posting["matched_titlewords"], ["sales"])
+
+
+class KarriereStepTests(unittest.TestCase):
+    """The declared steps are the new path; ``gather_data`` delegates to them."""
+
+    def scraper(self):
+        return KarriereAT(
+            driver="",
+            keywords={"titlewords": ["sales"], "locations": ["wien-und-umgebung"]},
+            date_day="2026-11-23",
+        )
+
+    def config(self, **overrides):
+        values = {"cached_postings": {}, "cache_mode": None,
+                  "cache_hit_predicate": None}
+        values.update(overrides)
+        return SimpleNamespace(**values)
+
+    def test_steps_are_declared_in_order_with_their_specs(self):
+        steps = self.scraper().steps
+        self.assertEqual([step.name for step in steps], ["listings", "details"])
+        self.assertIs(steps[0].output_spec, DISCOVERED_POSTINGS)
+        self.assertIs(steps[1].input_spec, DISCOVERED_POSTINGS)
+        self.assertIs(steps[1].output_spec, COLLECTED_POSTINGS)
+
+    def test_listings_returns_identity_records_without_descriptions(self):
+        session = FixtureSession()
+        with (
+            patch.object(http.requests, "Session", return_value=session),
+            patch.object(http.time, "sleep"),
+        ):
+            postings = self.scraper().listings({}, self.config())
+
+        self.assertEqual(
+            sorted(postings), ["karriere.at10029573", "karriere.at10035272"]
+        )
+        posting = postings["karriere.at10029573"]
+        self.assertEqual(posting["source"], "karriere.at")
+        self.assertEqual(posting["url"], "https://www.karriere.at/jobs/10029573")
+        self.assertNotIn("description", posting)
+        self.assertNotIn(
+            "https://www.karriere.at/jobs/10029573", session.requested_urls
+        )
+
+    def test_details_skips_cached_ids_and_merges_the_hit(self):
+        scraper = self.scraper()
+        session = FixtureSession()
+        cached = {
+            "karriere.at10035272": {
+                "title": "Cached title",
+                "company": "Windhager Home & Garden",
+                "description": "Cached description",
+            }
+        }
+        config = self.config(cached_postings=cached, cache_mode="id-only")
+        with (
+            patch.object(http.requests, "Session", return_value=session),
+            patch.object(http.time, "sleep"),
+        ):
+            result = scraper.details(scraper.listings({}, config), config)
+
+        hit = result["karriere.at10035272"]
+        self.assertEqual(hit["description"], "Cached description")
+        self.assertEqual(
+            hit["title"], "Key Account Manager Amazon & Marktplätze (m/w/d)"
+        )
+        detail_urls = [
+            url for url in session.requested_urls
+            if url.startswith("https://www.karriere.at/jobs/")
+        ]
+        self.assertEqual(detail_urls, ["https://www.karriere.at/jobs/10029573"])
 
 
 class RaiffeisenFixtureParsingTests(unittest.TestCase):

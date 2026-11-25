@@ -1,6 +1,7 @@
 import json
 import re
 from copy import deepcopy
+from types import SimpleNamespace
 
 from bs4 import BeautifulSoup
 
@@ -12,16 +13,36 @@ from jobscraping.config.configs import (
     SALARY_BEARABLE,
 )
 from jobscraping.config.constants import BASE_RULES
+from jobscraping.processing.attributes import salary_from_text
 from jobscraping.processing.postings_utils import (
     factual_postings,
     split_cached_postings,
 )
 from jobscraping.scrapers import http
 from jobscraping.scrapers.basescraper import BaseScraper
+from jobscraping.scrapers.steps import RecordSet, Step
+from jobscraping.specs.postings import COLLECTED_POSTINGS, DISCOVERED_POSTINGS
+
+
+SALARY_KEYWORDS = {
+    "annual": [
+        "jährlich",
+        "yearly",
+        "per year",
+        "annual",
+        "jährige",
+        "pro jahr",
+        "p.a.",
+    ],
+    "monthly": ["monatlich", "monthly", "per month", "pro monat"],
+}
 
 
 class KarriereAT(BaseScraper):
     """Scraper for karriere.at postings."""
+
+    source = "karriere.at"
+
     def __init__(
         self,
         driver="",
@@ -89,26 +110,130 @@ class KarriereAT(BaseScraper):
                  locations=locations, locations_desired=locations_desired,
                  locations_secondary=locations_secondary,
                  transformations = transformations, date_day=date_day)
+        self.steps = (
+            Step("listings", self.listings, output_spec=DISCOVERED_POSTINGS),
+            Step("details", self.details, input_spec=DISCOVERED_POSTINGS,
+                 output_spec=COLLECTED_POSTINGS),
+        )
 
-    def _salary_from_text(self, text, keywords=None, clarity_comma_char=".",
-                          decimal_separator=",", conversion_rate=14):
-        if keywords is None:
-            keywords = {
-                "annual": [
-                    "jährlich",
-                    "yearly",
-                    "per year",
-                    "annual",
-                    "jährige",
-                    "pro jahr",
-                    "p.a.",
-                ],
-                "monthly": ["monatlich", "monthly", "per month", "pro monat"],
-            }
-        #Conversion rate is 14 here as in Austria 14 salaries are paid per year
-        return super()._salary_from_text(text, keywords=keywords, clarity_comma_char=clarity_comma_char,
-                                        decimal_separator=decimal_separator, conversion_rate=conversion_rate)
-        
+    def listings(self, records: RecordSet, config) -> RecordSet:
+        """Search pages: identity, URL and listing facts, keyed by identity."""
+        website = self.rules["website"]
+        locations = self.keywords["locations"]
+        titlewords = self.keywords["titlewords"]  # expected to have spaces, not dashes
+        wait_time = self.rules["request_wait_time"]
+        postings = {key: deepcopy(record) for key, record in (records or {}).items()}
+        pairs = [(title, location) for title in titlewords for location in locations]
+
+        def _search_page_has_no_postings(response):
+            content = json.loads(response.text)
+            items = content['data']['jobsSearchList']['activeItems']['items']
+            return not any('jobsItem' in item for item in items)
+
+        def _add_matched_titleword(posting_data, titleword):
+            if not titleword:
+                return
+            matched = posting_data.get("matched_titlewords")
+            if not matched:
+                posting_data["matched_titlewords"] = [titleword]
+            elif titleword not in matched:
+                matched.append(titleword)
+
+        for titleword, location in pairs:
+            base_url = 'https://www.karriere.at/jobs?keywords=' + titleword + '&location=' + location
+            path = '/jobs?keywords=' + titleword + '&location=' + location
+            referer = ('https://www.karriere.at/jobs/' + titleword.replace(' ', '-')
+                       + '/' + location.replace(' ', '-'))
+            responses = http.requests_responses_with_cookies(
+                base_url=base_url,
+                pages=["&page=" + str(i) for i in range(1, 40)],
+                base_path=path,
+                referer=referer,
+                wait_time=wait_time,
+                headers_more={
+                    "Priority": "u=1, i",
+                    "X-CSRF-Token": self.csrf_token,
+                    "X-Requested-With": "XMLHttpRequest",
+                },
+                return_kind='responses',
+                stop_condition=_search_page_has_no_postings,
+                raise_on_retry_failure=True,
+                terminal_http_statuses=(410,),
+                raise_on_http_error=True,
+            )
+            if not responses:
+                raise RuntimeError(f"Acquisition failed for {base_url}")
+            for response in responses:
+                content = json.loads(response.text)
+                items = content['data']['jobsSearchList']['activeItems']['items']
+                for item in items:
+                    if 'jobsItem' not in item:
+                        continue
+                    posting = item['jobsItem']
+                    posting_id = website + str(posting['id'])
+                    if posting_id in postings:
+                        _add_matched_titleword(postings[posting_id], titleword)
+                        continue
+                    salary_read = salary_from_text(
+                        posting['salary'], keywords=SALARY_KEYWORDS,
+                        clarity_comma_char=".", decimal_separator=",", conversion_rate=14,
+                    )
+                    postings[posting_id] = {
+                        "title": posting['title'],
+                        "company": posting['company']['name'],
+                        "locations": [loc['name'] for loc in posting['locations']],
+                        "salary": posting['salary'],
+                        "salary_monthly_guessed": salary_read["monthly"] if salary_read else None,
+                        "salary_guessed": salary_read,
+                        "source": website,
+                        "isActive": posting['isActive'],
+                        "isHomeOffice": posting['isHomeOffice'],
+                        "employmentTypes": posting['employmentTypes'],
+                        "url": posting['link'],
+                        "snippet": posting['snippet'],
+                        "collected_on": self.business_day,
+                        "date": posting['date'],
+                        "id": posting['id'],
+                        "matched_titlewords": [titleword] if titleword else [],
+                    }
+        return postings
+
+    def details(self, records: RecordSet, config) -> RecordSet:
+        """Fetch descriptions for cache misses and merge the cache hits back in."""
+        website = self.rules["website"]
+        cached_hits, postings = split_cached_postings(
+            {key: deepcopy(record) for key, record in (records or {}).items()},
+            cached_postings=getattr(config, "cached_postings", None),
+            cache_mode=getattr(config, "cache_mode", None),
+            cache_hit_predicate=getattr(config, "cache_hit_predicate", None),
+        )
+        if postings:
+            jobs_url = [posting["url"] for posting in postings.values()]
+            ids = [re.search(r'\d+', url) for url in jobs_url if re.search(r'\d+', url)]
+            ids = ["/" + str(id.group()) for id in ids]
+            responses = http.requests_responses_with_cookies(
+                base_url='https://www.karriere.at/jobs',
+                base_path='/jobs',
+                referer='https://www.karriere.at/jobs/machine-learning/wien-und-umgebung',
+                pages=ids,
+                headers_more={
+                    "Priority": "u=1, i",
+                    "X-CSRF-Token": self.csrf_token,
+                    "X-Requested-With": "XMLHttpRequest",
+                },
+                return_kind='responses',
+                continue_on_http_error=True,
+                raise_on_retry_failure=False,
+            )
+            for response in (responses or []):
+                content = json.loads(response.text)
+                posting = content['data']['jobDetailContent']['jobContent']['text']
+                _id = website + str(content['data']['jobDetailContent']['jobHeader']['job']['id'])
+                if _id in postings and posting:
+                    postings[_id]["description"] = BeautifulSoup(
+                        posting, 'html.parser').get_text()
+        return {**cached_hits, **postings}
+
     def gather_data(
         self,
         descriptions=False,
@@ -121,6 +246,20 @@ class KarriereAT(BaseScraper):
         cache_hit_predicate=None,
         process=True,
     ):
+        if not process:
+            config = SimpleNamespace(
+                cached_postings=cached_postings,
+                cache_mode=cache_mode,
+                cache_hit_predicate=cache_hit_predicate,
+            )
+            postings = self.listings({}, config)
+            if descriptions:
+                postings = self.details(postings, config)
+            postings = factual_postings(postings)
+            if save_data:
+                self._save_data(postings, name="karriere_at", with_timestamp=True)
+            return postings
+
         website = self.rules["website"]
         locations = self.keywords["locations"]
         titlewords = self.keywords["titlewords"] #expected not to have dashes, but spaces
