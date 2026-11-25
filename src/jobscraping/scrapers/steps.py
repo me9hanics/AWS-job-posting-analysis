@@ -20,7 +20,7 @@ RecordSet = dict[str, dict]
 class CollectionConfigLike(Protocol):
     """The part of the collection config a step may read.
 
-    The concrete ``CollectionConfig`` lands with B22 in ``config/models.py``;
+    The concrete ``CollectionConfig`` lives in ``jobscraping.config.models``;
     a step is configured by anything that carries these values. The cache
     inputs are data, not scope, and never enter ``scope_digest()``.
     """

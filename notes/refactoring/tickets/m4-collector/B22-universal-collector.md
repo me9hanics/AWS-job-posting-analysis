@@ -1,6 +1,6 @@
 # B22 — Create the universal collector
 
-Status: todo · Milestone: M4 Collector · Phase 4 · Size: L
+Status: done · Milestone: M4 Collector · Phase 4 · Size: L
 
 - Depends on: B09, B10, B19, B20, B21
 - Files: `src/jobscraping/acquisition/collector.py`,
@@ -41,6 +41,14 @@ call (one-step, two-step, skip, raising step, zero records). B23 and B25 extend
 the same module.
 
 See [implementation-flow.md](implementation-flow.md#b22--the-universal-collector).
+
+## Checks
+
+Ruff and ty are clean on the new files. `scrapers/steps.py` carries one
+pre-existing `I001` (import block order, line 10); this ticket only corrects its
+docstring and leaves that finding untouched. `ty check src` reports the baseline
+95 diagnostics, none of them from `config/models.py` or
+`acquisition/collector.py`.
 
 ## Done when
 
