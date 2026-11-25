@@ -52,9 +52,11 @@ docstring and leaves that finding untouched. `ty check src` reports the baseline
 
 The collector's step catch is a broad `except Exception` because the collector
 rules mandate it: one step failing must not stop later steps and must be
-recorded. It carries no `noqa`; the current ruff default rule set reports
-`BLE001` (blind except) on it, and that finding stays reported rather than
-suppressed.
+recorded. The current ruff default rule set reports `BLE001` (blind except) on
+it; the suppression carries its reason in place (`# noqa: BLE001 - a step may
+raise anything; the rule is to record it`) rather than being a silent noqa.
+Narrowing the catch would break the rule that one step failing never stops later
+steps.
 
 ## Done when
 

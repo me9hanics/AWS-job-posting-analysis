@@ -42,7 +42,7 @@ def _run_adapter(adapter, config, scope_digest, artifact_path=None):
             continue
         try:
             result = run(records, config)
-        except Exception as error:
+        except Exception as error:  # noqa: BLE001 - a step may raise anything; the rule is to record it
             failed = True
             steps.append(_step_report(name, "failed", error=str(error)))
             continue
