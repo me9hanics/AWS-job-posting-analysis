@@ -1,6 +1,6 @@
 # B24 — Wire the universal pipeline to the collector
 
-Status: todo · Milestone: M4 Collector · Phase 4 · Size: M
+Status: done · Milestone: M4 Collector · Phase 4 · Size: M
 
 - Depends on: B22, B23
 - Files: `src/jobscraping/pipelines/scrape_universal.py`,

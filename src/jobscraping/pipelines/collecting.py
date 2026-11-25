@@ -56,6 +56,23 @@ def reorder_locations(locations, primary=configs.LOCATIONS_DESIRED):
     return first_locs + other_locs
 
 
+def build_scraper(scraper_class, *, keywords, rankings, salary_bearable, date_day=None, **kwargs):
+    """Construct one scraper with the shared keyword and per-site override mapping."""
+    prefix = scraper_class.__name__.lower()
+    return scraper_class(
+        date_day=date_day,
+        keywords=keywords,
+        rankings=rankings,
+        salary_bearable=salary_bearable,
+        extra_keywords=kwargs.get(f"{prefix}_extra_keywords", kwargs.get("extra_keywords", {})),
+        extra_titlewords=kwargs.get(f"{prefix}_extra_titlewords", kwargs.get("extra_titlewords", [])),
+        extra_locations=kwargs.get(f"{prefix}_extra_locations", kwargs.get("extra_locations", [])),
+        locations_secondary=kwargs.get(f"{prefix}_locations_secondary", kwargs.get("locations_secondary", configs.LOCATIONS_SECONDARY)),
+        rules=kwargs.get(f"{prefix}_rules", kwargs.get("rules", BASE_RULES)),
+        transformations=kwargs.get(f"{prefix}_transformations", kwargs.get("transformations", [])),
+    )
+
+
 def scrape_sites(
     scrapers: List[Type[BaseScraper]] = SCRAPERS,
     keywords=KEYWORDS,
@@ -73,17 +90,13 @@ def scrape_sites(
     """Scrape postings, optionally overriding their collection date with date_day (YYYY-MM-DD)."""
     results = {}
     for scraper_class in scrapers:
-        scraper = scraper_class(
-            date_day=date_day,
+        scraper = build_scraper(
+            scraper_class,
             keywords=keywords,
             rankings=rankings,
             salary_bearable=salary_bearable,
-            extra_keywords=kwargs.get(f"{scraper_class.__name__.lower()}_extra_keywords", kwargs.get("extra_keywords", {})),
-            extra_titlewords=kwargs.get(f"{scraper_class.__name__.lower()}_extra_titlewords", kwargs.get("extra_titlewords", [])),
-            extra_locations=kwargs.get(f"{scraper_class.__name__.lower()}_extra_locations", kwargs.get("extra_locations", [])),
-            locations_secondary=kwargs.get(f"{scraper_class.__name__.lower()}_locations_secondary", kwargs.get("locations_secondary", configs.LOCATIONS_SECONDARY)),
-            rules=kwargs.get(f"{scraper_class.__name__.lower()}_rules", kwargs.get("rules", BASE_RULES)),
-            transformations=kwargs.get(f"{scraper_class.__name__.lower()}_transformations", kwargs.get("transformations", [])),
+            date_day=date_day,
+            **kwargs,
         )
         scrape_start = time.time()
         gather_kwargs = {

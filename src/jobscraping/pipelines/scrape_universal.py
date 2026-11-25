@@ -1,10 +1,35 @@
 """Raw acquisition for one explicit query scope; no profile selection."""
 
-from jobscraping.pipelines.collecting import KEYWORDS, SCRAPERS, scrape_sites, validate_postings_quality
+from jobscraping.acquisition.collector import run_collection
+from jobscraping.config.models import CollectionConfig
+from jobscraping.pipelines.collecting import (
+    KEYWORDS,
+    RANKINGS,
+    SALARY_BEARABLE,
+    SCRAPERS,
+    build_scraper,
+    validate_postings_quality,
+)
 from jobscraping.pipelines.store_universal import (
-    load_postings, save_incomplete_run, store_universal_postings,
+    load_postings,
+    save_incomplete_run,
+    store_universal_postings,
 )
 from jobscraping.processing.postings_utils import factual_postings, validate_cache_mode
+
+
+def _collection_failure(report):
+    """Describe every failed step, embedding its recorded error verbatim."""
+    failures = []
+    for site in report["sites"]:
+        for step in site["steps"]:
+            if step["status"] == "failed":
+                failures.append(f"{site['source']} {step['name']}: {step['error']}")
+            elif step["status"] == "empty":
+                failures.append(f"{site['source']} {step['name']}: no records")
+    if not failures:
+        failures.append("no records collected")
+    return "Collection failed: " + "; ".join(failures)
 
 
 def run_universal_scrape_flow(
@@ -40,10 +65,26 @@ def run_universal_scrape_flow(
     if not cache:
         cache = {k: p for k, p in (seed_history or {}).items()
                  if all(p.get(f) for f in ("title", "company", "description"))}
-    raw = scrape_sites(scrapers=scrapers, keywords=keywords, process=False,
-                       cached_postings=factual_postings(cache), cache_mode=cache_mode,
-                       cache_hit_predicate=cache_hit_predicate, verbose=verbose, **kwargs)
-    raw = factual_postings(raw)
+    scraper_defaults = {
+        "rankings": kwargs.pop("rankings", RANKINGS),
+        "salary_bearable": kwargs.pop("salary_bearable", SALARY_BEARABLE),
+    }
+    adapters = [build_scraper(scraper_class, keywords=keywords, **scraper_defaults, **kwargs)
+                for scraper_class in scrapers]
+    config = CollectionConfig(
+        sites=tuple(adapter.source for adapter in adapters),
+        queries=tuple(sorted(set(keywords.get("titlewords", [])))),
+        locations=tuple(keywords.get("locations", [])),
+        steps=(),
+        overrides=overrides,
+        cache_mode=cache_mode,
+        cached_postings=factual_postings(cache),
+        cache_hit_predicate=cache_hit_predicate,
+    )
+    result = run_collection(adapters, config, artifact_path=path)
+    raw = factual_postings(result["records"])
+    if result["report"]["failed"]:
+        raise RuntimeError(_collection_failure(result["report"]))
     try:
         required_fields = {p.get("source"): ("title", "description", "company") for p in raw.values()}
         for source, fields in (required_fields_by_source or {}).items():
