@@ -1,6 +1,6 @@
 # B27 — Move merge and history rebuild
 
-Status: todo · Milestone: M5 Data layer · Phase 5 · Size: M
+Status: done · Milestone: M5 Data layer · Phase 5 · Size: M
 
 - Depends on: B26, B04, B02a
 - Files: `src/jobscraping/data/merge.py`,
@@ -13,6 +13,11 @@ Status: todo · Milestone: M5 Data layer · Phase 5 · Size: M
 3. Make a second merge idempotent.
 4. Move the `last_modified_on` computation from B02a here, unchanged in
    behaviour.
+
+Applying the merge rule is deliberately **not** part of this move: B27 keeps
+byte parity with the B04 fixtures, and B27a applies the general
+non-empty-observation rule (including the description) with its own fixture
+update.
 
 ## Done when
 

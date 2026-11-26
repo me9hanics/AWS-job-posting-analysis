@@ -11,7 +11,7 @@ from jobscraping.config.constants import (
 )
 from jobscraping.data.load import load_postings
 from jobscraping.io import files_io
-from jobscraping.pipelines.store_universal import merge_observations
+from jobscraping.data.merge import merge_observations
 from jobscraping.processing.attributes import analyze_postings_language, analyze_text_language, find_keywords_in_postings, rank_postings
 from jobscraping.processing.language_requirements import guess_required_languages
 from jobscraping.processing.postings_utils import factual_postings, get_added_and_removed

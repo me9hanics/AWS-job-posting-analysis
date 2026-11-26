@@ -1,56 +1,12 @@
 """Scoped raw storage. Dani query provenance never replaces the root vault."""
 
-from copy import deepcopy
-from datetime import date, datetime
-from pathlib import Path
+from datetime import datetime
 
-from jobscraping.data.load import load_postings, save_json
-from jobscraping.processing.attributes import merge_matched_titlewords
+from jobscraping.data.load import load_postings, save_json, save_posting_set
+from jobscraping.data.merge import rebuild_history
 from jobscraping.processing.postings_utils import factual_postings
 
-
 UNIVERSAL_POSTINGS_FOLDER = "data/save/postings/universal"
-
-
-def _material_changed(old, posting):
-    """Only title and description decide a change; absent keys leave stored values."""
-    return any(
-        (posting.get(field) or "") != (old.get(field) or "")
-        for field in ("title", "description")
-        if field in posting
-    )
-
-
-def _last_modified_on(old, posting):
-    """Date of the observation that last changed the posting's material."""
-    if not old or _material_changed(old, posting):
-        return posting.get("collected_on")
-    return (old.get("last_modified_on") or old.get("last_collected_on")
-            or old.get("collected_on") or posting.get("collected_on"))
-
-
-def merge_observations(current, previous):
-    """Keep prior IDs and dates, replacing current observations and derived values."""
-    history = deepcopy(previous)
-    for key, posting in current.items():
-        old = previous.get(key, {})
-        merged = {**deepcopy(old), **deepcopy(posting)}
-        dates = [p.get(field) for p in (old, posting)
-                 for field in ("collected_on", "first_collected_on", "last_collected_on")
-                 if p.get(field)]
-        if dates:
-            merged["first_collected_on"] = min(dates)
-            merged["last_collected_on"] = max(dates)
-            merged["timespan_days"] = (date.fromisoformat(max(dates)) - date.fromisoformat(min(dates))).days
-        merge_matched_titlewords(merged, old)
-        modified_on = _last_modified_on(old, posting)
-        if modified_on:
-            merged["last_modified_on"] = modified_on
-        else:
-            merged.pop("last_modified_on", None)
-        history[key] = merged
-        posting.update(deepcopy(merged))
-    return history
 
 
 def save_incomplete_run(postings, path, error):
@@ -63,11 +19,9 @@ def store_universal_postings(postings, path, scope):
     """Persist a quality-checked raw collection, including a valid empty run."""
     current = factual_postings(postings)
     previous = factual_postings(load_postings(path, "postings_history.json"))
-    added_ids = current.keys() - previous.keys()
-    history = merge_observations(current, previous)
-    for filename, data in (("current_postings.json", current),
-                           ("postings_history.json", history),
-                           ("newly_added_postings.json", {k: current[k] for k in added_ids}),
-                           ("collection_scope.json", scope)):
-        save_json(data, path, filename, with_timestamp=False)
+    history, added = rebuild_history(current, previous)
+    save_posting_set(history, path, "postings_history.json")
+    save_posting_set(current, path, "current_postings.json")
+    save_posting_set(added, path, "newly_added_postings.json")
+    save_json(scope, path, "collection_scope.json")
     return current

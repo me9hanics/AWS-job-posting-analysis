@@ -1,7 +1,9 @@
-"""Helpers for job posting attributes: salary parsing, scoring, keyword analysis."""
+﻿"""Helpers for job posting attributes: salary parsing, scoring, keyword analysis."""
 
 import re
 from typing import List, Callable, Any, Dict, Sequence
+
+from jobscraping.data.merge import merge_matched_titlewords
 
 
 DEFAULT_SALARY_KEYWORDS = {
@@ -405,21 +407,6 @@ def add_matched_titleword(posting_data, titleword):
     elif titleword not in matched:
         matched.append(titleword)
     return posting_data
-
-def merge_matched_titlewords(target_posting, incoming_posting):
-    """Merge titleword lists between postings, preserving order."""
-    incoming_titlewords = incoming_posting.get("matched_titlewords")
-    if not incoming_titlewords:
-        return
-    if not isinstance(incoming_titlewords, list):
-        incoming_titlewords = [incoming_titlewords]
-    existing_titlewords = target_posting.get("matched_titlewords")
-    if not existing_titlewords:
-        target_posting["matched_titlewords"] = list(incoming_titlewords)
-        return
-    for titleword in incoming_titlewords:
-        if titleword not in existing_titlewords:
-            existing_titlewords.append(titleword)
 
 def analyze_text_language(texts) -> list:
     """Returns a list of 'en', 'de', or None for each text in texts."""
