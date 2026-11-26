@@ -2,6 +2,7 @@
 
 from jobscraping.acquisition.collector import failure_message, run_collection
 from jobscraping.config.models import CollectionConfig
+from jobscraping.data.enrich import annotate_postings
 from jobscraping.data.load import load_postings
 from jobscraping.pipelines.collecting import (
     KEYWORDS,
@@ -85,4 +86,5 @@ def run_universal_scrape_flow(
     except ValueError as error:
         save_incomplete_run(raw, path, error)
         raise
+    raw = annotate_postings(raw)
     return store_universal_postings(raw, path, scope)

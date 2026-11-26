@@ -615,17 +615,41 @@ it.
   1. Move `merge_observations` and the history-rebuild logic.
   2. Keep the B04 fixtures as the parity gate.
   3. Make a second merge idempotent.
+  4. Move the B02a `last_modified_on` computation unchanged.
 - Done when:
   - `data/merge.py` imports no pipeline module;
   - the B04 tests pass unchanged;
   - byte-identical JSON on a repeated fixture run.
+
+### B27a — Non-empty observations win
+
+- Depends on: B27
+- Size: M
+- Files: `src/jobscraping/data/merge.py`, `tests/test_data_rules.py`,
+  `tests/fixtures/merge_expected.json`, `tests/fixtures/merge_current.json`
+- Do:
+  1. Replace the blanket observation update with the grouped rule: observed
+     facts need a non-empty observation; derived fields are authoritative when
+     present; four metadata fields always refresh; dates and
+     `last_modified_on` stay merge-owned; `matched_titlewords` unions.
+  2. Align `_material_changed`: an empty or absent title/description is not a
+     material change.
+  3. Update the pinned fixtures and add cases for an empty scalar, empty list,
+     `False`, `0` and an empty derived value.
+- Done when:
+  - an empty observation never erases a stored observed fact;
+  - a non-empty observation still replaces it;
+  - `False` and `0` replace; derived fields replace even when empty;
+  - an empty title/description does not move `last_modified_on`;
+  - the rest of the B04/B02a suite passes.
 
 ### B28 — Make the diff neutral
 
 - Depends on: B27
 - Size: S
 - Files: `src/jobscraping/data/compare.py`,
-  `src/jobscraping/processing/postings_utils.py`
+  `src/jobscraping/processing/postings_utils.py`,
+  `src/jobscraping/processing/derive_profile_postings.py`
 - Do:
   1. Move `get_added_and_removed` into `data/compare.py`.
   2. Remove the `points = 0` injection; profile derivation adds its own default.
@@ -639,17 +663,26 @@ it.
 
 - Depends on: B27, B28
 - Size: M
-- Files: `src/jobscraping/data/enrich.py`,
-  `src/jobscraping/processing/postings_utils.py`
+- Files: `src/jobscraping/data/enrich.py`, `src/jobscraping/data/language.py`,
+  `src/jobscraping/data/salary.py`, `src/jobscraping/processing/postings_utils.py`,
+  `src/jobscraping/processing/attributes.py`,
+  `src/jobscraping/processing/language_requirements.py`
 - Do:
-  1. Move `enrich_postings` and its re-processing behaviour into `data/enrich.py`.
-  2. Remove the `BaseScraper` import from `processing/postings_utils.py`.
+  1. Move the detection primitives down into `data`: `analyze_text_language`
+     and the `language_requirements` content to `data/language.py`, salary
+     detection to `data/salary.py`. `processing` re-exports its old public
+     names; the shims are removed in B44.
+  2. Move `enrich_postings` into `data/enrich.py` without the `BaseScraper`
+     import or profile reprocessing; it has no callers today, so no
+     reprocessing hook is carried over.
   3. Keep enrichment idempotent: rerun replaces derived values, never appends.
-  4. Add a profile-neutral annotation pass that fills `language`
+  4. Move `get_date_of_collection` here from `postings_utils`; enrichment is its
+     only consumer.
+  5. Add a profile-neutral annotation pass that fills `language`
      (`analyze_text_language`) and `guessed_required_languages`
      (`guess_required_languages`) on records that have a description; replace,
      never merge, the previous values (Q29).
-  5. Let the annotations survive the fact projection: add both names to
+  6. Let the annotations survive the fact projection: add both names to
      `RAW_POSTING_FIELDS` (or its successor) so `factual_postings` keeps them
      when it is applied to already-annotated records.
 - Done when:
@@ -664,16 +697,20 @@ it.
 
 - Depends on: B26
 - Size: M
-- Files: `src/jobscraping/io/files_io.py`, `src/jobscraping/data/load.py`
+- Files: `src/jobscraping/io/files_io.py`, `src/jobscraping/data/load.py`,
+  `src/jobscraping/config/constants.py`
 - Do:
   1. Write to a temporary file in the destination directory and `os.replace`.
   2. Use UTC for new artifact timestamps and filenames.
-  3. Add `schema_version` to vault artifacts.
+  3. Add `schema_version` to vault artifacts as a per-folder `vault_meta.json`
+     (`{schema_version, updated_at}`); posting files keep their dict shape and
+     the scope file stays unchanged.
   4. Keep reading legacy local-time files without conversion.
 - Done when:
   - a simulated write failure leaves the previous file intact;
   - new timestamps are UTC;
-  - every vault file has `schema_version`.
+  - every vault folder written by `data/load.py` has a `vault_meta.json` with
+    `schema_version`.
 - Note: current artifacts are local-time; do not rewrite history in this task.
 
 ### B31 — Store every posting in universal
@@ -684,7 +721,8 @@ it.
   `data/merge.py`, tests
 - Do:
   1. Make the universal path stop running role/manager/relevance filtering;
-     profiles own it.
+     profiles own it. After M4 the step bodies are already filter-free, so this
+     is a verification plus a regression test, not a removal.
   2. Keep the legacy profile path behaviour until its cutover; do not change
      `get_postings` in this task.
   3. Keep only factual normalization and quality gates on the universal path.

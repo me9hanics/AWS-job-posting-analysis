@@ -7,7 +7,9 @@ task can be picked up, tracked and closed on its own.
 `B01`–`B46` are the backlog tasks. `B02a` is one task that was missing from the
 backlog and was added early, by decision on 2026-11-19; it inserts without
 renumbering anything else. `B07a` is a follow-up to the closed B07/B08 specs after
-Q29 (2026-11-24) and is placed after B08.
+Q29 (2026-11-24) and is placed after B08. `B27a` splits the grouped non-empty
+merge rule out of B27 (2026-11-26) so B27 stays a byte-parity move; the
+milestone flow records the decision.
 
 ## Layout
 
@@ -106,12 +108,20 @@ one test, no runtime behaviour. Its producers land in B29/B31; B33 consumes them
 
 | ID | Ticket | Depends on | Status |
 | --- | --- | --- | --- |
-| B26 | [Create `data/load.py`](m5-data-layer/B26-data-load.md) | B03 | todo |
-| B27 | [Move merge and history rebuild](m5-data-layer/B27-data-merge.md) | B26, B04, B02a | todo |
-| B28 | [Make the diff neutral](m5-data-layer/B28-neutral-diff.md) | B27 | todo |
-| B29 | [Move generic enrichment and remove the scraper import](m5-data-layer/B29-data-enrich.md) | B27, B28 | todo |
-| B30 | [Atomic writes, UTC and `schema_version`](m5-data-layer/B30-atomic-writes.md) | B26 | todo |
-| B31 | [Store every posting in universal](m5-data-layer/B31-store-every-posting.md) | B22, B24, B27 | todo |
+| B26 | [Create `data/load.py`](m5-data-layer/B26-data-load.md) | B03 | done |
+| B27 | [Move merge and history rebuild](m5-data-layer/B27-data-merge.md) | B26, B04, B02a | done |
+| B27a | [Non-empty observations win](m5-data-layer/B27a-non-empty-merge.md) | B27 | done |
+| B28 | [Make the diff neutral](m5-data-layer/B28-neutral-diff.md) | B27 | done |
+| B29 | [Move generic enrichment and remove the scraper import](m5-data-layer/B29-data-enrich.md) | B27, B28 | done |
+| B30 | [Atomic writes, UTC and `schema_version`](m5-data-layer/B30-atomic-writes.md) | B26 | done |
+| B31 | [Store every posting in universal](m5-data-layer/B31-store-every-posting.md) | B22, B24, B27 | done |
+
+The milestone flow is
+[implementation-flow.md](m5-data-layer/implementation-flow.md). It records two
+decisions made during planning (2026-11-26): the language/salary detectors move
+into `data/` so `data` imports no `processing`, and `schema_version` is carried
+by a per-vault `vault_meta.json` instead of a key in the dict-keyed posting
+files. It also splits the grouped non-empty merge rule out as B27a.
 
 ### M6 — Profiles (phase 6)
 

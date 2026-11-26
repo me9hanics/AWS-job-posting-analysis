@@ -20,7 +20,8 @@ Universal, under `data/save/postings/universal/`:
 | `postings_history.json` | `store_universal_postings` | merged observations over time; also the factual cache |
 | `newly_added_postings.json` | `store_universal_postings` | IDs absent from the previous universal history |
 | `collection_scope.json` | `store_universal_postings` | normalized scope of the last run; equality enables cache reuse |
-| `incomplete_run_<timestamp>.json` | `save_incomplete_run` | `{error, postings}` from a rejected quality gate |
+| `vault_meta.json` | `data/load.py` | `{schema_version, updated_at}`; the vault's schema marker, rewritten with every posting write |
+| `incomplete_run_<timestamp>.json` | `save_incomplete_run` | `{error, postings}` from a rejected quality gate; new filenames use UTC |
 | `collections/dani/*` | `pipelines/dani.py` | a scoped collection whose provenance must not replace the root vault |
 
 Profile, under `data/save/postings/<profile>/`:
@@ -111,9 +112,10 @@ fixtures before the data layer moves.
   observation date and is not a range.
 - **Material change.** `last_modified_on` is the observation date on which the
   posting's material last changed. Only `title` and `description` decide a
-  change, compared as the raw values the observation supplies. No other field
-  does: `isActive`, the site's `date`, `url`, locations, salaries and the merge
-  bookkeeping (`collected_on`, `first_collected_on`, `last_collected_on`,
+  change, compared as the raw values the observation supplies. An absent or
+  empty value is not a change, because the merge does not store it. No other
+  field does: `isActive`, the site's `date`, `url`, locations, salaries and the
+  merge bookkeeping (`collected_on`, `first_collected_on`, `last_collected_on`,
   `timespan_days`) are ignored, and the comparison ignores `last_modified_on`
   itself so a repeated merge cannot move it.
 - **Missing values.** Only fields present in the observation are compared; an
@@ -131,21 +133,43 @@ fixtures before the data layer moves.
 - **One owner, no backfill.** Only the merge computes `last_modified_on`;
   adapters, enrichment and derivation never set it. Existing history is not
   backfilled (Q27): old records gain the field on their next observation.
-- **Description.** Latest non-empty observation wins. The non-empty guard is
-  not implemented today: a later empty description currently replaces a stored
-  non-empty one. B27 owns making this rule true; B04 pins the current
-  behaviour meanwhile.
-- **Scalars.** An existing non-empty value is preserved; a new non-empty value
-  fills a missing one. Conflicts are resolved by an explicit rule, not by dict
-  order.
-- **Lists.** Ordered union; `matched_titlewords` accumulates provenance.
+- **Description.** Follows the observed-facts rule below. The blanket
+  `{**old, **posting}` merge currently lets a later empty description replace a
+  stored non-empty one; B27 moves the merge with parity so the B04 fixtures pass
+  unchanged, and B27a applies the grouped rule and updates the one fixture that
+  pins the old result.
+- **Observed facts.** A non-empty observation replaces the stored value; an
+  absent, `""`, `None`, `[]` or `{}` value leaves the stored one in place.
+  `False` and `0` count as values and replace. This applies to every field the
+  collector observes and the merge does not own, including `title`, `company`,
+  `description`, `salary`, `locations`, `isHomeOffice`, `employmentTypes`,
+  `snippet`, `role`, `requirements`, `nice_to_have` and `benefits`. A site that
+  temporarily omits a field never erases a stored fact.
+- **Derived fields.** `language`, `guessed_required_languages`,
+  `salary_guessed` and `salary_monthly_guessed` are recomputed from the latest
+  observation and are authoritative: a present value replaces the stored one
+  even when the recomputation is empty or `None`. An absent key leaves the
+  stored value untouched.
+- **Always fresh.** `collected_on`, `date`, `isActive` and `url` always come
+  from the observation (the same set `split_cached_postings` treats as fresh).
+- **Merge-owned fields.** `first_collected_on`, `last_collected_on`,
+  `timespan_days` and `last_modified_on` are computed by the merge and never
+  taken from the observation.
+- **Lists.** Observed list fields replace when non-empty; an empty list leaves
+  the stored one. `matched_titlewords` is the exception and accumulates
+  provenance by ordered union.
+- **Vocabulary of a fact.** An empty value means "the observation did not
+  report it", not "the site erased it"; there is no deletion signal in the
+  vault. A field is removed only by a deliberate schema change, never by an
+  empty observation.
 - **Profile policy fields.** `points`, profile keywords, `role_families`,
   `language_adjustment`, `profile_excluded`, `language_excluded` and profile
   scores never enter universal records.
 - **Profile-neutral annotations.** `language` and `guessed_required_languages`
-  are universal fields (Q29). They are derived from the stored description, so
-  the merge replaces them with the latest enrichment instead of unioning them;
-  `matched_titlewords` stays a collection field and unions.
+  are universal fields (Q29) and derived fields under this rule: they are
+  replaced by the latest enrichment, even when the recomputation is empty or
+  `None`, and never unioned. `matched_titlewords` stays a collection field and
+  unions.
 - **Vocabulary.** "Universal" names the expected shared record shape and folder,
   not a run that must exist. Interfaces that read or write it take records or
   paths as arguments; no stage or profile discovers a universal history (Q28).
@@ -190,9 +214,12 @@ fixtures before the data layer moves.
 - **Time.** Decided: UTC for all new artifacts and filenames (Q13). Existing
   local-time files are read as they are; no conversion is attempted.
 - **Schema version.** Decided: a `schema_version` field on vault artifacts
-  (Q13). Added when the data layer is extracted. There is no per-spec version or
-  digest and no requirement to keep old data compatible (Q27); a spec change is
-  handled by the check, not by migration.
+  (Q13). Posting files are dicts keyed by identity, so the version is carried by
+  a per-folder `vault_meta.json` (`{schema_version, updated_at}`) written by
+  `data/load.py`; a top-level key in a posting file would read as a posting. The
+  scope file is not extended, because its equality decides cache reuse. There is
+  no per-spec version or digest and no requirement to keep old data compatible
+  (Q27); a spec change is handled by the check, not by migration.
 - **Run report.** Decided: JSON artifact written by the collector (Q25),
   including unit, step, outcome and error. Promote to a dataclass only when a
   second consumer needs structured access. In M4 it is `<vault>/run_report.json`,

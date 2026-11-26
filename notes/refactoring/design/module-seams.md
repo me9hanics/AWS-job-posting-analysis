@@ -60,6 +60,13 @@ Allowed direction is upward only:
 `specs` is a leaf because a site adapter, a data operation and a profile
 derivation must all agree on field names without importing each other.
 
+Detection is a fact, not a policy: `data` owns the text-language and salary
+detectors because `data/enrich.py` produces the profile-neutral annotations
+(D24, Q29) and must not import `processing`. There is exactly one
+`language.py`, under `data/`: detection and requirement evidence. Language
+*policy* (`assess_language`, adjustments, exclusions) stays with the profile
+that owns it, and `processing` keeps only scoring and derivation helpers.
+
 `scrapers/http.py` and `scrapers/browser.py` have different dependencies and
 failure modes. One `scrape.py` facade keeps call sites stable during the move;
 the facade is removed when no caller needs it. Pagination is shared because both
@@ -130,9 +137,10 @@ src/jobscraping/
     merge.py              # merge_observations, history rebuild
     compare.py            # neutral added/removed diff
     enrich.py             # rerunnable generic enrichment
+    language.py           # text language + requirement evidence (moved from processing)
+    salary.py             # salary detection without a scraper
   processing/
     facts.py              # factual_postings and normalization
-    language.py           # text language + requirement evidence
     scoring_mechanics.py  # scoring mechanics, profile-agnostic
     derive.py             # generic profile derivation
   profiles/
@@ -157,7 +165,7 @@ src/jobscraping/
 | `pipelines/scrape_universal.py::run_universal_scrape_flow` | `acquisition/collector.py` + pipeline | One function owns scope, cache, acquisition, quality and storage. |
 | `pipelines/collecting.py` helpers | `acquisition/collector.py`, `acquisition/quality.py` | Reusable acquisition sits inside the legacy pipeline. |
 | `processing/derive_profile_postings.py` | `processing/derive.py` + profile policy functions | Generic derivation with a policy input; no wrapper class. |
-| `processing/attributes.py` | `processing/language.py`, `processing/scoring_mechanics.py`, `data/enrich.py` | Detection, scoring and enrichment are different reasons to change. |
+| `processing/attributes.py` | `data/language.py`, `data/salary.py`, `processing/scoring_mechanics.py`, `data/enrich.py` | Detection (a fact, used by enrichment), scoring (policy mechanics) and enrichment are different reasons to change. |
 | `config/configs.py` | `config/models.py`, `config/constants.py`, `specs/`, `conf/` | Config values, code constants and data-spec field names are three different things. |
 
 ## Canonical copies (B11)

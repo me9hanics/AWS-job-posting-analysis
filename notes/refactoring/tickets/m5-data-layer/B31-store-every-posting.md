@@ -1,6 +1,6 @@
 # B31 — Store every posting in universal
 
-Status: todo · Milestone: M5 Data layer · Phase 5 · Size: M
+Status: done · Milestone: M5 Data layer · Phase 5 · Size: M
 
 - Depends on: B22, B24, B27
 - Files: `scrapers/basescraper.py`, `pipelines/scrape_universal.py`,
@@ -9,7 +9,8 @@ Status: todo · Milestone: M5 Data layer · Phase 5 · Size: M
 ## Do
 
 1. Make the universal path stop running role/manager/relevance filtering;
-   profiles own it.
+   profiles own it. After M4 the step bodies are already filter-free, so this is
+   a verification plus a regression test, not a removal.
 2. Keep the legacy profile path behaviour until its cutover; do not change
    `get_postings` in this ticket.
 3. Keep only factual normalization and quality gates on the universal path.
