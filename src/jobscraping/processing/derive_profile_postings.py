@@ -1,110 +1,97 @@
-"""Skeleton for deriving profile-specific posting sets from universal data.
+"""Derive Dani candidates and outputs from supplied facts, without scraping."""
 
-This module is intentionally not wired into the current runtime yet.
+from copy import deepcopy
+from datetime import datetime
+from pathlib import Path
+import re
 
-Future replacement scope:
-- Profile-specific parts of ``jobscraping.pipelines.collecting.get_postings``.
-- Filtering currently split between profile collect scripts and
-  ``jobscraping.processing.transformations``.
-- Profile history/current/newly-added storage behavior.
+from jobscraping.config import configs
+from jobscraping.config.constants import (
+    CURRENT_POSTINGS_FILENAME, NEWLY_ADDED_POSTINGS_FILENAME, POSTINGS_HISTORY_FILENAME,
+)
+from jobscraping.data.load import load_postings
+from jobscraping.io import files_io
+from jobscraping.pipelines.store_universal import merge_observations
+from jobscraping.processing.attributes import analyze_postings_language, analyze_text_language, find_keywords_in_postings, rank_postings
+from jobscraping.processing.language_requirements import guess_required_languages
+from jobscraping.processing.postings_utils import factual_postings, get_added_and_removed
+from jobscraping.processing.transformations import apply_filters_transformations
+from jobscraping.profiles.dani import DANI_NON_VIENNA_PENALTY, DANI_PHRASES, DANI_KEYWORD_SCORING, DANI_SALARY_BEARABLE, assess_language, is_candidate, role_contributions, title_excluded
 
-Not kept here from the old flow:
-- Site scraping.
-- Universal history ownership.
-- Excel rendering internals.
-"""
 
-from __future__ import annotations
+def derive_profile_postings(
+    raw_postings, path, keywords=DANI_PHRASES, rankings=DANI_KEYWORD_SCORING,
+    salary_bearable=DANI_SALARY_BEARABLE, threshold=0.01, previous_history=None,
+    current_postings_filename=CURRENT_POSTINGS_FILENAME,
+    newly_added_postings_filename=NEWLY_ADDED_POSTINGS_FILENAME,
+    postings_history_filename=POSTINGS_HISTORY_FILENAME,
+    only_thresholded_stored=False, efficient_storing=True, transformations=None,
+    language_policy=None, locations_primary=None, locations_secondary=None,
+    **kwargs,
+):
+    """Compare candidates to full history before merge; select only at output.
 
-
-def load_profile_history():
-    """Load all prior candidates for a profile.
-
-    Placeholder only.
+    Known reappearances and score-driven entrants stay out of newly added.
+    Current/newly-added artifacts keep the established pre-threshold ordering.
     """
+    path = str(Path(path)) + "/"
+    Path(path).mkdir(parents=True, exist_ok=True)
+    if previous_history is None:
+        previous_file = postings_history_filename
+        if not previous_file or not (Path(path) / previous_file).exists():
+            previous_file = files_io.get_filename_from_dir(path, index=-1)
+        previous_history = load_postings(path, previous_file) if previous_file else {}
+    previous_history = deepcopy(previous_history)
+    candidates = {k: p for k, p in factual_postings(raw_postings).items() if is_candidate(p, keywords)}
+    analyze_postings_language(candidates)
+    rank_postings(candidates, keyword_points=rankings, root_value=salary_bearable,
+                  locations_desired=configs.LOCATIONS_DESIRED if locations_primary is None else locations_primary,
+                  locations_secodary=configs.LOCATIONS_SECONDARY if locations_secondary is None else locations_secondary)
+    find_keywords_in_postings(candidates, ordered_keywords=keywords.get("description_keywords_order", []))
+    for p in candidates.values():
+        if p.get("locations") and not any(
+            "vienna" in location.lower() or re.search(r"\bwien\b", location, re.I)
+            for location in p["locations"]
+        ):
+            p["points"] = round(p["points"] - DANI_NON_VIENNA_PENALTY, 2)
+        p["guessed_required_languages"] = guess_required_languages(
+            p.get("title", "") + "\n" + p.get("description", "")
+        )
+        contributions = role_contributions(p.get("title", ""), p.get("description", ""))
+        p["role_families"] = [family for family, value in contributions.items() if value]
+        p.update(assess_language(p.get("title", "") + "\n" + p.get("description", ""), p.get("language"), language_policy))
+        p["points"] = round(p["points"] + p["language_adjustment"], 2)
+        p["profile_excluded"] = title_excluded(p, keywords)
+    candidates = dict(sorted(candidates.items(), key=lambda item: item[1]["points"], reverse=True))
+    added, removed = get_added_and_removed(candidates, deepcopy(previous_history))
+    for p in removed.values():
+        # Keep historical points for the established delta threshold, applying
+        # today's eligibility even to legacy history without language fields.
+        description = p.get("description") or ""
+        language = (analyze_text_language(description) or [None])[0]
+        p.update(assess_language((p.get("title") or "") + "\n" + description, language, language_policy))
+        p["profile_excluded"] = title_excluded(p, keywords)
+    history = merge_observations(candidates, previous_history)
 
+    def select(postings):
+        selected = {k: p for k, p in postings.items()
+                    if not p.get("language_excluded") and not p.get("profile_excluded")
+                    and (threshold is None or p.get("points", 0) >= threshold)}
+        return apply_filters_transformations(selected, transformations=transformations or [])
 
-def apply_candidate_filter():
-    """Select broad profile candidates from universal postings.
-
-    Candidate filtering answers:
-    - Could this posting belong to this profile?
-    - Should this posting be added to the profile history?
-
-    This should be broader than the final output filter.
-
-    Placeholder only.
-    """
-
-
-def merge_candidates_into_profile_history():
-    """Update profile history with newly routed candidates.
-
-    Planned responsibilities:
-    - Keep candidates even when they later receive low scores.
-    - Preserve first/last collected dates.
-    - Preserve profile-specific fields such as score history if useful later.
-
-    Placeholder only.
-    """
-
-
-def score_profile_candidates():
-    """Apply profile-specific scoring to candidates.
-
-    Scoring belongs here, not in universal processing, because the same posting
-    can receive different scores for tech, legal, tn, dani, or future profiles.
-
-    Placeholder only.
-    """
-
-
-def apply_selection_filter():
-    """Select final profile postings for current outputs.
-
-    Selection filtering answers:
-    - Is this posting relevant enough to show now?
-    - Does it pass thresholds, date rules, exclusions, and manual profile rules?
-
-    Placeholder only.
-    """
-
-
-def compare_profile_selected_postings():
-    """Compare selected current profile postings with previous profile state.
-
-    Placeholder only.
-    """
-
-
-def save_profile_history():
-    """Save profile candidate history, including profile scores.
-
-    Placeholder only.
-    """
-
-
-def save_profile_current_and_newly_added():
-    """Save selected current and newly-added profile postings.
-
-    Placeholder only.
-    """
-
-
-def derive_profile_postings():
-    """Top-level profile derivation orchestration.
-
-    Planned flow:
-    1. Load universal current postings.
-    2. Load profile history.
-    3. Apply candidate filter.
-    4. Merge candidates into profile history.
-    5. Score profile candidates.
-    6. Save profile history.
-    7. Apply selection filter.
-    8. Compare selected current postings with previous selected postings.
-    9. Save profile current and newly-added files.
-    10. Hand selected postings to output generation.
-
-    Placeholder only.
-    """
+    if previous_history and postings_history_filename:
+        baseline = Path(path) / ("migration_baseline_" + datetime.now().strftime("%Y-%m-%d") + ".json")
+        if not any(Path(path).glob("migration_baseline_*.json")):
+            files_io.save_data(previous_history, path=path, name=baseline.name, with_timestamp=False)
+    for filename, data in ((current_postings_filename, select(candidates) if only_thresholded_stored else candidates),
+                           (postings_history_filename, history),
+                           (newly_added_postings_filename, select(added) if only_thresholded_stored else added)):
+        if filename:
+            files_io.save_data(data, path=path, name=filename, with_timestamp=False)
+    if not efficient_storing:
+        files_io.save_data(candidates, path=path, name="postings", with_timestamp=True)
+    results = select(candidates)
+    companies = list(dict.fromkeys(p.get("company") for p in results.values()
+                     if any("wien" in loc.lower() or "vienna" in loc.lower() for loc in p.get("locations", []) or [])))
+    return {"results": results, "added": select(added), "removed": select(removed),
+            "companies": companies, "excel_file_path": None}

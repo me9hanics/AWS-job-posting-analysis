@@ -1,6 +1,6 @@
 # B26 — Create `data/load.py`
 
-Status: todo · Milestone: M5 Data layer · Phase 5 · Size: S
+Status: done · Milestone: M5 Data layer · Phase 5 · Size: S
 
 - Depends on: B03
 - Files: `src/jobscraping/data/load.py`, `src/jobscraping/pipelines/store_universal.py`

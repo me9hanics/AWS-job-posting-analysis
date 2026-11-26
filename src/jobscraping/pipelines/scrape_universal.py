@@ -2,6 +2,7 @@
 
 from jobscraping.acquisition.collector import failure_message, run_collection
 from jobscraping.config.models import CollectionConfig
+from jobscraping.data.load import load_postings
 from jobscraping.pipelines.collecting import (
     KEYWORDS,
     RANKINGS,
@@ -11,7 +12,6 @@ from jobscraping.pipelines.collecting import (
     validate_postings_quality,
 )
 from jobscraping.pipelines.store_universal import (
-    load_postings,
     save_incomplete_run,
     store_universal_postings,
 )

@@ -4,7 +4,7 @@ from copy import deepcopy
 from datetime import date, datetime
 from pathlib import Path
 
-from jobscraping.io.files_io import load_file_if_str, save_data
+from jobscraping.data.load import load_postings, save_json
 from jobscraping.processing.attributes import merge_matched_titlewords
 from jobscraping.processing.postings_utils import factual_postings
 
@@ -27,11 +27,6 @@ def _last_modified_on(old, posting):
         return posting.get("collected_on")
     return (old.get("last_modified_on") or old.get("last_collected_on")
             or old.get("collected_on") or posting.get("collected_on"))
-
-
-def load_postings(path, filename):
-    file = Path(path) / filename
-    return load_file_if_str(str(file), "dict") if file.exists() else {}
 
 
 def merge_observations(current, previous):
@@ -59,8 +54,8 @@ def merge_observations(current, previous):
 
 
 def save_incomplete_run(postings, path, error):
-    save_data({"error": str(error), "postings": factual_postings(postings)},
-              path=str(Path(path)) + "/", name="incomplete_run_" + datetime.now().strftime("%Y-%m-%d-%H-%M-%S-%f"),
+    save_json({"error": str(error), "postings": factual_postings(postings)},
+              path, "incomplete_run_" + datetime.now().strftime("%Y-%m-%d-%H-%M-%S-%f"),
               with_timestamp=False)
 
 
@@ -74,5 +69,5 @@ def store_universal_postings(postings, path, scope):
                            ("postings_history.json", history),
                            ("newly_added_postings.json", {k: current[k] for k in added_ids}),
                            ("collection_scope.json", scope)):
-        save_data(data, path=str(Path(path)) + "/", name=filename, with_timestamp=False)
+        save_json(data, path, filename, with_timestamp=False)
     return current

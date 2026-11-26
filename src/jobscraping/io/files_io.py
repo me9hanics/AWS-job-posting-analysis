@@ -4,8 +4,10 @@ import json
 import os
 import time
 from datetime import datetime
-from jobscraping.config.configs import RELATIVE_POSTINGS_PATH
+from pathlib import Path
 from typing import Any
+
+from jobscraping.config.configs import RELATIVE_POSTINGS_PATH
 
 def save_list(list_: list, filename: str) -> None:
     """
@@ -27,7 +29,7 @@ def save_data(
     name: str = "",
     with_timestamp: bool = True,
     verbose: bool = False,
-) -> None:
+) -> Path:
     """
     Save data to a JSON file, optionally with a date in the name.
     
@@ -39,7 +41,7 @@ def save_data(
     verbose (bool): Whether to print a message if the data type is not supported.
 
     Returns:
-    None
+    Path: the path that was written.
     """
     if not os.path.exists(path):
         os.makedirs(path)
@@ -50,12 +52,14 @@ def save_data(
         name = f"{name}_{date}"
     if not name.endswith(".json"):
         name += ".json"
-    with open(f"{path}{name}", "w", encoding="utf-8") as file_obj:
-        if type(data) in [dict, list, str]:
+    target = Path(f"{path}{name}")
+    if type(data) in [dict, list, str]:
+        with open(target, "w", encoding="utf-8") as file_obj:
             json.dump(data, file_obj, indent=4, ensure_ascii=False)
-        else:
-            if verbose:
-                print(f"Could not save data of type {type(data)}")
+    else:
+        if verbose:
+            print(f"Could not save data of type {type(data)}")
+    return target
 
 def load_file_if_str(file: str | Any, type_: str = "dict") -> object:
     """
