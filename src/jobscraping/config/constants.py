@@ -37,6 +37,9 @@ CURRENT_POSTINGS_FILENAME = "current_postings.json"
 NEWLY_ADDED_POSTINGS_FILENAME = "newly_added_postings.json"
 POSTINGS_HISTORY_FILENAME = "postings_history.json"
 
+SCHEMA_VERSION = 1
+VAULT_META_FILENAME = "vault_meta.json"
+
 # ============================================================================
 # WEBSITE-SPECIFIC SCRAPING CONFIGURATION
 # ============================================================================

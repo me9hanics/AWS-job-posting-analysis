@@ -2,12 +2,24 @@
 
 import json
 import os
-import time
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 from jobscraping.config.configs import RELATIVE_POSTINGS_PATH
+
+
+def _write_json_atomic(target: Path, data: Any) -> None:
+    """Write JSON to a sibling temp file, then swap it into place."""
+    tmp = target.with_name(target.name + ".tmp")
+    try:
+        with open(tmp, "w", encoding="utf-8") as file_obj:
+            json.dump(data, file_obj, indent=4, ensure_ascii=False)
+        os.replace(tmp, target)
+    except Exception:
+        tmp.unlink(missing_ok=True)
+        raise
+
 
 def save_list(list_: list, filename: str) -> None:
     """
@@ -20,8 +32,7 @@ def save_list(list_: list, filename: str) -> None:
     Returns:
     None
     """
-    with open(filename, "w", encoding="utf-8") as file_obj:
-        json.dump(list_, file_obj, indent=4, ensure_ascii=False)
+    _write_json_atomic(Path(filename), list_)
 
 def save_data(
     data: dict | list | str,
@@ -41,21 +52,20 @@ def save_data(
     verbose (bool): Whether to print a message if the data type is not supported.
 
     Returns:
-    Path: the path that was written.
+    Path: the target path for the data.
     """
     if not os.path.exists(path):
         os.makedirs(path)
     if not name:
         name = "postings"
     if with_timestamp:
-        date = time.strftime("%Y-%m-%d-%H-%M-%S")
+        date = datetime.now(UTC).strftime("%Y-%m-%d-%H-%M-%S")
         name = f"{name}_{date}"
     if not name.endswith(".json"):
         name += ".json"
     target = Path(f"{path}{name}")
     if type(data) in [dict, list, str]:
-        with open(target, "w", encoding="utf-8") as file_obj:
-            json.dump(data, file_obj, indent=4, ensure_ascii=False)
+        _write_json_atomic(target, data)
     else:
         if verbose:
             print(f"Could not save data of type {type(data)}")

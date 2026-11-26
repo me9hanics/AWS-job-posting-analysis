@@ -1,8 +1,10 @@
 """Load and persist posting records at relative vault paths."""
 
+from datetime import UTC, datetime
 from pathlib import Path
 
-from jobscraping.io.files_io import load_file_if_str, save_data, save_list
+from jobscraping.config.constants import SCHEMA_VERSION, VAULT_META_FILENAME
+from jobscraping.io.files_io import load_file_if_str, save_data
 
 
 def load_postings(path, filename):
@@ -16,11 +18,21 @@ def save_json(data, path, filename, *, with_timestamp: bool = False) -> Path:
                      with_timestamp=with_timestamp)
 
 
+def save_vault_meta(path, updated_at=None) -> Path:
+    """Write the vault's schema marker; return its path."""
+    if updated_at is None:
+        updated_at = datetime.now(UTC).isoformat()
+    return save_json({"schema_version": SCHEMA_VERSION, "updated_at": updated_at},
+                     path, VAULT_META_FILENAME)
+
+
+def load_vault_meta(path) -> dict:
+    """Return the vault's schema marker, or {} when the vault has none."""
+    return load_postings(path, VAULT_META_FILENAME)
+
+
 def save_posting_set(records, path, filename) -> Path:
-    """Write a posting set as one JSON artifact; return its path."""
-    target = Path(path) / filename
-    target.parent.mkdir(parents=True, exist_ok=True)
-    if isinstance(records, list):
-        save_list(records, filename=str(target))
-        return target
-    return save_json(records, path, filename)
+    """Write a posting set plus the vault meta; return the posting file's path."""
+    target = save_json(records, path, filename)
+    save_vault_meta(path)
+    return target
