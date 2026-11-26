@@ -1,4 +1,4 @@
-"""Utilities for filtering, comparing, and enriching postings data."""
+﻿"""Utilities for filtering, comparing, and enriching postings data."""
 
 import datetime
 import os
@@ -17,9 +17,11 @@ from jobscraping.processing.attributes import (
 from jobscraping.processing.language_requirements import guess_required_languages
 from jobscraping.processing.transformations import apply_filters_transformations as apply_filters_transformations_func
 from jobscraping.utils.datastruct_utils import sort_dict_by_key, get_nested_dict_keys
+from jobscraping.data.merge import ALWAYS_FRESH_FIELDS
+from jobscraping.data.merge import has_value as _has_value
 
 
-CACHE_ALWAYS_FRESH_FIELDS = {"collected_on", "date", "isActive", "url"}
+CACHE_ALWAYS_FRESH_FIELDS = set(ALWAYS_FRESH_FIELDS)
 RAW_POSTING_FIELDS = {
     "title", "company", "description", "source", "salary", "salary_guessed",
     "salary_monthly_guessed", "locations", "first_collected_on", "last_collected_on",
@@ -34,10 +36,6 @@ INCOMPLETE_HISTORY_REPAIR_FIELDS = {
     "language",
     "points",
 }
-
-
-def _has_value(value):
-    return value is not None and value != "" and value != [] and value != {}
 
 
 def factual_postings(postings):

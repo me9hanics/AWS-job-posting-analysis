@@ -152,5 +152,220 @@
       "last_modified_on": "2025-02-01",
       "last_collected_on": "2025-03-10"
     }
+  },
+  "empty_scalar_keeps_stored_value": {
+    "previous": {
+      "test1": {
+        "id": "1",
+        "source": "test",
+        "title": "Data Engineer",
+        "description": "Build the platform.",
+        "collected_on": "2025-03-01",
+        "first_collected_on": "2025-03-01",
+        "last_collected_on": "2025-03-01",
+        "timespan_days": 0,
+        "last_modified_on": "2025-03-01"
+      }
+    },
+    "current": {
+      "test1": {
+        "id": "1",
+        "source": "test",
+        "title": "Data Engineer",
+        "description": "",
+        "collected_on": "2025-03-10"
+      }
+    },
+    "expected": {
+      "description": "Build the platform.",
+      "last_modified_on": "2025-03-01",
+      "last_collected_on": "2025-03-10"
+    }
+  },
+  "empty_list_keeps_stored_value": {
+    "previous": {
+      "test1": {
+        "id": "1",
+        "source": "test",
+        "title": "Data Engineer",
+        "description": "Build the platform.",
+        "locations": ["Wien"],
+        "collected_on": "2025-03-01",
+        "first_collected_on": "2025-03-01",
+        "last_collected_on": "2025-03-01",
+        "timespan_days": 0,
+        "last_modified_on": "2025-03-01"
+      }
+    },
+    "current": {
+      "test1": {
+        "id": "1",
+        "source": "test",
+        "title": "Data Engineer",
+        "description": "Build the platform.",
+        "locations": [],
+        "collected_on": "2025-03-10"
+      }
+    },
+    "expected": {
+      "locations": ["Wien"],
+      "last_collected_on": "2025-03-10"
+    }
+  },
+  "false_replaces_stored_value": {
+    "previous": {
+      "test1": {
+        "id": "1",
+        "source": "test",
+        "title": "Data Engineer",
+        "description": "Build the platform.",
+        "isHomeOffice": true,
+        "collected_on": "2025-03-01",
+        "first_collected_on": "2025-03-01",
+        "last_collected_on": "2025-03-01",
+        "timespan_days": 0,
+        "last_modified_on": "2025-03-01"
+      }
+    },
+    "current": {
+      "test1": {
+        "id": "1",
+        "source": "test",
+        "title": "Data Engineer",
+        "description": "Build the platform.",
+        "isHomeOffice": false,
+        "collected_on": "2025-03-10"
+      }
+    },
+    "expected": {
+      "isHomeOffice": false,
+      "last_collected_on": "2025-03-10"
+    }
+  },
+  "zero_replaces_stored_value": {
+    "previous": {
+      "test1": {
+        "id": "1",
+        "source": "test",
+        "title": "Data Engineer",
+        "description": "Build the platform.",
+        "salary": 75000,
+        "collected_on": "2025-03-01",
+        "first_collected_on": "2025-03-01",
+        "last_collected_on": "2025-03-01",
+        "timespan_days": 0,
+        "last_modified_on": "2025-03-01"
+      }
+    },
+    "current": {
+      "test1": {
+        "id": "1",
+        "source": "test",
+        "title": "Data Engineer",
+        "description": "Build the platform.",
+        "salary": 0,
+        "collected_on": "2025-03-10"
+      }
+    },
+    "expected": {
+      "salary": 0,
+      "last_collected_on": "2025-03-10"
+    }
+  },
+  "empty_derived_value_replaces": {
+    "previous": {
+      "test1": {
+        "id": "1",
+        "source": "test",
+        "title": "Data Engineer",
+        "description": "Build the platform.",
+        "language": "en",
+        "guessed_required_languages": ["en"],
+        "salary_guessed": true,
+        "salary_monthly_guessed": 6250,
+        "collected_on": "2025-03-01",
+        "first_collected_on": "2025-03-01",
+        "last_collected_on": "2025-03-01",
+        "timespan_days": 0,
+        "last_modified_on": "2025-03-01"
+      }
+    },
+    "current": {
+      "test1": {
+        "id": "1",
+        "source": "test",
+        "title": "Data Engineer",
+        "description": "Build the platform.",
+        "language": null,
+        "guessed_required_languages": [],
+        "salary_guessed": null,
+        "salary_monthly_guessed": null,
+        "collected_on": "2025-03-10"
+      }
+    },
+    "expected": {
+      "language": null,
+      "guessed_required_languages": [],
+      "salary_guessed": null,
+      "salary_monthly_guessed": null,
+      "last_collected_on": "2025-03-10"
+    }
+  },
+  "empty_title_does_not_move_last_modified_on": {
+    "previous": {
+      "test1": {
+        "id": "1",
+        "source": "test",
+        "title": "Data Engineer",
+        "description": "Build the platform.",
+        "collected_on": "2025-03-01",
+        "first_collected_on": "2025-03-01",
+        "last_collected_on": "2025-03-01",
+        "timespan_days": 0,
+        "last_modified_on": "2025-03-01"
+      }
+    },
+    "current": {
+      "test1": {
+        "id": "1",
+        "source": "test",
+        "title": "",
+        "description": "Build the platform.",
+        "collected_on": "2025-03-10"
+      }
+    },
+    "expected": {
+      "title": "Data Engineer",
+      "last_modified_on": "2025-03-01",
+      "last_collected_on": "2025-03-10"
+    }
+  },
+  "absent_title_does_not_move_last_modified_on": {
+    "previous": {
+      "test1": {
+        "id": "1",
+        "source": "test",
+        "title": "Data Engineer",
+        "description": "Build the platform.",
+        "collected_on": "2025-03-01",
+        "first_collected_on": "2025-03-01",
+        "last_collected_on": "2025-03-01",
+        "timespan_days": 0,
+        "last_modified_on": "2025-03-01"
+      }
+    },
+    "current": {
+      "test1": {
+        "id": "1",
+        "source": "test",
+        "description": "Build the platform.",
+        "collected_on": "2025-03-10"
+      }
+    },
+    "expected": {
+      "title": "Data Engineer",
+      "last_modified_on": "2025-03-01",
+      "last_collected_on": "2025-03-10"
+    }
   }
 }
