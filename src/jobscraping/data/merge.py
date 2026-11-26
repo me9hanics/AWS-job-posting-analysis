@@ -3,6 +3,8 @@
 from copy import deepcopy
 from datetime import date
 
+from jobscraping.data.compare import get_added_and_removed
+
 # A field belongs to exactly one group; anything unlisted is an observed fact.
 DERIVED_FIELDS = ("language", "guessed_required_languages",
                   "salary_guessed", "salary_monthly_guessed")
@@ -99,5 +101,5 @@ def merge_observations(current, previous):
 def rebuild_history(current, previous):
     """Merge current observations into history; return (history, newly added)."""
     history = merge_observations(current, previous)
-    added = {key: posting for key, posting in current.items() if key not in previous}
+    added, _removed = get_added_and_removed(current, previous)
     return history, added

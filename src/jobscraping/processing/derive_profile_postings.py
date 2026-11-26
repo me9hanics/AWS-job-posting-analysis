@@ -10,13 +10,14 @@ from jobscraping.config.constants import (
     CURRENT_POSTINGS_FILENAME, NEWLY_ADDED_POSTINGS_FILENAME, POSTINGS_HISTORY_FILENAME,
 )
 from jobscraping.data.load import load_postings
-from jobscraping.io import files_io
 from jobscraping.data.merge import merge_observations
+from jobscraping.io import files_io
 from jobscraping.processing.attributes import analyze_postings_language, analyze_text_language, find_keywords_in_postings, rank_postings
 from jobscraping.processing.language_requirements import guess_required_languages
 from jobscraping.processing.postings_utils import factual_postings, get_added_and_removed
 from jobscraping.processing.transformations import apply_filters_transformations
 from jobscraping.profiles.dani import DANI_NON_VIENNA_PENALTY, DANI_PHRASES, DANI_KEYWORD_SCORING, DANI_SALARY_BEARABLE, assess_language, is_candidate, role_contributions, title_excluded
+from jobscraping.utils.datastruct_utils import sort_dict_by_key
 
 
 def derive_profile_postings(
@@ -42,6 +43,10 @@ def derive_profile_postings(
             previous_file = files_io.get_filename_from_dir(path, index=-1)
         previous_history = load_postings(path, previous_file) if previous_file else {}
     previous_history = deepcopy(previous_history)
+    previous_for_diff = deepcopy(previous_history)
+    for posting in previous_for_diff.values():
+        if posting.get("points") is None:
+            posting["points"] = 0
     candidates = {k: p for k, p in factual_postings(raw_postings).items() if is_candidate(p, keywords)}
     analyze_postings_language(candidates)
     rank_postings(candidates, keyword_points=rankings, root_value=salary_bearable,
@@ -63,7 +68,9 @@ def derive_profile_postings(
         p["points"] = round(p["points"] + p["language_adjustment"], 2)
         p["profile_excluded"] = title_excluded(p, keywords)
     candidates = dict(sorted(candidates.items(), key=lambda item: item[1]["points"], reverse=True))
-    added, removed = get_added_and_removed(candidates, deepcopy(previous_history))
+    added, removed = get_added_and_removed(candidates, previous_for_diff)
+    added = sort_dict_by_key(added, key="points", descending=True) if added else {}
+    removed = sort_dict_by_key(removed, key="points", descending=True) if removed else {}
     for p in removed.values():
         # Keep historical points for the established delta threshold, applying
         # today's eligibility even to legacy history without language fields.

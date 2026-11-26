@@ -1,15 +1,19 @@
 # B28 — Make the diff neutral
 
-Status: todo · Milestone: M5 Data layer · Phase 5 · Size: S
+Status: done · Milestone: M5 Data layer · Phase 5 · Size: S
 
 - Depends on: B27
 - Files: `src/jobscraping/data/compare.py`,
-  `src/jobscraping/processing/postings_utils.py`
+  `src/jobscraping/processing/postings_utils.py`,
+  `src/jobscraping/processing/derive_profile_postings.py`
 
 ## Do
 
-1. Move `get_added_and_removed` into `data/compare.py`.
-2. Remove the `points = 0` injection; profile derivation adds its own default.
+1. Move `get_added_and_removed` into `data/compare.py` as a pure diff over
+   records; keep a path-tolerant wrapper of the same name in `postings_utils`
+   for the legacy callers (Q16).
+2. Remove the `points = 0` injection and the `points` ordering; profile
+   derivation adds its own default and ordering so its output is unchanged.
 3. Add tests for added, removed and reappeared identities.
 
 ## Done when

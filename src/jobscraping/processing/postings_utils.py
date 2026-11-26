@@ -16,7 +16,8 @@ from jobscraping.processing.attributes import (
 )
 from jobscraping.processing.language_requirements import guess_required_languages
 from jobscraping.processing.transformations import apply_filters_transformations as apply_filters_transformations_func
-from jobscraping.utils.datastruct_utils import sort_dict_by_key, get_nested_dict_keys
+from jobscraping.utils.datastruct_utils import get_nested_dict_keys
+from jobscraping.data.compare import get_added_and_removed as neutral_diff
 from jobscraping.data.merge import ALWAYS_FRESH_FIELDS
 from jobscraping.data.merge import has_value as _has_value
 
@@ -126,38 +127,18 @@ def get_date_of_collection(value=None, filename=None, overwrite=False):
     return None
 
 def get_added_and_removed(new, previous):
-    """
-    Compare two lists and return the differences.
-    (If any of the lists are given as a string, it is interpreted as a file path,
-            and the list is loaded from the file.)
+    """Path-tolerant identity diff; ordering is left to the caller (Q16, B28).
 
-    Parameters:
-    new (list | str): The new list, that is being compared.
-    previous (list | str): The previous list, to compare against.
-    print_out (str): What to print out, if anything. Can be:
-        -"complete_lists": Print out the lists
-        -"only_lengths": Print out the lengths of the lists
-        -"none": Do not print out anything
-        -*string*: Interpreted as a key in dictionaries;
-                print out the value of that key for each item in both lists.
+    String arguments are read as dict-valued files. The diff itself is the
+    neutral one in ``jobscraping.data.compare`` and adds no profile field.
     """
     new = load_file_if_str(new, "dict")
     previous = load_file_if_str(previous, "dict")
-    
-    for posting in new.values():
-        if 'points' not in posting or posting['points'] is None:
-            posting['points'] = 0
-    for posting in previous.values():
-        if 'points' not in posting or posting['points'] is None:
-            posting['points'] = 0
-    
-    added_keys = list(set(new) - set(previous))
-    removed_keys = list(set(previous) - set(new))
-    added = {key: new[key] for key in added_keys}
-    removed = {key: previous[key] for key in removed_keys}
-    added = sort_dict_by_key(added, key="points", descending=True) if added else {}
-    removed = sort_dict_by_key(removed, key="points", descending=True) if removed else {}
-    return added, removed
+    return neutral_diff(
+        new if isinstance(new, dict) else {},
+        previous if isinstance(previous, dict) else {},
+    )
+
 
 def threshold_postings_by_points(postings, points_threshold = 0.01):
     """
