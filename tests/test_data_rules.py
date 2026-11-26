@@ -13,11 +13,13 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from jobscraping.pipelines.store_universal import merge_observations, store_universal_postings
-from jobscraping.processing.postings_utils import factual_postings, get_added_and_removed
-from jobscraping.scrapers import http
-from jobscraping.scrapers import KarriereAT
-
+from jobscraping.data.merge import merge_observations
+from jobscraping.pipelines.store_universal import store_universal_postings
+from jobscraping.processing.postings_utils import (
+    factual_postings,
+    get_added_and_removed,
+)
+from jobscraping.scrapers import KarriereAT, http
 
 FIXTURES = Path(__file__).with_name("fixtures")
 
@@ -31,6 +33,7 @@ EXPECTED_RAW_FIELDS = {
     "collected_on", "timespan_days", "matched_titlewords", "date", "id", "url",
     "isActive", "isHomeOffice", "employmentTypes", "snippet", "role",
     "requirements", "nice_to_have", "benefits", "last_modified_on",
+    "language", "guessed_required_languages",
 }
 
 
@@ -128,12 +131,13 @@ class MergeObservationsTests(unittest.TestCase):
             "Build and operate the data platform.",
         )
 
-    def test_empty_later_description_replaces_the_previous_one(self):
-        # Current behaviour, not the design rule: a later observation with an
-        # empty description still replaces the stored non-empty value. The
-        # design says "latest non-empty observation wins"; today there is no
-        # non-empty guard, so this pins the mechanical result.
-        self.assertEqual(self.history["karriere.at7818419"]["description"], "")
+    def test_empty_later_description_keeps_the_previous_one(self):
+        # B27a: an empty observation does not erase a stored fact, so the
+        # previous non-empty description survives.
+        self.assertEqual(
+            self.history["karriere.at7818419"]["description"],
+            "Keep the reports running.",
+        )
 
     def test_previous_scalar_survives_when_current_omits_it(self):
         self.assertEqual(self.history["karriere.at7818416"]["snippet"], "Python and SQL.")
@@ -199,6 +203,34 @@ class LastModifiedOnMergeTests(unittest.TestCase):
         self.assert_expected("empty_observation_of_empty_record",
                              self.merge("empty_observation_of_empty_record"))
 
+    def test_empty_scalar_keeps_stored_value(self):
+        self.assert_expected("empty_scalar_keeps_stored_value",
+                             self.merge("empty_scalar_keeps_stored_value"))
+
+    def test_empty_list_keeps_stored_value(self):
+        self.assert_expected("empty_list_keeps_stored_value",
+                             self.merge("empty_list_keeps_stored_value"))
+
+    def test_false_replaces_stored_value(self):
+        self.assert_expected("false_replaces_stored_value",
+                             self.merge("false_replaces_stored_value"))
+
+    def test_zero_replaces_stored_value(self):
+        self.assert_expected("zero_replaces_stored_value",
+                             self.merge("zero_replaces_stored_value"))
+
+    def test_empty_derived_value_replaces(self):
+        self.assert_expected("empty_derived_value_replaces",
+                             self.merge("empty_derived_value_replaces"))
+
+    def test_empty_title_does_not_move_last_modified_on(self):
+        self.assert_expected("empty_title_does_not_move_last_modified_on",
+                             self.merge("empty_title_does_not_move_last_modified_on"))
+
+    def test_absent_title_does_not_move_last_modified_on(self):
+        self.assert_expected("absent_title_does_not_move_last_modified_on",
+                             self.merge("absent_title_does_not_move_last_modified_on"))
+
     def test_legacy_record_without_any_stored_date_uses_the_observation_date(self):
         # No stored date resolves, but the observation itself is dated, so the
         # field must still have a value.
@@ -218,6 +250,15 @@ class LastModifiedOnMergeTests(unittest.TestCase):
 
         merged = merge_observations(copy.deepcopy(current), {})
 
+        self.assertNotIn("last_modified_on", merged["test1"])
+
+    def test_merge_owned_fields_are_never_taken_from_the_observation(self):
+        current = {"test1": {"id": "1", "source": "test", "title": "Data Engineer",
+                             "timespan_days": 5, "last_modified_on": "2025-02-01"}}
+
+        merged = merge_observations(copy.deepcopy(current), {})
+
+        self.assertNotIn("timespan_days", merged["test1"])
         self.assertNotIn("last_modified_on", merged["test1"])
 
 
@@ -269,9 +310,9 @@ class GetAddedAndRemovedTests(unittest.TestCase):
         self.assertNotIn("karriere.at7818416", self.added)
         self.assertNotIn("karriere.at7818416", self.removed)
 
-    def test_distinct_points_are_ordered_descending(self):
-        self.assertEqual(list(self.added)[0], "karriere.at7818418")
-        self.assertEqual(list(self.removed)[0], "karriere.at7818417")
+    def test_output_follows_input_insertion_order(self):
+        self.assertEqual(list(self.added), [k for k in self.current if k not in self.previous])
+        self.assertEqual(list(self.removed), [k for k in self.previous if k not in self.current])
 
     def test_equal_points_are_not_ordered(self):
         # Ties fall back to the iteration order of a set difference, which

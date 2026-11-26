@@ -1,197 +1,45 @@
-﻿"""Helpers for job posting attributes: salary parsing, scoring, keyword analysis."""
+"""Helpers for job posting attributes: scoring, keyword analysis and policy.
+
+Salary and text-language detection moved to ``data.salary`` and
+``data.language``; the names below are transitional re-exports and B44 removes
+the indirection.
+"""
 
 import re
-from typing import List, Callable, Any, Dict, Sequence
+from typing import Any, Callable, Dict, List
 
+from jobscraping.data.language import analyze_text_language
 from jobscraping.data.merge import merge_matched_titlewords
-
-
-DEFAULT_SALARY_KEYWORDS = {
-    "annual": (
-        "jährlich",
-        "yearly",
-        "per year",
-        "annual",
-        "jährige",
-        "pro jahr",
-        "p.a.",
-    ),
-    "monthly": ("monatlich", "monthly", "per month", "pro monat"),
-}
-DEFAULT_SALARY_REGEXES = (r"\d{6},\d{2}", r"\d{5},\d{2}", r"\d{6}", r"\d{5}")
-DEFAULT_DESCRIPTION_REGEXES = (
-    r"(Salary|Gehalt|Compensation|Vergütung):.*",
-    r"\b(Gross|Brutto|Net|Netto)\b:.*",
-    (
-        r"(\d{5}[.,]\d+)"
-        r"(?:(?!\d{5}[.,]?\d*).)*?\b(netto|brutto|gross)\b"
-    ),
-    (
-        r"(\d{2}[.,]\d{3}[.,]\d+)"
-        r"(?:(?!\d{2}[.,]\d{3}[.,]\d*).)*?\b(netto|brutto|gross)\b"
-    ),
-    (
-        r"(\d{4}[.,]\d+)"
-        r"(?:(?!\d{4}[.,]?\d*).)*?\b(netto|brutto|gross)\b"
-    ),
-    (
-        r"(\d{1}[.,]\d{3}[.,]\d+)"
-        r"(?:(?!\d{1}[.,]\d{3}[.,]\d*).)*?\b(netto|brutto|gross)\b"
-    ),
-    (
-        r"(\d{5})"
-        r"(?:(?!\d{5}).)*?\b(netto|brutto|gross)\b"
-    ),
-    (
-        r"(\d{2}[.,]\d{3})"
-        r"(?:(?!\d{2}[.,]\d{3}).)*?\b(netto|brutto|gross)\b"
-    ),
-    (
-        r"(\d{5}[.,]\d+)"
-        r"(?:(?!\d{5}[.,]?\d*).)*?\b(net|taxes|tax)\b"
-    ),
-    (
-        r"(\d{4}[.,]\d+)"
-        r"(?:(?!\d{4}[.,]?\d*).)*?\b(net|taxes|tax)\b"
-    ),
-    (
-        r"(\d{1}[.,]\d{3})"
-        r"(?:(?!\d{1}[.,]\d{3}).)*?\b(netto|brutto|gross)\b"
-    ),
-    r"\d{4,5}[.,]\d{2}",
-    r"(\d{5})(?:(?!\d{5}).)*?\b(net|taxes|tax)\b",
+from jobscraping.data.salary import (
+    DEFAULT_DESCRIPTION_REGEXES,
+    DEFAULT_SALARY_KEYWORDS,
+    DEFAULT_SALARY_REGEXES,
+    salary_from_description,
+    salary_from_text,
+    salary_number_from_str,
+    salary_regex,
 )
 
-def salary_number_from_str(
-    text: str,
-    keywords: Sequence[str] | None = None,
-    remove_chars: Sequence[str] = (".",),
-    lengths: Sequence[int] | None = None,
-):
-    """Extract a salary number from free text using optional keywords."""
-    if not isinstance(text, str):
-        return None
-    if lengths is None:
-        lengths = (6, 5)
-    if keywords is None:
-        keywords = []
-    for char in remove_chars:
-        text_cleaned = text.replace(char, "")
-    if not keywords:
-        for length in lengths:
-            #Search for length-digit numbers
-            value = re.search(rf'\d{{{length}}}', text_cleaned)
-            if value:
-                return int(value.group())
-    else:
-        if any(keyword in text for keyword in keywords):
-            for length in lengths:
-                value = re.search(rf'\d{{{length}}}', text_cleaned)
-                if value:
-                    return int(value.group())
-    return None
+__all__ = [
+    "DEFAULT_DESCRIPTION_REGEXES",
+    "DEFAULT_SALARY_KEYWORDS",
+    "DEFAULT_SALARY_REGEXES",
+    "add_matched_titleword",
+    "analyze_postings_language",
+    "analyze_text_language",
+    "check_locations",
+    "find_keywords",
+    "find_keywords_in_postings",
+    "merge_matched_titlewords",
+    "rank_postings",
+    "salary_from_description",
+    "salary_from_text",
+    "salary_number_from_str",
+    "salary_points",
+    "salary_regex",
+    "score_text_nested",
+]
 
-def salary_regex(
-    text: str,
-    regexes: Sequence[str] = DEFAULT_SALARY_REGEXES,
-    decimal_separator: str = ",",
-):
-    """Extract a salary number using a list of regex patterns."""
-    for regex in regexes:
-        value = re.search(regex, text)
-        if value:
-            try:
-                return int(value.group())
-            except ValueError:
-                return int(float(value.group().replace(decimal_separator, ".")))
-    return None
-
-def salary_from_text(
-    text: str,
-    keywords: Dict[str, Sequence[str]] | None = None,
-    clarity_comma_char: str = ".",
-    decimal_separator: str = ",",
-    conversion_rate: int = 12,
-    lengths: Sequence[int] | None = None, #(6, 5)
-):
-    """Parse salary numbers from a text string."""
-    if not isinstance(text, str):
-        return None
-    if keywords is None:
-        keywords = DEFAULT_SALARY_KEYWORDS
-    text = text.lower()
-    salary = {}
-    if "annual" in keywords:
-        value = salary_number_from_str(
-            text,
-            keywords["annual"],
-            remove_chars=[clarity_comma_char],
-            lengths=lengths,
-        )
-        if value:
-            salary["annual"] = value
-    if (not salary) and ("monthly" in keywords):
-        value = salary_regex(
-            text.replace(clarity_comma_char, ""),
-            decimal_separator=decimal_separator,
-            regexes=[rf"\d{{4}}{decimal_separator}\d{{2}}"],
-        )
-        if not value:
-            value = salary_number_from_str(
-                text,
-                keywords["monthly"],
-                remove_chars=[clarity_comma_char],
-                lengths=[4],
-            )
-        if value:
-            salary["monthly"] = value
-    if not salary:
-        value = salary_regex(
-            text.replace(clarity_comma_char, ""),
-            decimal_separator=decimal_separator,
-            regexes=[
-                rf"\d{{6}}{decimal_separator}\d{{2}}",
-                rf"\d{{5}}{decimal_separator}\d{{2}}",
-                r"\d{6}",
-                r"\d{5}",
-            ],
-        )
-        if value:
-            salary["annual"] = value
-        else:
-            value = salary_regex(
-                text.replace(clarity_comma_char, ""),
-                decimal_separator=decimal_separator,
-                regexes=[rf"\d{{4}}{decimal_separator}\d{{2}}", r"\d{4}"],
-            )
-            if value:
-                salary["monthly"] = value
-
-    #Conversion
-    if list(salary.keys()) == ["annual"]:
-        salary["monthly"] = int(salary["annual"] / conversion_rate)
-    elif list(salary.keys()) == ["monthly"]:
-        salary["annual"] = int(salary["monthly"] * conversion_rate)
-
-    if not salary: #perhaps could be that salary is 0
-        return None
-    return salary
-
-def salary_from_description(
-    text,
-    regexes: Sequence[str] = DEFAULT_DESCRIPTION_REGEXES,
-    method: Callable = salary_from_text,
-    **kwargs,
-):
-    """Find salary content in text using regex sections."""
-    if not isinstance(text, str):
-        return None
-    for regex in regexes:
-        salary_section = re.search(regex, text, flags=re.IGNORECASE)
-        if salary_section:
-            salary = method(salary_section.group(), **kwargs)
-            return salary
-    return None
 
 def salary_points(
     salary,
@@ -408,71 +256,7 @@ def add_matched_titleword(posting_data, titleword):
         matched.append(titleword)
     return posting_data
 
-def analyze_text_language(texts) -> list:
-    """Returns a list of 'en', 'de', or None for each text in texts."""
-    #Separated string sets and regexes for speed
-    english_words = {
-        'university', 'course', 'work', 'grade', 'and', 'for', 'with', 'develop', 'implement',
-        'design', 'build', 'create', 'product', 'manage', 'lead', 'analyze', 'talk', 'need',
-        'presenting', 'creating', 'adding', 'able', 'successful', 'have', 'has', 'had', 'will',
-        'would', 'should', 'could', 'good', 'better', 'best', 'great', 'way', 'ways', 'our',
-        'your', 'their', 'this', 'that', 'these', 'those', 'are', 'is', 'was', 'were', 'been',
-        'being', 'we', 'you', 'they', 'who', 'which', 'what', 'when', 'where', 'some', 'any',
-        'many', 'much', 'more', 'most', 'through', 'about', 'into', 'from', 'within', 'provide',
-        'support', 'help', 'make', 'take', 'get', 'including', 'such', 'both', 'each', 'other',
-        'looking', 'seeking', 'join', 'grow', 'learn'
-    }
-    german_words = {
-        'der', 'das', 'den', 'dem', 'des', 'ein', 'eine', 'einen', 'einem', 'einer', 'eines',
-        'und', 'oder', 'aber', 'denn', 'weil', 'dass', 'ist', 'sind', 'war', 'waren', 'wird',
-        'werden', 'wurde', 'wurden', 'haben', 'hat', 'hatte', 'hatten', 'abteilung', 'gegen',
-        'wart', 'entwickl', 'arbeit', 'implementier', 'optimier', 'automatisier', 'sie', 'ihr',
-        'ihre', 'ihren', 'ihrem', 'wir', 'unser', 'unsere', 'für', 'mit', 'zu', 'von', 'aus',
-        'bei', 'nach', 'im', 'an', 'auf', 'auch', 'nur', 'schon', 'noch', 'nicht', 'kein',
-        'keine', 'durch', 'über', 'unter', 'sehr', 'mehr', 'alle', 'jede', 'jeder', 'suchen',
-        'sucht', 'bieten', 'bietet', 'sowie', 'als', 'wenn', 'wann', 'wie', 'was', 'wo'
-    }
-    english_regex = [
-        re.compile(r'\bgrade:\b'),
-        re.compile(r'\bpresenting\b'),
-        re.compile(r'\bcreating\b'),
-        re.compile(r'\badding\b'),
-    ]
-    german_regex = [
-        re.compile(r'abteilung'),
-        re.compile(r'gegen'),
-        re.compile(r'wart'),
-        re.compile(r'\bentwickl'),
-        re.compile(r'\barbeit\b'),
-        re.compile(r'\bimplementier'),
-        re.compile(r'\boptimier'),
-        re.compile(r'\bautomatisier'),
-    ]
-    if ((not isinstance(texts, list)) and (not isinstance(texts, str))) or not texts:
-        return []
-    if isinstance(texts, str):
-        texts = [texts]
-    results = []
-    for text in texts:
-        english_count = 0
-        german_count = 0
-        text_lower = text.lower()
-        words = set(re.findall(r'\b\w+\b', text_lower))
-        english_count += len(words & english_words)
-        german_count += len(words & german_words)
-        for pattern in english_regex:
-            if pattern.search(text_lower):
-                english_count += 1
-        for pattern in german_regex:
-            if pattern.search(text_lower):
-                german_count += 1
-        if english_count > german_count:
-            results.append('en')
-        elif german_count > english_count:
-            results.append('de')
-        else:
-            results.append(None)
-    return results
+
 def analyze_postings_language(
     postings: Dict,
     description_key="description",

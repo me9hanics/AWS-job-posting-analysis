@@ -1,21 +1,30 @@
 # B29 — Move generic enrichment and remove the scraper import
 
-Status: todo · Milestone: M5 Data layer · Phase 5 · Size: M
+Status: done · Milestone: M5 Data layer · Phase 5 · Size: M
 
 - Depends on: B27, B28
-- Files: `src/jobscraping/data/enrich.py`,
-  `src/jobscraping/processing/postings_utils.py`
+- Files: `src/jobscraping/data/enrich.py`, `src/jobscraping/data/language.py`,
+  `src/jobscraping/data/salary.py`, `src/jobscraping/processing/postings_utils.py`,
+  `src/jobscraping/processing/attributes.py`,
+  `src/jobscraping/processing/language_requirements.py`
 
 ## Do
 
-1. Move `enrich_postings` and its re-processing behaviour into `data/enrich.py`.
-2. Remove the `BaseScraper` import from `processing/postings_utils.py`.
+1. Move the detection primitives down into `data`: `analyze_text_language`
+   and the `language_requirements` content to `data/language.py`; salary
+   detection to `data/salary.py`. `data` must not import `processing`.
+   `processing` re-exports the old public names as shims; B44 removes them.
+2. Move `enrich_postings` into `data/enrich.py` without the `BaseScraper`
+   import or profile reprocessing; it has no callers today, so no reprocessing
+   hook is carried over.
 3. Keep enrichment idempotent: rerun replaces derived values, never appends.
-4. Add the profile-neutral annotation pass (Q29): fill `language`
+4. Move `get_date_of_collection` here from `postings_utils`; enrichment is its
+   only consumer.
+5. Add the profile-neutral annotation pass (Q29): fill `language`
    (`analyze_text_language`) and `guessed_required_languages`
    (`guess_required_languages`) on records with a description, replacing previous
    values rather than merging.
-5. Let the annotations survive the fact projection: add both names to
+6. Let the annotations survive the fact projection: add both names to
    `RAW_POSTING_FIELDS` (or its successor) so `factual_postings` keeps them on
    already-annotated records.
 

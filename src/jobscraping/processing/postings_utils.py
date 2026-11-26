@@ -1,11 +1,13 @@
-﻿"""Utilities for filtering, comparing, and enriching postings data."""
+"""Utilities for filtering, comparing, and enriching postings data."""
 
-import datetime
 import os
 import re
 from copy import deepcopy
 
-from jobscraping.config.configs import RELATIVE_POSTINGS_PATH, BASE_PHRASES
+from jobscraping.config.configs import RELATIVE_POSTINGS_PATH
+from jobscraping.data.compare import get_added_and_removed as neutral_diff
+from jobscraping.data.merge import ALWAYS_FRESH_FIELDS
+from jobscraping.data.merge import has_value as _has_value
 from jobscraping.io.files_io import load_file_if_str, load_list_items
 from jobscraping.processing.attributes import (
     analyze_postings_language,
@@ -15,12 +17,10 @@ from jobscraping.processing.attributes import (
     salary_from_text,
 )
 from jobscraping.processing.language_requirements import guess_required_languages
-from jobscraping.processing.transformations import apply_filters_transformations as apply_filters_transformations_func
+from jobscraping.processing.transformations import (
+    apply_filters_transformations as apply_filters_transformations_func,
+)
 from jobscraping.utils.datastruct_utils import get_nested_dict_keys
-from jobscraping.data.compare import get_added_and_removed as neutral_diff
-from jobscraping.data.merge import ALWAYS_FRESH_FIELDS
-from jobscraping.data.merge import has_value as _has_value
-
 
 CACHE_ALWAYS_FRESH_FIELDS = set(ALWAYS_FRESH_FIELDS)
 RAW_POSTING_FIELDS = {
@@ -29,6 +29,7 @@ RAW_POSTING_FIELDS = {
     "collected_on", "timespan_days", "matched_titlewords", "date", "id", "url",
     "isActive", "isHomeOffice", "employmentTypes", "snippet", "role",
     "requirements", "nice_to_have", "benefits", "last_modified_on",
+    "language", "guessed_required_languages",
 }
 INCOMPLETE_HISTORY_REPAIR_FIELDS = {
     "company",
@@ -114,18 +115,6 @@ def filter_postings(postings: dict, banned_words=None, banned_capital_words=None
         filtered_postings[_id] = posting
     return filtered_postings
 
-def get_date_of_collection(value=None, filename=None, overwrite=False):
-    """Infer collection date from a posting or filename when possible."""
-    if not overwrite and isinstance(value, dict) and ('collected_on' in value) and value['collected_on']:
-        return value['collected_on']
-    if filename and isinstance(filename, str):
-        match = re.search(r'20\d{2}-\d{2}-\d{2}', filename)
-        if match:
-            return match.group()
-    if filename and isinstance(filename, str) and os.path.exists(filename):
-        return str(datetime.datetime.fromtimestamp(os.path.getctime(filename)).date())
-    return None
-
 def get_added_and_removed(new, previous):
     """Path-tolerant identity diff; ordering is left to the caller (Q16, B28).
 
@@ -138,7 +127,6 @@ def get_added_and_removed(new, previous):
         new if isinstance(new, dict) else {},
         previous if isinstance(previous, dict) else {},
     )
-
 
 def threshold_postings_by_points(postings, points_threshold = 0.01):
     """
@@ -431,47 +419,6 @@ def process_data(
     postings = rank_method(postings, **kwargs)
     postings = keyword_finding_method(postings, description_key=description_key, **kwargs)
     postings = apply_filters_transformations(postings, transformations=transformations, **kwargs)
-    return postings
-
-def enrich_postings(
-    postings: str | dict,
-    filename=None,
-    overwrite=True,
-    keywords=None,
-    extra_keywords=None,
-    process_method=process_data,
-    **kwargs,
-):  # rankings = BASE_KEYWORD_SCORING,
-    """Add salary guesses and reprocess postings as needed."""
-    # Keep import inside function to avoid heavy scraper imports unless used.
-    from jobscraping.scrapers import BaseScraper  # pylint: disable=import-outside-toplevel
-    if keywords is None:
-        keywords = BASE_PHRASES
-    if extra_keywords is None:
-        extra_keywords = {}
-    if not process_method:
-        process_method = BaseScraper._process_data
-    if isinstance(postings, str):
-        filename = filename or postings
-
-    postings = load_file_if_str(postings, type_="dict")
-    scraper = BaseScraper(driver="skip", keywords=keywords, extra_keywords=extra_keywords)
-    for _posting_id, posting in postings.copy().items():
-        if 'salary' in posting.keys():
-            salary_read = scraper._salary_from_text(posting['salary'])
-        else:
-            salary_read = scraper._salary_from_description(posting.get("description", []), **kwargs)
-        if overwrite or ('salary_guessed' not in posting.keys()) or (not posting['salary_guessed']):
-            posting['salary_guessed'] = salary_read
-        if overwrite or ('salary_monthly_guessed' not in posting.keys()) or (not posting['salary_monthly_guessed']):
-            posting['salary_monthly_guessed'] = salary_read["monthly"] if salary_read else None
-
-        if 'collected_on' not in posting.keys() or (not posting['collected_on']): #don't overwrite
-            posting['collected_on'] = get_date_of_collection(value=posting, filename=filename, overwrite=False)
-        
-    #postings = scraper._find_keywords_in_postings(postings, sort=False, overwrite=overwrite, **kwargs)
-    #postings = scraper._rank_postings(postings, overwrite=overwrite, **kwargs)
-    postings = process_method(postings, overwrite=overwrite, sort=False, **kwargs)
     return postings
 
 def process_posting_soups(
