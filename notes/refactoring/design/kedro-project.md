@@ -75,6 +75,21 @@ A possible set of pipelines:
 | `outputs` | prepare rows → render Excel → render Markdown → optional email | regenerate deliverables |
 | `__default__` | optional; wire whatever the user wants end to end | end-to-end run |
 
+### One pipeline, differences in YAML
+
+A profile must not need its own pipeline module, node or helper function. What
+differs between profiles is:
+
+- `conf/` — parameters, catalog overrides and the `--params=profile:<name>`
+  value;
+- `profiles/<name>.py` — the few genuine profile functions, such as the
+  candidate rule, the scoring and role functions, the language policy and the
+  output options.
+
+Nothing else. A profile that seems to need a new function in `pipelines/` is a
+missing parameter or a profile function, not a new code path. This keeps Dani
+from being the shape every later profile is cut to (D26, B43).
+
 The collection pipeline may be sliced into several nodes. One monolithic
 `collect_universal` node is an option, not a requirement: slicing by stage
 (`load cache`, `collect`, `validate`, `store`) mirrors the current `_collect`

@@ -58,7 +58,7 @@ in parallel with B03–B05 once B02 is done.
 | M6 — Profiles | B32–B35 | Config plus functions; no profile import in derivation |
 | M7 — Stages | B36–B39 | Startable stages, spec checks, resume and failure artifacts |
 | M8 — Kedro | B40–B43 | Kedro reproduces the script path for collection and Dani |
-| M9 — Done | B44–B46 (incl. B45b) | No compatibility shims, docs build, lint and type clean, fresh-clone gate passes |
+| M9 — Done | B44–B46 (incl. B45b) | No compatibility shims or dead code, no profile traces in shared code, docs build, lint and type clean, fresh-clone gate passes |
 
 M1 and M2 are deliberately low-risk: apart from B03 (path resolution), they add
 tests and contracts without changing scraping or derivation. Do not skip them to
@@ -763,8 +763,9 @@ it.
   `src/jobscraping/processing/derive_profile_postings.py`
 - Do:
   1. Move the generic derivation body into `processing/derive.py`.
-  2. Accept `ProfileConfig` plus profile functions; remove Dani imports and
-     defaults.
+  2. Accept `ProfileConfig` plus profile functions; remove Dani imports, defaults
+     and hidden branches (the Vienna penalty, the migration-baseline write).
+     B44 re-checks the tree for surviving traces (D26).
   3. Keep the existing delta rules and output ordering.
   4. Consume `language` and `guessed_required_languages` from the input records
      when present; compute them only when missing, so legacy history still
@@ -935,26 +936,49 @@ parity checks; they do not prescribe node granularity.
   1. One parameterised derivation pipeline for every profile.
   2. Excel as a dataset; Markdown/email as side effects.
   3. Run the script path and Kedro path on the same inputs.
+  4. Add no Dani-only node and no Dani-only pipeline function. A profile differs
+     from another only in `conf/` (parameters, catalog overrides, `--params`)
+     plus its `profiles/<name>.py` functions, such as candidate and scoring
+     rules. If Dani needs behaviour no parameter expresses, add the parameter or
+     the profile function, not a branch on the profile name (D26).
 - Done when:
   - artifacts match byte-for-byte excluding timestamps;
   - `kedro run --pipeline=derivation --params=profile:dani` works;
-  - no profile constants live in pipeline modules.
+  - no profile constants live in pipeline modules, and no pipeline module holds
+    a function, node or branch that exists for one profile only; a second
+    profile run is a parameter/catalog change.
 
 ## Phase 9 — Cleanup and final gates
 
-### B44 — Remove compatibility code and stale modules
+### B44 — Remove compatibility code, dead code and stale traces
 
 - Depends on: B43
-- Size: M
+- Size: L
 - Files: `scrapers/sites.py` shim, empty modules, `pipelines/collecting.py`,
-  unused schedule scripts
+  unused schedule scripts, any module/function/constant nothing calls,
+  `processing/derive_profile_postings.py` and other shared modules
 - Do:
   1. Remove re-exports with no named caller (Q16).
   2. Archive or delete superseded entry points.
   3. Keep one documented way to run collection, derivation and outputs.
+  4. Delete what nothing calls: modules, functions, constants, parameters and
+     artifacts left from the old implementation. A deleted path is not a reason
+     to keep its helpers "just in case".
+  5. Remove old traces from code that stays: a deleted or untracked feature must
+     not survive as a default value, a hidden branch, a loose keyword argument
+     or a filename. Use neutral constants or parameters instead of one
+     profile's; profile rules live in `profiles/<name>.py` and values in
+     `conf/` (B32, B34). `processing/derive_profile_postings.py` is the example:
+     its `DANI_*` defaults, inline Vienna-penalty rule,
+     `migration_baseline_*.json` write, `efficient_storing` artifact and
+     misspelled/vestigial parameters are traces, not generic derivation (D26).
 - Done when:
   - no module is imported only for compatibility;
   - no duplicate scraper or empty placeholder remains;
+  - every remaining module, function, constant and parameter has a caller;
+  - no shared module names a profile or carries its constant, default, branch
+    or artifact name; derivation takes its rules from `ProfileConfig` and the
+    profile module only;
   - `basescraper.py` exposes no overridable helper and no `gather_data`
     template, and no site module overrides a base method (Q30);
   - the suite passes.
@@ -1000,7 +1024,8 @@ parity checks; they do not prescribe node granularity.
 - Files: all
 - Do:
   1. Run the full suite.
-  2. Run the import audit, duplicate-class audit and absolute-path audit.
+  2. Run the import audit, duplicate-class audit, absolute-path audit and trace
+     audit (D26).
   3. Run `uvx ruff check src tests` and `uvx ty check src` over the whole tree;
      add the tools as dev dependencies or a config file only if the run needs
      it.
@@ -1010,6 +1035,8 @@ parity checks; they do not prescribe node granularity.
   - all tests pass;
   - no absolute path in `src`/`tests`;
   - one implementation per scraper class;
+  - no dead module/function/constant and no profile trace outside `profiles/`
+    and `conf/`;
   - `ruff` and `ty` report no finding anywhere in `src`/`tests`;
   - the docs build without warnings;
   - the fresh-clone run works without machine setup.

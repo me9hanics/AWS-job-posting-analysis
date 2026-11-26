@@ -154,10 +154,17 @@ files. It also splits the grouped non-empty merge rule out as B27a.
 
 | ID | Ticket | Depends on | Status |
 | --- | --- | --- | --- |
-| B44 | [Remove compatibility code and stale modules](m9-done/B44-remove-compatibility.md) | B43 | todo |
+| B44 | [Remove compatibility code, dead code and stale traces](m9-done/B44-remove-compatibility.md) | B43 | todo |
 | B45 | [Update documentation and ADRs](m9-done/B45-update-docs.md) | B44 | todo |
 | B45b | [Sphinx documentation in `docs/`](m9-done/B45b-sphinx-docs.md) | B45 | todo |
 | B46 | [Final gates](m9-done/B46-final-gates.md) | B44, B45b | todo |
+
+B44 carries D26 (2026-11-26): M9 removes what nothing calls and what is left of
+a deleted or untracked feature, including traces inside code that stays
+(`derive_profile_postings.py`'s Dani defaults, Vienna branch, migration-baseline
+write and vestigial parameters are the example). The end state it protects is
+B43's: a profile differs from another only in `conf/` plus its
+`profiles/<name>.py` functions, never in a new pipeline function.
 
 ## Ticket implementation notes
 

@@ -110,6 +110,7 @@ Confirmed decisions are binding. Only Q16 remains open; the full decision log is
 | D23 | The universal history is expected but not guaranteed. Collection may be planned per pipeline; profiles and stages take their input records as arguments and never assume one universal history exists. | Confirmed 2026-11-22 — Q28 |
 | D24 | Universal records carry profile-neutral annotations (`language`, `guessed_required_languages`, `matched_titlewords`); policy fields stay in scored/selected, and enrichment in `data/enrich.py` produces the language facts. | Confirmed 2026-11-24 — Q29 |
 | D25 | A site is a class in its own module and is its own adapter. `BaseScraper` shrinks to per-run setup (rules/keywords/date), `source` and the declared `steps` — no overridable helper methods; shared mechanics are module functions and per-site differences are arguments or `rules` keys. | Confirmed 2026-11-24 — Q30 |
+| D26 | No dead code and no profile traces in shared code. M9 deletes anything left from the old implementation that nothing calls, and removes any surviving default, branch, parameter or artifact name from a deleted or untracked feature (Dani in `derive_profile_postings.py` is the example): neutral constants or parameters, with profile rules in `profiles/<name>.py` and values in `conf/`. | Confirmed 2026-11-26 |
 
 ## The three mandated directions
 
